@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface TooltipProps {
@@ -15,10 +15,15 @@ const GAP = 10;
 /**
  * A quiet, delayed tooltip. It only appears after a deliberate hover, and
  * renders in a portal so toolbar overflow can't clip it.
+ *
+ * Touch is excluded on purpose. A tap fires pointerenter and focus just like a
+ * mouse does, but no pointerleave ever follows, so a tooltip opened by a thumb
+ * hangs around over the UI until something else is tapped.
  */
 export const Tooltip = ({ label, shortcut, placement = "bottom", children }: TooltipProps) => {
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLSpanElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | undefined>(undefined);
 
   const show = () => {
@@ -36,6 +41,22 @@ export const Tooltip = ({ label, shortcut, placement = "bottom", children }: Too
     }, OPEN_DELAY_MS);
   };
 
+  /**
+   * Nudges the tooltip back inside the viewport. A label on a button at the
+   * right edge would otherwise be half off-screen — the anchor is centred
+   * under it, with no regard for where the window ends.
+   */
+  useLayoutEffect(() => {
+    const tip = tipRef.current;
+    if (!position || !tip) return;
+    const { width } = tip.getBoundingClientRect();
+    // top/bottom are centred on the anchor by a CSS transform; right is not
+    const visibleLeft = placement === "right" ? position.x : position.x - width / 2;
+    const maxLeft = Math.max(GAP, window.innerWidth - GAP - width);
+    const shift = Math.min(Math.max(visibleLeft, GAP), maxLeft) - visibleLeft;
+    if (Math.abs(shift) > 0.5) setPosition({ ...position, x: position.x + shift });
+  }, [position, placement]);
+
   const hide = () => {
     window.clearTimeout(timerRef.current);
     setPosition(null);
@@ -46,11 +67,16 @@ export const Tooltip = ({ label, shortcut, placement = "bottom", children }: Too
       <span
         ref={wrapperRef}
         className="tooltip-anchor"
-        onPointerEnter={show}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") show();
+        }}
         onPointerLeave={hide}
         // hiding on press keeps the tooltip from lingering over a click
         onPointerDown={hide}
-        onFocus={show}
+        // only keyboard focus should explain a control; a tap already acted on it
+        onFocus={(event) => {
+          if ((event.target as HTMLElement).matches?.(":focus-visible")) show();
+        }}
         onBlur={hide}
       >
         {children}
@@ -58,6 +84,7 @@ export const Tooltip = ({ label, shortcut, placement = "bottom", children }: Too
       {position &&
         createPortal(
           <div
+            ref={tipRef}
             className={`tooltip tooltip--${placement}`}
             style={{ left: position.x, top: position.y }}
             role="tooltip"

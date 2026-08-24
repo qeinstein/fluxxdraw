@@ -2168,3 +2168,13 @@ kbd {
     padding: 11px;
   }
 }
+
+@media (hover: none) {
+  /*
+   * Belt and braces with the pointer-type check in Tooltip: on a touch-only
+   * device there is no hover, so a hover hint can only ever be in the way.
+   */
+  .tooltip {
+    display: none;
+  }
+}
