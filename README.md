@@ -93,6 +93,21 @@ Shapes are `rectangle`, `ellipse` and `diamond`. Fills are `red`, `green`,
 declared are created for you. Mistakes are reported with a line number rather
 than throwing the diagram away.
 
+## Usage figures
+
+`/uqnautmfluxx` shows how the app is being used: sessions open now, visits per
+day, and which cloud services get placed most. It needs a Redis store connected
+to the project — Upstash's free tier is enough — which supplies either
+`KV_REST_API_URL`/`KV_REST_API_TOKEN` or the `UPSTASH_REDIS_REST_*` pair; both
+are accepted. Environment variables only reach the functions at build time, so
+redeploy after connecting the store.
+
+Counters only: an event name, a service id, and a per-tab token that expires in
+minutes. No identifiers, no cookies, and nothing about anyone's drawings. Do Not
+Track is honoured and localhost is never counted. Set `STATS_TOKEN` to require
+`/uqnautmfluxx#k=<token>` if the page shouldn't be readable by anyone who finds
+the URL.
+
 ## Contributing
 
 Contributions are welcome. FluxxDraw is MIT licensed, so you can use it, fork it, embed it in something else, or ship it commercially without asking. If you're fixing a bug, a failing check in `scripts/` that turns green is the most convincing thing you can bring. If you're adding a feature, open an issue first so we can agree it belongs here before you spend the evening on it.
