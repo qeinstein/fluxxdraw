@@ -656,14 +656,14 @@ kbd {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: 262px;
+  width: min(326px, calc(100vw - 20px));
+  max-height: calc(100dvh - 20px);
   background: var(--surface-raised);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: 5px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  overflow: hidden;
   z-index: 30;
   animation: pop-in 130ms var(--ease);
   transform-origin: top left;
@@ -691,6 +691,111 @@ kbd {
   font-weight: 450;
   border-radius: var(--radius-sm);
   text-align: left;
+  color: var(--fg-muted);
+}
+
+.menu-item:hover {
+  color: var(--fg);
+  background: var(--hover);
+}
+
+.menu-sidebar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 14px 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.menu-sidebar-head > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-sidebar-head strong {
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+}
+
+.menu-sidebar-head span {
+  color: var(--fg-subtle);
+  font-size: 11px;
+}
+
+.menu-sidebar-close {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex: none;
+  place-items: center;
+  color: var(--fg-muted);
+}
+
+.menu-sidebar-close:hover {
+  color: var(--fg);
+  background: var(--hover);
+}
+
+.menu-sidebar-content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.menu-section {
+  padding: 9px 7px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.menu-section h2 {
+  margin: 0;
+  padding: 0 8px 5px;
+  color: var(--fg-subtle);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.menu-section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.menu-sidebar-footer {
+  flex: none;
+  padding: 7px;
+  border-top: 1px solid var(--line);
+}
+
+.menu-footer-links {
+  display: flex;
+  gap: 2px;
+  padding: 4px 1px 7px;
+}
+
+.menu-footer-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-subtle);
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.menu-footer-links a:hover {
+  color: var(--fg);
+  background: var(--hover);
 }
 
 .menu-toggle {
@@ -752,7 +857,7 @@ kbd {
 .menu-label {
   font-size: 11px;
   color: var(--fg-muted);
-  padding: 4px 9px 2px;
+  padding: 7px 9px 2px;
 }
 
 .menu-swatches {
@@ -1344,6 +1449,7 @@ kbd {
   background: var(--surface);
   display: grid;
   place-items: center;
+  cursor: default;
 }
 
 .presentation-canvas {
@@ -1352,6 +1458,7 @@ kbd {
   width: 100%;
   height: 100%;
   display: block;
+  cursor: default;
 }
 
 /* invisible click targets: back on the left third, forward on the rest */
@@ -1372,13 +1479,11 @@ kbd {
 .presentation-zone.prev {
   left: 0;
   width: 30%;
-  cursor: w-resize;
 }
 
 .presentation-zone.next {
   right: 0;
   width: 70%;
-  cursor: e-resize;
 }
 
 .presentation-bar {
@@ -1920,9 +2025,9 @@ kbd {
     background: var(--accent);
   }
 
-  .menu-popover {
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
+  .menu-sidebar {
+    /* The popover begins below the 40px menu button, not at the viewport edge. */
+    max-height: calc(100dvh - max(10px, env(safe-area-inset-top)) - 60px - max(10px, env(safe-area-inset-bottom)));
   }
 
   .dialog,

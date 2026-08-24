@@ -78,6 +78,11 @@ class SceneStore {
     this.recordCheckpoint();
   }
 
+  /** Discards a transaction whose gesture was cancelled before it was committed. */
+  cancelHistory() {
+    this.pendingBase = null;
+  }
+
   /** Appends to the durable timeline; coalesces rapid edits internally. */
   recordCheckpoint(label?: string) {
     if (this.previewing) return;
@@ -98,6 +103,16 @@ class SceneStore {
     this.redoStack.push(this.snapshot());
     this.elements = prev.elements;
     this.appState = { ...this.appState, selectedIds: prev.selectedIds, editingTextId: null };
+    /*
+     * This clears editingTextId directly, which unmounts TextEditor from
+     * underneath it without running its own commit — the only place that
+     * normally closes out a pending beginHistory(). Left alone, jumping to a
+     * different point in history while something was mid-edit orphaned that
+     * pending snapshot: beginHistory() is a no-op once pendingBase is set, so
+     * every later edit for the rest of the session would push this one stale
+     * baseline instead of its own, silently corrupting undo/redo from then on.
+     */
+    this.pendingBase = null;
     this.emit();
   }
 
@@ -107,6 +122,7 @@ class SceneStore {
     this.undoStack.push(this.snapshot());
     this.elements = next.elements;
     this.appState = { ...this.appState, selectedIds: next.selectedIds, editingTextId: null };
+    this.pendingBase = null;
     this.emit();
   }
 

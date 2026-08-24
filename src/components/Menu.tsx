@@ -1,10 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { store, useScene } from "../store";
 import { APP_NAME, PALETTE } from "../constants";
 import { setTheme } from "../theme";
 import { tidyUp } from "../layout";
 import { Tooltip } from "./Tooltip";
-import { IconMenu } from "./icons";
+import { IconClose, IconMenu } from "./icons";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { sc } from "../shortcuts";
 
@@ -23,6 +23,12 @@ interface MenuProps {
   currentFileName: string | null;
   dirty: boolean;
   onRename: (name: string) => void;
+}
+
+/** The browser emits this only after the installed app is eligible to install. */
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 export const Menu = ({
@@ -44,6 +50,7 @@ export const Menu = ({
   const scene = useScene();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,11 +69,28 @@ export const Menu = ({
     };
   }, [open]);
 
+  useEffect(() => {
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+  }, []);
+
   const { appState } = scene;
   const isDark = appState.theme === "dark";
   const run = (action: () => void) => () => {
     setOpen(false);
     action();
+  };
+  const install = async () => {
+    const prompt = installPrompt;
+    if (!prompt) return;
+    setOpen(false);
+    await prompt.prompt();
+    await prompt.userChoice;
+    setInstallPrompt(null);
   };
 
   return (
@@ -90,78 +114,110 @@ export const Menu = ({
       {!isMobile && <FileName name={currentFileName} dirty={dirty} onRename={onRename} />}
 
       {open && (
-        <div className="menu-popover" role="menu">
+        <aside className="menu-popover menu-sidebar" role="menu" aria-label="FluxxDraw menu">
+          <header className="menu-sidebar-head">
+            <div>
+              <strong>{APP_NAME}</strong>
+              <span>Your drawing stays on your device</span>
+            </div>
+            <button className="menu-sidebar-close" aria-label="Close menu" onClick={() => setOpen(false)}>
+              <IconClose />
+            </button>
+          </header>
+
           {isMobile && (
-            <>
-              <div className="menu-file">
-                <FileName name={currentFileName} dirty={dirty} onRename={onRename} />
-              </div>
-              <div className="menu-separator" />
-            </>
+            <div className="menu-file">
+              <FileName name={currentFileName} dirty={dirty} onRename={onRename} />
+            </div>
           )}
-          <MenuItem label="Open…" shortcut={sc("open")} onClick={run(onOpen)} />
-          <MenuItem label="Save" shortcut={sc("save")} onClick={run(onSave)} />
-          <MenuItem label="Save as…" shortcut={sc("saveAs")} onClick={run(onSaveAs)} />
-          <MenuItem label="Export…" shortcut={sc("export")} onClick={run(onExport)} />
-          {/* the top-right Quick save button has no room on a phone */}
-          {isMobile && <MenuItem label="Quick save to export folder" onClick={run(onQuickSave)} />}
 
-          <MenuItem label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
-          <MenuItem label="Present frames" shortcut={sc("present")} onClick={run(onPresent)} />
-          <MenuItem label="Service library…" shortcut={sc("services")} onClick={run(onServices)} />
-          <MenuItem label="Tidy up layout" shortcut={sc("tidyUp")} onClick={run(() => tidyUp())} />
-          <MenuItem label="Diagram as text" shortcut={sc("diagramText")} onClick={run(onToggleText)} />
+          <div className="menu-sidebar-content">
+            <MenuSection label="File">
+              <MenuItem label="Open…" shortcut={sc("open")} onClick={run(onOpen)} />
+              <MenuItem label="Save" shortcut={sc("save")} onClick={run(onSave)} />
+              <MenuItem label="Save as…" shortcut={sc("saveAs")} onClick={run(onSaveAs)} />
+              <MenuItem label="Export…" shortcut={sc("export")} onClick={run(onExport)} />
+              {isMobile && <MenuItem label="Quick save to export folder" onClick={run(onQuickSave)} />}
+              {installPrompt && <MenuItem label="Install FluxxDraw" onClick={install} />}
+            </MenuSection>
 
-          <div className="menu-separator" />
+            <MenuSection label="Diagram">
+              <MenuItem label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
+              <MenuItem label="Present frames" shortcut={sc("present")} onClick={run(onPresent)} />
+              <MenuItem label="Service library…" shortcut={sc("services")} onClick={run(onServices)} />
+              <MenuItem label="Tidy up layout" shortcut={sc("tidyUp")} onClick={run(() => tidyUp())} />
+              <MenuItem label="Diagram as text" shortcut={sc("diagramText")} onClick={run(onToggleText)} />
+            </MenuSection>
 
-          <MenuToggle
-            label="Dark mode"
-            checked={isDark}
-            onChange={(next) => setTheme(next ? "dark" : "light")}
-          />
-          <MenuToggle
-            label="Show grid"
-            checked={appState.gridSize !== null}
-            onChange={(next) => store.setAppState({ gridSize: next ? 20 : null })}
-          />
-          <MenuToggle
-            label="Snap to objects"
-            checked={appState.snapToObjects}
-            onChange={(next) => store.setAppState({ snapToObjects: next })}
-          />
-
-          <div className="menu-separator" />
-          <div className="menu-label">Canvas background</div>
-          <div className="swatches menu-swatches">
-            {PALETTE[appState.theme].canvas.map((color) => (
-              <Tooltip key={color} label={color}>
-                <button
-                  className={`swatch ${appState.viewBackgroundColor === color ? "active" : ""}`}
-                  style={{ background: color }}
-                  aria-label={color}
-                  onClick={() => store.setAppState({ viewBackgroundColor: color })}
-                />
-              </Tooltip>
-            ))}
-            <span className="swatch-divider" />
-            <span className="swatch custom-swatch" style={{ background: appState.viewBackgroundColor }}>
-              <input
-                type="color"
-                aria-label="Custom canvas colour"
-                value={appState.viewBackgroundColor}
-                onChange={(e) => store.setAppState({ viewBackgroundColor: e.target.value })}
+            <MenuSection label="Canvas">
+              <MenuToggle
+                label="Dark mode"
+                checked={isDark}
+                onChange={(next) => setTheme(next ? "dark" : "light")}
               />
-            </span>
+              <MenuToggle
+                label="Show grid"
+                checked={appState.gridSize !== null}
+                onChange={(next) => store.setAppState({ gridSize: next ? 20 : null })}
+              />
+              <MenuToggle
+                label="Snap to objects"
+                checked={appState.snapToObjects}
+                onChange={(next) => store.setAppState({ snapToObjects: next })}
+              />
+              <div className="menu-label">Canvas background</div>
+              <div className="swatches menu-swatches">
+                {PALETTE[appState.theme].canvas.map((color) => (
+                  <Tooltip key={color} label={color}>
+                    <button
+                      className={`swatch ${appState.viewBackgroundColor === color ? "active" : ""}`}
+                      style={{ background: color }}
+                      aria-label={color}
+                      onClick={() => store.setAppState({ viewBackgroundColor: color })}
+                    />
+                  </Tooltip>
+                ))}
+                <span className="swatch-divider" />
+                <span className="swatch custom-swatch" style={{ background: appState.viewBackgroundColor }}>
+                  <input
+                    type="color"
+                    aria-label="Custom canvas colour"
+                    value={appState.viewBackgroundColor}
+                    onChange={(e) => store.setAppState({ viewBackgroundColor: e.target.value })}
+                  />
+                </span>
+              </div>
+            </MenuSection>
           </div>
 
-          <div className="menu-separator" />
-          <MenuItem label="Keyboard shortcuts" shortcut="?" onClick={run(onHelp)} />
-          <MenuItem label="Reset canvas" onClick={run(onReset)} danger />
-        </div>
+          <footer className="menu-sidebar-footer">
+            <MenuItem label="Keyboard shortcuts" shortcut="?" onClick={run(onHelp)} />
+            <div className="menu-footer-links">
+              <a href="https://github.com/qeinstein/fluxxdraw" target="_blank" rel="noreferrer">
+                GitHub <span aria-hidden="true">↗</span>
+              </a>
+              <a
+                href="https://github.com/qeinstein/fluxxdraw/blob/main/CHANGELOG.md"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Changelog <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+            <MenuItem label="Reset canvas" onClick={run(onReset)} danger />
+          </footer>
+        </aside>
       )}
     </div>
   );
 };
+
+const MenuSection = ({ label, children }: { label: string; children: ReactNode }) => (
+  <section className="menu-section">
+    <h2>{label}</h2>
+    <div className="menu-section-items">{children}</div>
+  </section>
+);
 
 const MenuItem = ({
   label,

@@ -147,7 +147,7 @@ export const Canvas = ({
   onLinkProblem,
 }: CanvasProps) => {
   // subscribing keeps the component in sync with store-driven UI state
-  useScene();
+  const scene = useScene();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerRef = useRef<PointerState>(freshPointerState());
@@ -397,15 +397,22 @@ export const Canvas = ({
    */
   const abortActiveInteraction = () => {
     const pointer = pointerRef.current;
+    let removedDraft = false;
     if (
       (pointer.mode === "drawing" || pointer.mode === "drawing-linear") &&
       pointer.activeId
     ) {
       store.deleteElements([pointer.activeId]);
+      removedDraft = true;
+      // A cancelled draw must not leave its beginHistory() baseline active.
+      store.cancelHistory();
+    } else if (pointer.mode !== "none") {
+      // Preserve a completed move/erase if the browser takes focus mid-gesture.
+      store.commit();
     }
-    if (pointer.mode !== "none") store.commit();
     pointerRef.current = freshPointerState();
     guidesRef.current = [];
+    if (removedDraft) store.emit();
   };
 
   const cancelLongPress = () => {
@@ -413,6 +420,50 @@ export const Canvas = ({
     window.clearTimeout(longPressRef.current);
     longPressRef.current = null;
   };
+
+  /** Releases stale captures after a tool switch or when the browser loses focus. */
+  const clearTransientInput = () => {
+    cancelLongPress();
+    const canvas = canvasRef.current;
+    if (canvas) {
+      for (const pointerId of pointersRef.current.keys()) {
+        try {
+          if (canvas.hasPointerCapture(pointerId)) canvas.releasePointerCapture(pointerId);
+        } catch {
+          // A browser can cancel a pointer before React receives pointercancel.
+        }
+      }
+      canvas.style.cursor = "default";
+    }
+    pointersRef.current.clear();
+    gestureRef.current = null;
+    pointerRef.current = freshPointerState();
+    guidesRef.current = [];
+    hoveredLinkIdRef.current = null;
+  };
+
+  // Changing tools must always start a new interaction cleanly. In particular,
+  // this recovers from a missed pointercancel instead of requiring a refresh.
+  useLayoutEffect(() => {
+    abortActiveInteraction();
+    clearTransientInput();
+  }, [scene.appState.tool]);
+
+  useEffect(() => {
+    const recover = () => {
+      abortActiveInteraction();
+      clearTransientInput();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") recover();
+    };
+    window.addEventListener("blur", recover);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("blur", recover);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
 
   const beginPinch = () => {
     const pair = readTouchPair();
@@ -503,7 +554,11 @@ export const Canvas = ({
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button === 2) return; // context menu handled separately
     const canvas = canvasRef.current!;
-    canvas.setPointerCapture(event.pointerId);
+    try {
+      canvas.setPointerCapture(event.pointerId);
+    } catch {
+      // A browser can cancel a touch between pointerdown and capture.
+    }
 
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointersRef.current.size >= 2) {

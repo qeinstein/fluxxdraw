@@ -83,20 +83,6 @@ export const Presentation = ({ onExit }: PresentationProps) => {
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [index, total, go, onExit]);
 
-  // leaving the browser's fullscreen should leave the presentation too
-  useEffect(() => {
-    const element = document.documentElement;
-    element.requestFullscreen?.().catch(() => undefined);
-    const onChange = () => {
-      if (!document.fullscreenElement) onExit();
-    };
-    document.addEventListener("fullscreenchange", onChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", onChange);
-      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => undefined);
-    };
-  }, [onExit]);
-
   // render loop: draw the current slide, letter-boxed
   useEffect(() => {
     const draw = () => {
