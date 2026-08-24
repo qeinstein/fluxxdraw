@@ -10,6 +10,7 @@ import {
 } from "./exportImage";
 import { exportToSvgString } from "./exportSvg";
 import { saveExport, type SaveResult } from "./fileSystem";
+import { track } from "../analytics";
 
 export type ExportFormat = RasterFormat | "svg" | "json";
 export type ExportScope = "canvas" | "selection" | "frame";
@@ -159,6 +160,7 @@ export const buildExportBlob = async (settings: ExportSettings): Promise<Blob> =
 
 /** Builds and writes the export to the configured folder (or downloads it). */
 export const runExport = async (settings: ExportSettings): Promise<SaveResult> => {
+  track("export", undefined);
   const blob = await buildExportBlob(settings);
   return saveExport(blob, buildFilename(settings));
 };

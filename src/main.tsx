@@ -4,10 +4,12 @@ import { Analytics } from "@vercel/analytics/react";
 import "./index.css";
 import App from "./App.tsx";
 import { installFontFaces } from "./fonts";
+import { startAnalytics } from "./analytics";
 
 // Register the drawing fonts before React mounts, so the first measurement
 // pass has them available rather than sizing text against a fallback.
 installFontFaces();
+startAnalytics();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

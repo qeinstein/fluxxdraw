@@ -3,7 +3,8 @@ import { store } from "../store";
 import { newInstance } from "../components-model";
 import { measureText } from "../elements/text";
 import { getElementBounds } from "../geometry";
-import { LINE_HEIGHT } from "../constants";
+import { track } from "../analytics";
+import { LINE_HEIGHT, STROKE_WIDTHS } from "../constants";
 import { PROVIDERS, type Glyph, type ServicePreset } from "./catalog";
 import type {
   ComponentDefinition,
@@ -47,7 +48,8 @@ const base = (x: number, y: number, width: number, height: number, stroke: strin
   strokeColor: stroke,
   backgroundColor: "transparent",
   fillStyle: "solid" as const,
-  strokeWidth: 1.25,
+  // a value the toolbar can actually show as selected, not a bespoke 1.25
+  strokeWidth: STROKE_WIDTHS.thin,
   strokeStyle: "solid" as const,
   roughness: 1,
   edges: "round" as const,
@@ -292,6 +294,7 @@ const freeSpot = (x: number, y: number): [number, number] => {
  * the file open anywhere.
  */
 export const placeService = (preset: ServicePreset, atX: number, atY: number) => {
+  track("place", preset.id);
   const [x, y] = freeSpot(atX, atY);
   store.mutate(() => {
     if (!store.components[preset.id]) {

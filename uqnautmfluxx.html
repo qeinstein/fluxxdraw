@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>FluxxDraw · usage</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // match the app's saved theme before first paint
+      try {
+        const saved = JSON.parse(localStorage.getItem("fluxxdraw:preferences") || "{}");
+        document.documentElement.dataset.theme =
+          saved.theme === "dark"
+            ? "dark"
+            : saved.theme === "light"
+              ? "light"
+              : matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+      } catch {
+        document.documentElement.dataset.theme = "light";
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/stats/main.tsx"></script>
+  </body>
+</html>

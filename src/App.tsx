@@ -33,6 +33,7 @@ import {
 import { loadPreferences, savePreferences, type Preferences } from "./io/preferences";
 import { consumeLaunchFiles, registerServiceWorker } from "./io/launchHandler";
 import { loadFonts } from "./fonts";
+import { track } from "./analytics";
 import { reconcileFrameMembership, refreshTextLayout } from "./actions";
 import { newImageElement, syncFrameCounter } from "./elements/factory";
 import { preloadFiles } from "./render/imageCache";
@@ -340,6 +341,7 @@ export default function App() {
   }, [currentDocument, fileName, showToast]);
 
   const handleSave = useCallback(async () => {
+    track("save");
     const handle = fileHandleRef.current;
     if (!handle) {
       await handleSaveAs();
@@ -445,9 +447,15 @@ export default function App() {
         setContextMenu(null);
         setServicesOpen(false);
       },
-      onPresent: () => setPresenting(true),
+      onPresent: () => {
+        track("present");
+        setPresenting(true);
+      },
       onServices: () => setServicesOpen(true),
-      onToggleText: () => (textPanelOpen ? openPanel(null) : openPanel("text")),
+      onToggleText: () => {
+        track("text");
+        return textPanelOpen ? openPanel(null) : openPanel("text");
+      },
     }),
     [handleOpen, handleSave, handleSaveAs, openPanel, textPanelOpen],
   );

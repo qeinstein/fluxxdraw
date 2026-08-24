@@ -1,0 +1,462 @@
+/*
+ * The usage page wears FluxxDraw's own tokens, with one addition: a dedicated
+ * series colour. The app's dark accent (#8b87f5) sits above the lightness band
+ * a chart mark wants on a dark surface, so the dark series steps once down the
+ * same family. Both values were checked against their surface rather than eyeballed.
+ */
+
+:root {
+  --surface: #ffffff;
+  --surface-sunken: #f6f6f8;
+  --surface-raised: #ffffff;
+  --fg: #16161a;
+  --fg-muted: #6b6b76;
+  --fg-subtle: #93939e;
+  --line: #e6e6ea;
+  --series: #5b57d1;
+  --series-soft: #ecebfb;
+  --good: #1f9254;
+  --radius-lg: 10px;
+  --radius-md: 7px;
+  --shadow-sm: 0 1px 2px rgba(16, 16, 26, 0.06), 0 0 0 1px rgba(16, 16, 26, 0.05);
+}
+
+:root[data-theme="dark"] {
+  --surface: #1c1c22;
+  --surface-sunken: #16161b;
+  --surface-raised: #22222a;
+  --fg: #ececef;
+  --fg-muted: #9c9caa;
+  --fg-subtle: #71717f;
+  --line: #2e2e38;
+  --series: #7d78ee;
+  --series-soft: #2c2a52;
+  --good: #47c483;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-sunken);
+  color: var(--fg);
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.page-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 0;
+  padding: 16px 18px;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  color: var(--fg-muted);
+}
+
+.note.empty {
+  box-shadow: none;
+  background: transparent;
+  padding: 28px 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+.steps {
+  margin: 0;
+  padding: 4px 0 0 22px;
+  color: var(--fg-muted);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  background: var(--surface-sunken);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* --- stat tiles ------------------------------------------------------------ */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.tile-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+
+.tile-value {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.tile-hint {
+  font-size: 11.5px;
+  color: var(--fg-subtle);
+}
+
+.pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--good);
+  flex: none;
+  animation: pulse 2s var(--ease, ease-in-out) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
+/* --- cards ---------------------------------------------------------------- */
+
+.card {
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px 18px;
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+/* one filter row above the plot, never beside it */
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.segmented button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  background: transparent;
+  border: none;
+  padding: 5px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.segmented button:hover {
+  color: var(--fg);
+}
+
+.segmented button.active {
+  background: var(--surface-raised);
+  color: var(--fg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- daily chart ---------------------------------------------------------- */
+
+.chart {
+  position: relative;
+  /* room for the scale labels down the left */
+  padding-left: 34px;
+}
+
+/* the scale a magnitude chart needs to be readable without hovering */
+.chart-scale {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* spans the plot only; the date labels sit below it */
+  height: 168px;
+  width: 30px;
+}
+
+/* the plot proper, so overlay percentages track the bars and not the gutter */
+.chart-plot {
+  position: relative;
+}
+
+.chart-scale span {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  font-size: 10.5px;
+  color: var(--fg-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: 168px;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.bar {
+  fill: var(--series);
+  transition: opacity 120ms ease;
+}
+
+.bar-hover {
+  opacity: 0.75;
+}
+
+/* one printed value, on the peak: enough to anchor the scale, not clutter */
+.bar-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.chart-axis {
+  display: flex;
+  margin-top: 7px;
+}
+
+.chart-axis span {
+  flex: 1;
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-axis .faint {
+  color: var(--fg-subtle);
+}
+
+.tip {
+  position: absolute;
+  top: 2px;
+  transform: translateX(-50%);
+  z-index: 1;
+  background: var(--fg);
+  color: var(--surface);
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+.tip-date {
+  color: color-mix(in srgb, var(--surface) 60%, var(--fg));
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- table view ----------------------------------------------------------- */
+
+.table-view {
+  margin-top: 14px;
+  font-size: 12.5px;
+}
+
+.table-view summary {
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+
+.table-view table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-view th,
+.table-view td {
+  text-align: right;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+  color: var(--fg-muted);
+}
+
+.table-view thead th {
+  color: var(--fg-subtle);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.table-view tbody th {
+  text-align: left;
+  color: var(--fg);
+}
+
+.table-view thead th:first-child {
+  text-align: left;
+}
+
+/* --- service bars --------------------------------------------------------- */
+
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bars li {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.bars-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 0;
+}
+
+.bars-meta {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--fg-subtle);
+}
+
+.bars-track {
+  height: 10px;
+  background: var(--surface-sunken);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.bars-fill {
+  display: block;
+  height: 100%;
+  background: var(--series);
+  border-radius: 5px;
+  min-width: 3px;
+}
+
+.bars-value {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+  min-width: 3ch;
+  text-align: right;
+}
+
+.footnote {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--fg-subtle);
+  max-width: 68ch;
+}
+
+@media (max-width: 560px) {
+  .bars li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .bars-track {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}

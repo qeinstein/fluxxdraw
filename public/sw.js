@@ -47,9 +47,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Analytics is Vercel's own endpoint: never cache it, or it goes stale and
-  // keeps reporting through an old script.
-  if (new URL(request.url).pathname.startsWith("/_vercel/")) return;
+  const path = new URL(request.url).pathname;
+  // Vercel's own endpoints, our API and the usage page all want the network:
+  // caching them would serve stale figures, or none at all.
+  if (
+    path.startsWith("/_vercel/") ||
+    path.startsWith("/api/") ||
+    path.startsWith("/uqnautmfluxx")
+  ) {
+    return;
+  }
 
   // Static assets are content-hashed, so cache-first is safe and fast.
   event.respondWith(
