@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { store } from "../store";
 import { IconClose } from "./icons";
 import {
@@ -8,7 +8,10 @@ import {
   type Provider,
   type ServicePreset,
 } from "../presets/catalog";
-import { NODE_HEIGHT, NODE_WIDTH, placeService } from "../presets/build";
+import { NODE_HEIGHT, NODE_WIDTH, glyphPreview, placeService } from "../presets/build";
+import { renderElements } from "../render/renderScene";
+import { useIsMobile } from "../hooks/useMediaQuery";
+import type { Glyph } from "../presets/catalog";
 
 /**
  * The cloud service catalog, as a picker.
@@ -20,8 +23,7 @@ import { NODE_HEIGHT, NODE_WIDTH, placeService } from "../presets/build";
 export const ServiceLibrary = ({ onClose }: { onClose: () => void }) => {
   const [provider, setProvider] = useState<Provider>("aws");
   const [query, setQuery] = useState("");
-  /** each pick offsets a little, so a run of them doesn't stack in one spot */
-  const placed = useRef(0);
+  const isMobile = useIsMobile();
 
   const results = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -40,20 +42,31 @@ export const ServiceLibrary = ({ onClose }: { onClose: () => void }) => {
     const rect = container?.getBoundingClientRect();
     const { scrollX, scrollY, zoom } = store.appState;
 
-    // stagger repeated picks down and to the right
-    const step = (placed.current % 6) * 28;
-    placed.current += 1;
-
     const centreX = rect ? rect.width / (2 * zoom) - scrollX : 0;
     const centreY = rect ? rect.height / (2 * zoom) - scrollY : 0;
-    placeService(preset, centreX - NODE_WIDTH / 2 + step, centreY - NODE_HEIGHT / 2 + step);
+    placeService(preset, centreX - NODE_WIDTH / 2, centreY - NODE_HEIGHT / 2);
+    // the node lands selected, so get out of the way and let it be moved
+    onClose();
   };
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
-      <div className="dialog wide" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="dialog wide"
+        onClick={(event) => event.stopPropagation()}
+        /*
+         * Escape is handled here rather than left to the global shortcut: with
+         * the caret in the search box the app-level handler ignores the key, so
+         * the dialog would refuse to close from the field you just typed in.
+         */
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          event.stopPropagation();
+          onClose();
+        }}
+      >
         <header>
-          <h2>Cloud services</h2>
+          <h2>Service library</h2>
           <button className="icon-button" aria-label="Close" onClick={onClose}>
             <IconClose />
           </button>
@@ -81,6 +94,9 @@ export const ServiceLibrary = ({ onClose }: { onClose: () => void }) => {
             aria-label="Search services"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            /* a 68-item catalog is faster to type into than to scroll, but
+               autofocus on a phone would cover the list with a keyboard */
+            autoFocus={!isMobile}
           />
         </div>
 
@@ -129,7 +145,7 @@ const ServiceGrid = ({
         onClick={() => onPick(preset)}
         title={`Add ${preset.name}`}
       >
-        <span className="service-dot" style={{ background: PROVIDERS[preset.provider].accent }} />
+        <GlyphPreview glyph={preset.glyph} accent={PROVIDERS[preset.provider].accent} />
         <span className="service-name">{preset.name}</span>
         {/* grouped view already has a category heading above it */}
         {showProvider && (
@@ -141,3 +157,47 @@ const ServiceGrid = ({
     ))}
   </div>
 );
+
+const PREVIEW_SIZE = 26;
+
+/**
+ * Draws a service's glyph with the same renderer the canvas uses, so the
+ * picker shows the actual hand-drawn mark rather than a stand-in.
+ */
+const GlyphPreview = ({ glyph, accent }: { glyph: Glyph; accent: string }) => {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useLayoutEffect(() => {
+    const canvas = ref.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = PREVIEW_SIZE * dpr;
+    canvas.height = PREVIEW_SIZE * dpr;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const { elements, size } = glyphPreview(glyph, accent);
+    const scale = (PREVIEW_SIZE / size) * dpr;
+    ctx.save();
+    ctx.scale(scale, scale);
+    renderElements(ctx, elements, {
+      scrollX: 0,
+      scrollY: 0,
+      zoom: 1,
+      scale: dpr,
+      files: {},
+      exporting: true,
+    });
+    ctx.restore();
+  }, [glyph, accent]);
+
+  return (
+    <canvas
+      ref={ref}
+      className="service-glyph"
+      style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE }}
+      aria-hidden="true"
+    />
+  );
+};

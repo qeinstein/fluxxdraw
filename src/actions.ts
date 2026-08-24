@@ -5,7 +5,13 @@ import { duplicateElement } from "./elements/factory";
 import { getCommonBounds, getElementBounds, getRotatedBounds } from "./geometry";
 import { getLabelBox, getTextLines, measureText } from "./elements/text";
 import { CONTAINER_PADDING } from "./constants";
-import type { ExcaliElement, GenericElement, LinearElement, TextElement } from "./types";
+import type {
+  ExcaliElement,
+  GenericElement,
+  InstanceElement,
+  LinearElement,
+  TextElement,
+} from "./types";
 
 /** Re-runs binding math for every arrow attached to the given shapes. */
 export const refreshBindings = (changedIds: string[]) => {
@@ -301,8 +307,24 @@ export const applyStyleToSelection = (patch: Record<string, unknown>) => {
   for (const el of selected) {
     if ("boundText" in el && el.boundText) ids.push(el.boundText);
   }
+  // opacity already applies to an instance as a whole; the rest has to be
+  // handed to its children at render time
+  const { opacity, ...overridable } = patch;
+
   store.mutate(() => {
-    store.updateElements(ids, () => ({ ...patch }) as never);
+    for (const id of ids) {
+      const element = store.getElement(id);
+      if (element?.type === "instance") {
+        store.updateElement<InstanceElement>(id, (current) => ({
+          ...(opacity === undefined ? {} : { opacity: opacity as number }),
+          styleOverrides: Object.keys(overridable).length
+            ? { ...current.styleOverrides, ...overridable }
+            : current.styleOverrides,
+        }));
+      } else {
+        store.updateElement(id, () => ({ ...patch }) as never);
+      }
+    }
     const textIds = ids.filter((id) => store.getElement(id)?.type === "text");
     if (textIds.length) refreshTextLayout(textIds);
   });

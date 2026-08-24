@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { store } from "../store";
 import { newInstance } from "../components-model";
 import { measureText } from "../elements/text";
+import { getElementBounds } from "../geometry";
 import { LINE_HEIGHT } from "../constants";
 import { PROVIDERS, type Glyph, type ServicePreset } from "./catalog";
 import type {
@@ -217,6 +218,21 @@ const glyphElements = (glyph: Glyph, accent: string): ExcaliElement[] => {
 };
 
 /**
+ * Just the glyph, boxed at the origin — for showing a service in the picker.
+ *
+ * Reuses the same geometry the canvas draws rather than a parallel set of
+ * preview icons, so what you pick is literally what you get.
+ */
+export const glyphPreview = (glyph: Glyph, accent: string) => ({
+  elements: glyphElements(glyph, accent).map((el) => ({
+    ...el,
+    x: el.x - GLYPH_X,
+    y: el.y - GLYPH_Y,
+  })),
+  size: GLYPH_SIZE,
+});
+
+/**
  * The elements of one service node, in local coordinates with the origin at
  * (0, 0) — the shape a `ComponentDefinition` expects.
  */
@@ -242,6 +258,32 @@ export const serviceDefinition = (preset: ServicePreset): ComponentDefinition =>
   version: 1,
 });
 
+const STEP = 26;
+
+/**
+ * First spot at or after (x, y) whose node box hits nothing already on the
+ * canvas, searched diagonally.
+ *
+ * Without this, picking two services in a row drops the second exactly on top
+ * of the first and it looks like nothing happened.
+ */
+const freeSpot = (x: number, y: number): [number, number] => {
+  const clashes = (px: number, py: number) =>
+    store.visibleElements.some((el) => {
+      const b = getElementBounds(el);
+      return (
+        px < b.x2 && px + NODE_WIDTH > b.x1 && py < b.y2 && py + NODE_HEIGHT > b.y1
+      );
+    });
+
+  for (let i = 0; i < 60; i++) {
+    const ox = x + i * STEP;
+    const oy = y + i * STEP;
+    if (!clashes(ox, oy)) return [ox, oy];
+  }
+  return [x, y];
+};
+
 /**
  * Places a service on the canvas.
  *
@@ -249,7 +291,8 @@ export const serviceDefinition = (preset: ServicePreset): ComponentDefinition =>
  * services it actually contains — and carries them in full, which is what lets
  * the file open anywhere.
  */
-export const placeService = (preset: ServicePreset, x: number, y: number) => {
+export const placeService = (preset: ServicePreset, atX: number, atY: number) => {
+  const [x, y] = freeSpot(atX, atY);
   store.mutate(() => {
     if (!store.components[preset.id]) {
       store.components = { ...store.components, [preset.id]: serviceDefinition(preset) };

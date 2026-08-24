@@ -258,8 +258,17 @@ export const renderElement = (
         ctx.translate(el.x, el.y);
         // stretch the master to whatever box this instance occupies
         ctx.scale(el.width / definition.width, el.height / definition.height);
-        const innerById = new Map(definition.elements.map((child) => [child.id, child]));
-        for (const child of definition.elements) {
+        /*
+         * Instance-level style wins over the master's. Opacity is deliberately
+         * excluded: it is already applied to the instance as a whole above, and
+         * applying it again per child would dim twice over.
+         */
+        const overrides = el.styleOverrides;
+        const children = overrides
+          ? definition.elements.map((child) => ({ ...child, ...overrides }))
+          : definition.elements;
+        const innerById = new Map(children.map((child) => [child.id, child]));
+        for (const child of children) {
           renderElement(ctx, child, innerById, config);
         }
         ctx.restore();

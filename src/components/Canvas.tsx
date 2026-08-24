@@ -482,9 +482,14 @@ export const Canvas = ({ onDoubleClickText, onRequestImage, onContextMenu }: Can
       return;
     }
 
-    // Touch has no right-click, so holding still for a moment opens the menu.
-    // Any movement or lift cancels it, so drawing is never interrupted.
-    if (event.pointerType === "touch") {
+    /*
+     * Touch has no right-click, so holding still for a moment opens the menu —
+     * but only while selecting. With a drawing tool a long press is the start
+     * of a slow, deliberate stroke, and treating it as a menu request threw the
+     * stroke away: you'd press, hesitate, and get a menu instead of a line.
+     */
+    const activeTool = store.appState.tool;
+    if (event.pointerType === "touch" && (activeTool === "selection" || activeTool === "hand")) {
       const { clientX, clientY } = event;
       longPressRef.current = window.setTimeout(() => {
         longPressRef.current = null;
@@ -1108,11 +1113,33 @@ export const Canvas = ({ onDoubleClickText, onRequestImage, onContextMenu }: Can
       store.setAppState({ selectedIds: [] });
     }
 
+    /*
+     * Locked elements are invisible to hit testing, so without this a locked
+     * shape can't be reached at all: it can't be selected, so no panel or
+     * shortcut applies to it, and the menu would offer canvas actions over the
+     * top of it. Offering "Unlock" here is the way back.
+     */
+    const lockedUnder = hit
+      ? null
+      : [...store.visibleElements].reverse().find((el) => {
+          if (!el.locked) return false;
+          const b = getElementBounds(el);
+          return x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2;
+        });
+
     onContextMenu({
       x: clientX,
       y: clientY,
       onEditLabel:
         hit && isContainer(hit) ? () => onDoubleClickText(ensureBoundText(hit.id)) : null,
+      onUnlock: lockedUnder
+        ? () => {
+            store.mutate(() => {
+              store.updateElement(lockedUnder.id, () => ({ locked: false }));
+              store.appState = { ...store.appState, selectedIds: [lockedUnder.id] };
+            });
+          }
+        : null,
     });
   };
 

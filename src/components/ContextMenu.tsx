@@ -19,6 +19,8 @@ export interface ContextMenuRequest {
   y: number;
   /** present when the thing under the cursor can carry a label */
   onEditLabel: (() => void) | null;
+  /** present when a locked element sits under the cursor */
+  onUnlock: (() => void) | null;
 }
 
 interface ContextMenuProps {
@@ -159,7 +161,19 @@ export const ContextMenu = ({
         },
       ]
     : [
-        { kind: "item", label: "Add cloud service…", shortcut: sc("services"), run: run(onServices) },
+        // a locked element can't be selected, so this is the only route back
+        ...(request.onUnlock
+          ? [
+              {
+                kind: "item" as const,
+                label: "Unlock this",
+                shortcut: sc("lock"),
+                run: run(request.onUnlock),
+              },
+              { kind: "separator" as const },
+            ]
+          : []),
+        { kind: "item", label: "Add a service…", shortcut: sc("services"), run: run(onServices) },
         { kind: "separator" },
         { kind: "item", label: "Select all", shortcut: sc("selectAll"), run: run(selectAll) },
         { kind: "item", label: "Tidy up layout", shortcut: sc("tidyUp"), run: run(() => tidyUp()) },

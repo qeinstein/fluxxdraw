@@ -39,6 +39,7 @@ export const newInstance = (
   id: nanoid(),
   type: "instance",
   componentId,
+  styleOverrides: null,
   x,
   y,
   width,

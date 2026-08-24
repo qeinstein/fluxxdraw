@@ -124,6 +124,13 @@ export interface EmbedElement extends BaseElement {
 export interface InstanceElement extends BaseElement {
   type: "instance";
   componentId: string;
+  /**
+   * Style the user applied to this instance, laid over the definition's own
+   * when drawing. Only the keys they actually changed are present: an instance
+   * carries a full default style block like every element, so applying all of
+   * it blindly would repaint every component in the default black.
+   */
+  styleOverrides?: Partial<ElementStyle> | null;
 }
 
 /** A reusable symbol: elements in local coordinates with origin at (0, 0). */

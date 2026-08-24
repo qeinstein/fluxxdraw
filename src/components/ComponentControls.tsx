@@ -52,23 +52,25 @@ export const ComponentControls = ({
             Changes apply to {instances} instance{instances === 1 ? "" : "s"}
           </span>
         </div>
-        <button
-          onClick={() => {
-            cancelComponentEdit(session, editingInstanceId);
-            onSessionChange(null, null);
-          }}
-        >
-          Discard
-        </button>
-        <button
-          className="primary"
-          onClick={() => {
-            commitComponentEdit(session, editingInstanceId);
-            onSessionChange(null, null);
-          }}
-        >
-          Save component
-        </button>
+        <div className="component-editing-actions">
+          <button
+            onClick={() => {
+              cancelComponentEdit(session, editingInstanceId);
+              onSessionChange(null, null);
+            }}
+          >
+            Discard
+          </button>
+          <button
+            className="primary"
+            onClick={() => {
+              commitComponentEdit(session, editingInstanceId);
+              onSessionChange(null, null);
+            }}
+          >
+            Save component
+          </button>
+        </div>
       </div>
     );
   }
@@ -170,7 +172,10 @@ export const ComponentControls = ({
                     }}
                   >
                     {definition.name}
-                    <span className="hint">{countInstances(definition.id)}</span>
+                    {/* an unplaced definition just reads as "0", which says nothing */}
+                    {countInstances(definition.id) > 0 && (
+                      <span className="hint">{countInstances(definition.id)}</span>
+                    )}
                   </button>
                 </Tooltip>
               ))}

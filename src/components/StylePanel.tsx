@@ -69,10 +69,14 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
 
   if (selected.length === 0 && !drawing) return null;
 
+  /*
+   * Instances count as shape-like: a placed component takes the same stroke,
+   * fill and sloppiness settings as anything else, applied over its master.
+   */
   const shapeLike =
     selected.length === 0
       ? SHAPE_TOOLS.includes(tool)
-      : has("rectangle", "diamond", "ellipse", "arrow", "line", "freedraw", "frame");
+      : has("rectangle", "diamond", "ellipse", "arrow", "line", "freedraw", "frame", "instance");
 
   return {
     background: shapeLike && (selected.length === 0 ? tool !== "freedraw" : !has("freedraw")),
@@ -81,7 +85,7 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
     edges:
       selected.length === 0
         ? ["rectangle", "arrow", "line"].includes(tool)
-        : has("rectangle", "arrow", "line"),
+        : has("rectangle", "arrow", "line", "instance"),
     arrowheads: selected.length === 0 ? tool === "arrow" : has("arrow"),
     font: selected.length === 0 ? tool === "text" : has("text"),
     layout: selected.length > 0,

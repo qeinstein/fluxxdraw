@@ -141,6 +141,7 @@ body {
   gap: 10px;
   max-height: calc(100% - 28px);
   width: 226px;
+  min-height: 0;
 }
 
 .top-centre {
@@ -375,6 +376,9 @@ kbd {
 /* --- style panel ---------------------------------------------------------- */
 
 .style-panel {
+  /* shrink inside the column instead of pushing the panels below it away */
+  flex: 0 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -1480,12 +1484,30 @@ kbd {
   text-align: left;
 }
 
+/*
+ * Editing a master is a mode, so its bar floats free of the panel column
+ * rather than sitting at the bottom of it: in the 226px column the label and
+ * buttons collided, and once the style panel grew the buttons ended up under
+ * the zoom controls where they couldn't be clicked at all.
+ */
 .component-editing {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  width: min(430px, calc(100vw - 28px));
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px 9px 12px;
+  padding: 9px 10px 9px 13px;
   border: 1px solid var(--accent);
+  z-index: 70;
+}
+
+.component-editing-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
 }
 
 .component-editing-text {
@@ -1734,6 +1756,10 @@ kbd {
     transform-origin: bottom right;
   }
 
+  .component-editing {
+    bottom: calc(var(--dock) + 46px);
+  }
+
   /* zoom and history sit above the dock */
   .bottom-left {
     left: var(--edge);
@@ -1791,6 +1817,16 @@ kbd {
     left: var(--edge);
     width: auto;
     max-width: calc(100vw - 150px);
+  }
+
+  /*
+   * The style sheet owns the bottom of a phone screen, so the editing bar sits
+   * under the top bar instead of floating over the sheet's controls.
+   */
+  .component-editing {
+    top: calc(max(10px, env(safe-area-inset-top)) + 48px);
+    bottom: auto;
+    width: calc(100vw - 20px);
   }
 
   /* the trigger is the whole island now, so make it a proper touch target */
@@ -2132,11 +2168,9 @@ kbd {
   background: var(--hover);
 }
 
-.service-dot {
-  width: 9px;
-  height: 9px;
+.service-glyph {
   flex: none;
-  border-radius: 50%;
+  display: block;
 }
 
 .service-name {
