@@ -2,7 +2,7 @@ import rough from "roughjs/bin/rough";
 import type { BinaryFile, ExcaliElement, TextElement } from "../types";
 import { getCommonBounds, getElementBounds, getElementCenter } from "../geometry";
 import { freedrawPath, getDrawables } from "../render/shapes";
-import { getTextLines, measureText } from "../elements/text";
+import { baselineOffset, getTextLines, measureText } from "../elements/text";
 import { CONTAINER_PADDING, FONT_STACKS } from "../constants";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -56,9 +56,10 @@ const appendTextElement = (
         ? originX + boxWidth
         : originX;
 
+  const baseline = baselineOffset(el);
   const text = document.createElementNS(SVG_NS, "text");
   text.setAttribute("x", String(anchorX));
-  text.setAttribute("y", String(originY + el.fontSize * 0.79));
+  text.setAttribute("y", String(originY + baseline));
   text.setAttribute("font-family", FONT_STACKS[el.fontFamily]);
   text.setAttribute("font-size", `${el.fontSize}px`);
   text.setAttribute("fill", el.strokeColor);
@@ -68,7 +69,7 @@ const appendTextElement = (
   lines.forEach((line, i) => {
     const tspan = document.createElementNS(SVG_NS, "tspan");
     tspan.setAttribute("x", String(anchorX));
-    tspan.setAttribute("y", String(originY + i * lineHeightPx + el.fontSize * 0.79));
+    tspan.setAttribute("y", String(originY + i * lineHeightPx + baseline));
     tspan.textContent = line;
     text.appendChild(tspan);
   });

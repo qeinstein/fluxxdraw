@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { store } from "../store";
 import { refreshBindings, refreshTextLayout } from "../actions";
-import { fontString } from "../elements/text";
+import { fontString, measureText, wrapText } from "../elements/text";
 import { CONTAINER_PADDING, FONT_STACKS } from "../constants";
 import { getElementBounds } from "../geometry";
 import type { TextElement } from "../types";
@@ -12,55 +12,115 @@ interface TextEditorProps {
 }
 
 /**
- * A textarea overlaid on the canvas, positioned and styled to match how the
- * text will render once committed.
+ * A textarea overlaid on the canvas, sized and styled to match how the text
+ * will render once committed.
+ *
+ * The box grows with what you type — outwards for free-floating text, and
+ * downwards (wrapping) for a label bound inside a shape — so typing never runs
+ * out of room or gets clipped.
  */
 export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
   const ref = useRef<HTMLTextAreaElement>(null);
   const element = store.getElement(elementId) as TextElement | null;
   const [value, setValue] = useState(element?.text ?? "");
+  const committedRef = useRef(false);
+  /**
+   * The pointer event that opens the editor finishes settling focus *after*
+   * React mounts us, so an immediate blur is the browser tidying up rather
+   * than the user clicking away. Only honour blur once focus has landed.
+   */
+  const [focusSettled, setFocusSettled] = useState(false);
 
   useLayoutEffect(() => {
     const textarea = ref.current;
     if (!textarea) return;
-    textarea.focus();
-    textarea.select();
+    const frame = requestAnimationFrame(() => {
+      textarea.focus();
+      // put the caret at the end rather than selecting, so typing appends
+      const end = textarea.value.length;
+      textarea.setSelectionRange(end, end);
+      setFocusSettled(true);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Live-update the element so the container grows while typing. The element
-  // is read inside the effect rather than depended on, since every store
-  // update replaces it and would otherwise re-trigger this endlessly.
-  useEffect(() => {
+  /**
+   * Pushes the typed text straight into the scene so the shape grows as you
+   * type. Done in the change handler rather than an effect: writing to the
+   * store notifies subscribers synchronously, and doing that from an effect
+   * sets up a render/effect feedback loop.
+   */
+  const applyText = (next: string) => {
+    setValue(next);
     const current = store.getElement(elementId) as TextElement | null;
-    if (!current) return;
-    if (current.text === value) return;
-    store.updateElement<TextElement>(elementId, () => ({ text: value }));
+    if (!current || current.text === next) return;
+    store.updateElement<TextElement>(elementId, () => ({ text: next }));
     refreshTextLayout([elementId]);
     if (current.containerId) refreshBindings([current.containerId]);
     store.emit();
-  }, [value, elementId]);
+  };
 
   if (!element) return null;
 
   const container = element.containerId ? store.getElement(element.containerId) : null;
   const { scrollX, scrollY, zoom } = store.appState;
 
-  const bounds = container ? getElementBounds(container) : getElementBounds(element);
-  const sceneX = container ? bounds.x1 + CONTAINER_PADDING : element.x;
-  const sceneY = container ? bounds.y1 + CONTAINER_PADDING : element.y;
-  const width = container
-    ? bounds.x2 - bounds.x1 - CONTAINER_PADDING * 2
-    : Math.max(element.width, element.fontSize * 4);
-  const height = container
-    ? bounds.y2 - bounds.y1 - CONTAINER_PADDING * 2
-    : Math.max(element.height, element.fontSize * element.lineHeight);
+  // Measure the text being typed, including the line currently in progress, so
+  // the box is always at least as large as its content.
+  const measuredWidth = (() => {
+    if (container) return null;
+    const lines = value.length ? value.split("\n") : [""];
+    return measureText(lines, element).width;
+  })();
+
+  const wrappedLineCount = (() => {
+    const boxWidth = container
+      ? Math.max(Math.abs(container.width) - CONTAINER_PADDING * 2, 20)
+      : Infinity;
+    const lines =
+      container && value.length
+        ? wrapText(value, element, boxWidth)
+        : value.length
+          ? value.split("\n")
+          : [""];
+    return Math.max(lines.length, 1);
+  })();
+
+  const lineHeightPx = element.fontSize * element.lineHeight;
+  const contentHeight = wrappedLineCount * lineHeightPx;
+
+  let sceneX: number;
+  let sceneY: number;
+  let width: number;
+  let height: number;
+
+  if (container) {
+    const cb = getElementBounds(container);
+    width = cb.x2 - cb.x1 - CONTAINER_PADDING * 2;
+    height = contentHeight;
+    sceneX = cb.x1 + CONTAINER_PADDING;
+    // labels sit vertically centred in their shape
+    sceneY =
+      element.verticalAlign === "middle"
+        ? cb.y1 + (cb.y2 - cb.y1 - contentHeight) / 2
+        : element.verticalAlign === "bottom"
+          ? cb.y2 - contentHeight - CONTAINER_PADDING
+          : cb.y1 + CONTAINER_PADDING;
+  } else {
+    // a little slack past the caret keeps typing from feeling cramped
+    width = Math.max(measuredWidth ?? 0, element.fontSize * 0.6) + element.fontSize * 0.75;
+    height = contentHeight;
+    sceneX = element.x;
+    sceneY = element.y;
+  }
 
   const commit = () => {
+    if (committedRef.current) return;
+    committedRef.current = true;
     const current = store.getElement(elementId) as TextElement | null;
     if (current && current.text.trim() === "") {
       // an empty label leaves nothing behind
-      const ids = [elementId];
-      store.deleteElements(ids);
+      store.deleteElements([elementId]);
       if (current.containerId) {
         store.updateElement(current.containerId, () => ({ boundText: null }));
       }
@@ -75,15 +135,22 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
       ref={ref}
       className="text-editor"
       value={value}
-      onChange={(event) => setValue(event.target.value)}
-      onBlur={commit}
+      spellCheck={false}
+      autoComplete="off"
+      autoCapitalize="off"
+      autoCorrect="off"
+      onChange={(event) => applyText(event.target.value)}
+      onBlur={focusSettled ? commit : undefined}
+      onPointerDown={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
+        // the canvas shortcuts must not fire while typing
         event.stopPropagation();
         if (event.key === "Escape") {
           event.preventDefault();
           commit();
+          return;
         }
-        // Enter inserts a newline; Cmd/Ctrl+Enter finishes editing
+        // Enter inserts a newline; Cmd/Ctrl+Enter finishes
         if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
           event.preventDefault();
           commit();
@@ -92,8 +159,8 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
       style={{
         left: (sceneX + scrollX) * zoom,
         top: (sceneY + scrollY) * zoom,
-        width: width * zoom,
-        height: height * zoom,
+        width: Math.max(width, 4) * zoom,
+        height: Math.max(height, lineHeightPx) * zoom,
         font: fontString({
           fontSize: element.fontSize * zoom,
           fontFamily: element.fontFamily,
@@ -103,6 +170,9 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
         color: element.strokeColor,
         textAlign: element.textAlign,
         opacity: element.opacity / 100,
+        // free text never wraps on its own; labels wrap inside their shape
+        whiteSpace: container ? "pre-wrap" : "pre",
+        overflow: "hidden",
       }}
     />
   );

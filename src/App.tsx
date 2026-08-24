@@ -38,12 +38,21 @@ export default function App() {
   const [exportOpen, setExportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [dirty, setDirty] = useState(false);
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const lastSavedVersion = useRef(0);
+
+  /**
+   * Derived rather than stored: the scene version already tells us whether
+   * there are unsaved changes. Keeping it as state meant a setState on every
+   * single store emit, which React counts as a nested update and which
+   * stuttered fast typing.
+   */
+  const dirty = scene.getVersion() !== lastSavedVersion.current;
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -97,14 +106,12 @@ export default function App() {
   // --- autosave (crash recovery only; the real copy is the user's file) ----
 
   const currentDocument = useCallback(
-    (): SceneDocument => serializeScene(store.elements, store.files, store.appState),
+    (): SceneDocument =>
+      serializeScene(store.elements, store.files, store.appState, store.timeline.checkpoints),
     [],
   );
 
   useEffect(() => {
-    const version = scene.getVersion();
-    if (version !== lastSavedVersion.current) setDirty(true);
-
     const timer = window.setTimeout(() => {
       try {
         localStorage.setItem(AUTOSAVE_KEY, sceneToJson(currentDocument()));
@@ -122,7 +129,7 @@ export default function App() {
     try {
       const doc = JSON.parse(raw) as SceneDocument;
       if (!doc.elements?.length) return;
-      store.loadScene(doc.elements, doc.files ?? {}, doc.appState);
+      store.loadScene(doc.elements, doc.files ?? {}, doc.appState, doc.history);
       syncFrameCounter(doc.elements);
       preloadFiles(doc.files ?? {});
     } catch {
@@ -133,11 +140,11 @@ export default function App() {
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (dirty && store.elements.length > 0) event.preventDefault();
+      if (dirtyRef.current && store.elements.length > 0) event.preventDefault();
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+  }, []);
 
   // --- opening -------------------------------------------------------------
 
@@ -148,16 +155,17 @@ export default function App() {
       if (result.kind === "scene") {
         // files from other tools may not record a theme, so infer one
         const theme = inferTheme(result.doc.appState.viewBackgroundColor);
-        store.loadScene(result.doc.elements, result.doc.files, {
-          ...result.doc.appState,
-          theme,
-        });
+        store.loadScene(
+          result.doc.elements,
+          result.doc.files,
+          { ...result.doc.appState, theme },
+          result.doc.history,
+        );
         syncFrameCounter(result.doc.elements);
         await preloadFiles(result.doc.files);
         fileHandleRef.current = handle;
         setFileName(handle?.name ?? file.name);
         lastSavedVersion.current = store.getVersion();
-        setDirty(false);
         store.emit();
         showToast(`Opened ${file.name}`);
         return;
@@ -240,7 +248,6 @@ export default function App() {
       fileHandleRef.current = saved.handle;
       setFileName(saved.handle.name);
       lastSavedVersion.current = store.getVersion();
-      setDirty(false);
       showToast(`Saved ${saved.handle.name}`);
     } catch (error) {
       showToast(`Save failed: ${(error as Error).message}`);
@@ -262,7 +269,6 @@ export default function App() {
         return;
       }
       lastSavedVersion.current = store.getVersion();
-      setDirty(false);
       showToast(`Saved ${result.filename}`);
     } catch (error) {
       showToast(`Save failed: ${(error as Error).message}`);

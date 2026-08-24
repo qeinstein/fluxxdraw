@@ -1,3 +1,5 @@
+import type { Checkpoint } from "./io/history";
+
 export type FillStyle = "hachure" | "cross-hatch" | "solid" | "zigzag";
 export type StrokeStyle = "solid" | "dashed" | "dotted";
 export type Edges = "sharp" | "round";
@@ -181,6 +183,8 @@ export interface SceneDocument {
     gridSize: number | null;
     theme: "light" | "dark";
   };
+  /** durable version history travelling with the document */
+  history?: Checkpoint[];
 }
 
 export const FILE_VERSION = 1;

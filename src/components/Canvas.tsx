@@ -107,6 +107,16 @@ const DRAWING_TOOLS: Tool[] = [
   "frame",
 ];
 
+interface PinchGesture {
+  /** spread between the two pointers when the gesture began */
+  distance: number;
+  clientX: number;
+  clientY: number;
+  zoom: number;
+  scrollX: number;
+  scrollY: number;
+}
+
 interface LaserPoint {
   x: number;
   y: number;
@@ -124,6 +134,9 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerRef = useRef<PointerState>(freshPointerState());
+  /** every pointer currently down, so two-finger gestures can be detected */
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const gestureRef = useRef<PinchGesture | null>(null);
   const guidesRef = useRef<SnapGuide[]>([]);
   const laserRef = useRef<LaserPoint[]>([]);
   const spaceHeldRef = useRef(false);
@@ -346,6 +359,80 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     };
   }, [draw]);
 
+  // --- multi-touch pinch & pan ---------------------------------------------
+
+  /** Midpoint and spread of the two active pointers, in client space. */
+  const readTouchPair = (): { x: number; y: number; distance: number } | null => {
+    const points = [...pointersRef.current.values()];
+    if (points.length < 2) return null;
+    const [a, b] = points;
+    return {
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2,
+      distance: Math.max(Math.hypot(a.x - b.x, a.y - b.y), 1),
+    };
+  };
+
+  /**
+   * A second finger turns whatever was happening into a canvas gesture, so
+   * back out any element that the first finger had started drawing.
+   */
+  const abortActiveInteraction = () => {
+    const pointer = pointerRef.current;
+    if (
+      (pointer.mode === "drawing" || pointer.mode === "drawing-linear") &&
+      pointer.activeId
+    ) {
+      store.deleteElements([pointer.activeId]);
+    }
+    if (pointer.mode !== "none") store.commit();
+    pointerRef.current = freshPointerState();
+    guidesRef.current = [];
+  };
+
+  const beginPinch = () => {
+    const pair = readTouchPair();
+    if (!pair) return;
+    abortActiveInteraction();
+    const state = store.appState;
+    gestureRef.current = {
+      distance: pair.distance,
+      clientX: pair.x,
+      clientY: pair.y,
+      zoom: state.zoom,
+      scrollX: state.scrollX,
+      scrollY: state.scrollY,
+    };
+  };
+
+  /** Zooms around the pinch centre while panning with it. */
+  const applyPinch = () => {
+    const gesture = gestureRef.current;
+    const pair = readTouchPair();
+    if (!gesture || !pair) return;
+
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const zoom = Math.min(
+      MAX_ZOOM,
+      Math.max(MIN_ZOOM, (gesture.zoom * pair.distance) / gesture.distance),
+    );
+
+    // keep the scene point under the original pinch centre pinned there
+    const anchorX = gesture.clientX - rect.left;
+    const anchorY = gesture.clientY - rect.top;
+    const sceneX = anchorX / gesture.zoom - gesture.scrollX;
+    const sceneY = anchorY / gesture.zoom - gesture.scrollY;
+
+    const currentX = pair.x - rect.left;
+    const currentY = pair.y - rect.top;
+
+    store.setAppState({
+      zoom,
+      scrollX: currentX / zoom - sceneX,
+      scrollY: currentY / zoom - sceneY,
+    });
+  };
+
   // --- gesture start -------------------------------------------------------
 
   const startDrawing = (tool: Tool, x: number, y: number) => {
@@ -393,6 +480,12 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     if (event.button === 2) return; // context menu handled separately
     const canvas = canvasRef.current!;
     canvas.setPointerCapture(event.pointerId);
+
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointersRef.current.size >= 2) {
+      beginPinch();
+      return;
+    }
 
     const [x, y] = toScene(event.clientX, event.clientY);
     const pointer = pointerRef.current;
@@ -450,6 +543,8 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     }
 
     if (state.tool === "text") {
+      // keep the browser from moving focus to the canvas as we open the editor
+      event.preventDefault();
       store.beginHistory();
       const target = getElementAtPosition(store.visibleElements, x, y) ?? getContainerAt(x, y);
       if (target && isContainer(target)) {
@@ -552,6 +647,14 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
   // --- gesture move --------------------------------------------------------
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (pointersRef.current.has(event.pointerId)) {
+      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+    if (gestureRef.current) {
+      applyPinch();
+      return;
+    }
+
     const pointer = pointerRef.current;
     const state = store.appState;
     const [x, y] = toScene(event.clientX, event.clientY);
@@ -766,6 +869,14 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    if (gestureRef.current) {
+      // lifting one finger of a pinch ends the gesture rather than resuming a draw
+      if (pointersRef.current.size < 2) gestureRef.current = null;
+      else beginPinch();
+      return;
+    }
+
     const pointer = pointerRef.current;
     const [x, y] = toScene(event.clientX, event.clientY);
     const mode = pointer.mode;
@@ -1041,7 +1152,11 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
         const sceneX = cursorX / state.zoom - state.scrollX;
         const sceneY = cursorY / state.zoom - state.scrollY;
 
-        const factor = Math.exp(-event.deltaY / 200);
+        // Clamp before scaling: trackpads emit many tiny deltas (fine control)
+        // while a mouse wheel emits one big notch, which would otherwise jump
+        // several hundred percent in a single tick.
+        const step = Math.max(-60, Math.min(60, event.deltaY));
+        const factor = Math.exp(-step / 300);
         const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom * factor));
         // keep the point under the cursor pinned while zooming
         store.setAppState({

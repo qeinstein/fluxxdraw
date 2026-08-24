@@ -8,6 +8,7 @@ import {
   type ExcaliElement,
   type SceneDocument,
 } from "../types";
+import type { Checkpoint } from "./history";
 
 /** Files actually referenced by the given elements, so exports stay lean. */
 export const collectUsedFiles = (
@@ -25,6 +26,7 @@ export const serializeScene = (
   elements: ExcaliElement[],
   files: Record<string, BinaryFile>,
   appState: Pick<AppState, "viewBackgroundColor" | "gridSize" | "theme">,
+  history?: Checkpoint[],
 ): SceneDocument => ({
   type: DOCUMENT_TYPE,
   version: FILE_VERSION,
@@ -36,6 +38,7 @@ export const serializeScene = (
     gridSize: appState.gridSize,
     theme: appState.theme,
   },
+  ...(history?.length ? { history } : {}),
 });
 
 export const sceneToJson = (doc: SceneDocument) => JSON.stringify(doc, null, 2);
@@ -80,5 +83,6 @@ export const parseSceneDocument = (raw: unknown): SceneDocument => {
       gridSize: typeof appState.gridSize === "number" ? appState.gridSize : null,
       theme: appState.theme === "dark" ? "dark" : "light",
     },
+    ...(Array.isArray(raw.history) ? { history: raw.history as Checkpoint[] } : {}),
   };
 };

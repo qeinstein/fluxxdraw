@@ -2,7 +2,7 @@ import rough from "roughjs/bin/rough";
 import type { RoughCanvas } from "roughjs/bin/canvas";
 import type { BinaryFile, ExcaliElement, TextElement } from "../types";
 import { getElementBounds, getElementCenter } from "../geometry";
-import { fontString, getTextLines, measureText } from "../elements/text";
+import { baselineOffset, fontString, getTextLines, measureText } from "../elements/text";
 import { CONTAINER_PADDING } from "../constants";
 import { freedrawPath, getDrawables } from "./shapes";
 import { getImage } from "./imageCache";
@@ -90,13 +90,13 @@ const drawTextElement = (
           : cb.y1 + CONTAINER_PADDING;
   }
 
+  const baseline = baselineOffset(el);
   lines.forEach((line, i) => {
     const metrics = ctx.measureText(line);
     let x = originX;
     if (el.textAlign === "center") x = originX + (boxWidth - metrics.width) / 2;
     else if (el.textAlign === "right") x = originX + boxWidth - metrics.width;
-    // baseline sits ~0.79 of the line box down, which matches typical ascent
-    ctx.fillText(line, x, originY + i * lineHeightPx + el.fontSize * 0.79);
+    ctx.fillText(line, x, originY + i * lineHeightPx + baseline);
   });
 };
 

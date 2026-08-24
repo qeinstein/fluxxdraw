@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 import { DEFAULT_APP_STATE } from "./constants";
+import { Timeline } from "./io/history";
 import type { AppState, BinaryFile, ExcaliElement } from "./types";
+import type { Checkpoint } from "./io/history";
 
 interface Snapshot {
   elements: ExcaliElement[];
@@ -22,6 +24,10 @@ class SceneStore {
   private undoStack: Snapshot[] = [];
   private redoStack: Snapshot[] = [];
   private listeners = new Set<() => void>();
+  /** durable, saved-to-file version history (distinct from undo/redo) */
+  timeline = new Timeline();
+  /** set while scrubbing, so checkpoints aren't recorded for preview states */
+  previewing = false;
   private version = 0;
   /** snapshot taken when the current interaction began */
   private pendingBase: Snapshot | null = null;
@@ -62,6 +68,13 @@ class SceneStore {
     if (this.undoStack.length > HISTORY_LIMIT) this.undoStack.shift();
     this.redoStack = [];
     this.pendingBase = null;
+    this.recordCheckpoint();
+  }
+
+  /** Appends to the durable timeline; coalesces rapid edits internally. */
+  recordCheckpoint(label?: string) {
+    if (this.previewing) return;
+    this.timeline.record(this.elements, Date.now(), label);
   }
 
   /** Convenience for one-shot changes that should be undoable as a unit. */
@@ -164,10 +177,18 @@ class SceneStore {
     elements: ExcaliElement[],
     files: Record<string, BinaryFile>,
     appStatePatch: Partial<AppState> = {},
+    checkpoints?: Checkpoint[],
   ) {
     this.undoStack = [];
     this.redoStack = [];
     this.pendingBase = null;
+    this.previewing = false;
+    if (checkpoints?.length) {
+      this.timeline.load(checkpoints);
+    } else {
+      this.timeline.reset();
+      this.timeline.record(elements, Date.now(), "Opened");
+    }
     this.elements = elements;
     this.files = files;
     this.appState = {

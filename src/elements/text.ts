@@ -75,6 +75,17 @@ export const getTextLines = (el: TextElement, container: ExcaliElement | null): 
   return el.text.split("\n");
 };
 
+/**
+ * Distance from the top of a line box down to the text baseline.
+ *
+ * This mirrors how CSS positions text inside a line box (half the leading,
+ * then the ascent), so the canvas rendering lines up exactly with the textarea
+ * used for editing and the text doesn't shift when you finish typing.
+ */
+export const baselineOffset = (
+  el: Pick<TextElement, "fontSize" | "lineHeight">,
+) => ((el.lineHeight - 1) / 2 + 0.8) * el.fontSize;
+
 export const measureText = (
   lines: string[],
   el: Pick<TextElement, "fontSize" | "fontFamily" | "lineHeight">,
