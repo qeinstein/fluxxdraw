@@ -6,6 +6,7 @@ import { tidyUp } from "../layout";
 import { Tooltip } from "./Tooltip";
 import { IconMenu } from "./icons";
 import { useIsMobile } from "../hooks/useMediaQuery";
+import { sc } from "../shortcuts";
 
 interface MenuProps {
   onOpen: () => void;
@@ -79,25 +80,34 @@ export const Menu = ({
         </button>
       </Tooltip>
 
-      <FileName
-        name={currentFileName}
-        dirty={dirty}
-        onRename={onRename}
-      />
+      {/*
+        * On a phone the bar has room for the trigger and nothing else, so the
+        * document name moves inside the popover rather than being squeezed
+        * against the Export button.
+        */}
+      {!isMobile && <FileName name={currentFileName} dirty={dirty} onRename={onRename} />}
 
       {open && (
         <div className="menu-popover" role="menu">
-          <MenuItem label="Open…" shortcut="⌘O" onClick={run(onOpen)} />
-          <MenuItem label="Save" shortcut="⌘S" onClick={run(onSave)} />
-          <MenuItem label="Save as…" shortcut="⇧⌘S" onClick={run(onSaveAs)} />
-          <MenuItem label="Export…" shortcut="⇧⌘E" onClick={run(onExport)} />
+          {isMobile && (
+            <>
+              <div className="menu-file">
+                <FileName name={currentFileName} dirty={dirty} onRename={onRename} />
+              </div>
+              <div className="menu-separator" />
+            </>
+          )}
+          <MenuItem label="Open…" shortcut={sc("open")} onClick={run(onOpen)} />
+          <MenuItem label="Save" shortcut={sc("save")} onClick={run(onSave)} />
+          <MenuItem label="Save as…" shortcut={sc("saveAs")} onClick={run(onSaveAs)} />
+          <MenuItem label="Export…" shortcut={sc("export")} onClick={run(onExport)} />
           {/* the top-right Quick save button has no room on a phone */}
           {isMobile && <MenuItem label="Quick save to export folder" onClick={run(onQuickSave)} />}
 
-          <MenuItem label="Version history…" shortcut="⌘H" onClick={run(onHistory)} />
-          <MenuItem label="Present frames" shortcut="⇧⌘P" onClick={run(onPresent)} />
-          <MenuItem label="Tidy up layout" shortcut="⇧⌘T" onClick={run(() => tidyUp())} />
-          <MenuItem label="Diagram as text" shortcut="⌘/" onClick={run(onToggleText)} />
+          <MenuItem label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
+          <MenuItem label="Present frames" shortcut={sc("present")} onClick={run(onPresent)} />
+          <MenuItem label="Tidy up layout" shortcut={sc("tidyUp")} onClick={run(() => tidyUp())} />
+          <MenuItem label="Diagram as text" shortcut={sc("diagramText")} onClick={run(onToggleText)} />
 
           <div className="menu-separator" />
 

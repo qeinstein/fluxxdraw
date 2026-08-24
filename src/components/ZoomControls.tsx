@@ -3,6 +3,7 @@ import { Tooltip } from "./Tooltip";
 import { IconFit, IconMinus, IconPlus } from "./icons";
 import { MAX_ZOOM, MIN_ZOOM } from "../constants";
 import { getCommonBounds } from "../geometry";
+import { sc } from "../shortcuts";
 
 /** Fits the given elements (or everything) into the viewport. */
 export const zoomToFit = (target: "all" | "selection" = "all") => {
@@ -61,23 +62,23 @@ export const ZoomControls = () => {
 
   return (
     <div className="zoom-controls island">
-      <Tooltip label="Zoom out" shortcut="⌘−" placement="top">
+      <Tooltip label="Zoom out" shortcut={sc("zoomOut")} placement="top">
         <button aria-label="Zoom out" onClick={() => setZoom(zoom / 1.2)}>
           <IconMinus />
         </button>
       </Tooltip>
-      <Tooltip label="Reset to 100%" shortcut="⌘0" placement="top">
+      <Tooltip label="Reset to 100%" shortcut={sc("zoomReset")} placement="top">
         <button className="zoom-value" aria-label="Reset zoom" onClick={() => setZoom(1)}>
           {Math.round(zoom * 100)}%
         </button>
       </Tooltip>
-      <Tooltip label="Zoom in" shortcut="⌘+" placement="top">
+      <Tooltip label="Zoom in" shortcut={sc("zoomIn")} placement="top">
         <button aria-label="Zoom in" onClick={() => setZoom(zoom * 1.2)}>
           <IconPlus />
         </button>
       </Tooltip>
       <span className="toolbar-divider" />
-      <Tooltip label="Zoom to fit" shortcut="⇧1" placement="top">
+      <Tooltip label="Zoom to fit" shortcut={sc("zoomToFit")} placement="top">
         <button aria-label="Zoom to fit" onClick={() => zoomToFit("all")}>
           <IconFit />
         </button>

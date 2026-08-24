@@ -49,6 +49,7 @@ import {
 } from "./icons";
 import { FONTS, fontStack } from "../fonts";
 import type { Arrowhead, ExcaliElement, Tool } from "../types";
+import { sc } from "../shortcuts";
 
 const SHAPE_TOOLS: Tool[] = [
   "rectangle",
@@ -321,26 +322,26 @@ export const StylePanel = () => {
         <>
           <Section label="Layers">
             <div className="row">
-              <IconAction label="Send to back" shortcut="⌘[" onClick={() => changeZOrder("back")}>
+              <IconAction label="Send to back" shortcut={sc("sendToBack")} onClick={() => changeZOrder("back")}>
                 <IconSendToBack />
               </IconAction>
               <IconAction
                 label="Send backward"
-                shortcut="⇧⌘["
+                shortcut={sc("sendBackward")}
                 onClick={() => changeZOrder("backward")}
               >
                 <IconSendBackward />
               </IconAction>
               <IconAction
                 label="Bring forward"
-                shortcut="⇧⌘]"
+                shortcut={sc("bringForward")}
                 onClick={() => changeZOrder("forward")}
               >
                 <IconBringForward />
               </IconAction>
               <IconAction
                 label="Bring to front"
-                shortcut="⌘]"
+                shortcut={sc("bringToFront")}
                 onClick={() => changeZOrder("front")}
               >
                 <IconBringToFront />
@@ -391,16 +392,16 @@ export const StylePanel = () => {
 
           <Section label="Actions">
             <div className="row">
-              <IconAction label="Duplicate" shortcut="⌘D" onClick={() => duplicateSelection()}>
+              <IconAction label="Duplicate" shortcut={sc("duplicate")} onClick={() => duplicateSelection()}>
                 <IconDuplicate />
               </IconAction>
-              <IconAction label="Group" shortcut="⌘G" onClick={groupSelection}>
+              <IconAction label="Group" shortcut={sc("group")} onClick={groupSelection}>
                 <IconGroup />
               </IconAction>
-              <IconAction label="Ungroup" shortcut="⇧⌘G" onClick={ungroupSelection}>
+              <IconAction label="Ungroup" shortcut={sc("ungroup")} onClick={ungroupSelection}>
                 <IconUngroup />
               </IconAction>
-              <IconAction label="Lock" shortcut="⇧⌘L" onClick={toggleLockSelection}>
+              <IconAction label="Lock" shortcut={sc("lock")} onClick={toggleLockSelection}>
                 <IconLockClosed />
               </IconAction>
               <IconAction label="Delete" shortcut="Del" onClick={deleteSelection} danger>

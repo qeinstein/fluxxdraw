@@ -10,6 +10,7 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
+import { ContextMenu, type ContextMenuRequest } from "./components/ContextMenu";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
@@ -38,6 +39,7 @@ import { preloadFiles } from "./render/imageCache";
 import { APP_NAME, FILE_EXTENSION } from "./constants";
 import { inferTheme } from "./theme";
 import type { BinaryFile, SceneDocument } from "./types";
+import { sc } from "./shortcuts";
 
 const AUTOSAVE_KEY = "fluxxdraw:autosave";
 const AUTOSAVE_DEBOUNCE_MS = 800;
@@ -57,6 +59,7 @@ export default function App() {
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [styleSheetOpen, setStyleSheetOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ContextMenuRequest | null>(null);
   const isMobile = useIsMobile();
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
@@ -437,6 +440,7 @@ export default function App() {
         setHelpOpen(false);
         setHistoryOpen(false);
         setStyleSheetOpen(false);
+        setContextMenu(null);
       },
       onPresent: () => setPresenting(true),
       onToggleText: () => (textPanelOpen ? openPanel(null) : openPanel("text")),
@@ -471,13 +475,24 @@ export default function App() {
       <Canvas
         onDoubleClickText={(id) => store.setAppState({ editingTextId: id })}
         onRequestImage={() => imageInputRef.current?.click()}
+        onContextMenu={setContextMenu}
       />
 
       {editingTextId && (
         <TextEditor
+          /*
+           * Keyed so switching straight from one text to another gets a fresh
+           * editor: without it React reuses the instance and its stale draft.
+           */
+          key={editingTextId}
           elementId={editingTextId}
           onDone={() => {
-            store.setAppState({ editingTextId: null, tool: "selection" });
+            // a locked text tool stays selected, like every other locked tool
+            const { tool, toolLocked } = store.appState;
+            store.setAppState({
+              editingTextId: null,
+              tool: toolLocked && tool === "text" ? "text" : "selection",
+            });
             reconcileFrameMembership();
           }}
         />
@@ -540,7 +555,7 @@ export default function App() {
               </button>
             </Tooltip>
           )}
-          <Tooltip label="Export as an image or file" shortcut="⇧⌘E" placement="bottom">
+          <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
             <button className="island export-button" onClick={() => setExportOpen(true)}>
               Export
             </button>
@@ -550,12 +565,12 @@ export default function App() {
         <div className="bottom-left">
           <ZoomControls />
           <div className="island history-controls">
-            <Tooltip label="Undo" shortcut="⌘Z" placement="top">
+            <Tooltip label="Undo" shortcut={sc("undo")} placement="top">
               <button aria-label="Undo" onClick={() => store.undo()} disabled={!scene.canUndo()}>
                 <IconUndo />
               </button>
             </Tooltip>
-            <Tooltip label="Redo" shortcut="⇧⌘Z" placement="top">
+            <Tooltip label="Redo" shortcut={sc("redo")} placement="top">
               <button aria-label="Redo" onClick={() => store.redo()} disabled={!scene.canRedo()}>
                 <IconRedo />
               </button>
@@ -610,6 +625,15 @@ export default function App() {
       {presenting && <Presentation onExit={() => setPresenting(false)} />}
 
       {textPanelOpen && <DiagramTextPanel onClose={() => setTextPanelOpen(false)} />}
+
+      {contextMenu && (
+        <ContextMenu
+          request={contextMenu}
+          onClose={() => setContextMenu(null)}
+          onExport={() => setExportOpen(true)}
+          onPresent={() => setPresenting(true)}
+        />
+      )}
 
       {toast && <div className="toast">{toast}</div>}
 

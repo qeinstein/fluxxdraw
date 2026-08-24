@@ -49,6 +49,7 @@ import {
 } from "../actions";
 import type { EmbedElement, ExcaliElement, FreedrawElement, LinearElement, Tool } from "../types";
 import { promptForInput } from "../prompt";
+import type { ContextMenuRequest } from "./ContextMenu";
 
 type Mode =
   | "none"
@@ -122,10 +123,11 @@ interface PinchGesture {
 
 interface CanvasProps {
   onDoubleClickText: (elementId: string) => void;
+  onContextMenu: (request: ContextMenuRequest) => void;
   onRequestImage: () => void;
 }
 
-export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
+export const Canvas = ({ onDoubleClickText, onRequestImage, onContextMenu }: CanvasProps) => {
   // subscribing keeps the component in sync with store-driven UI state
   useScene();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -134,6 +136,8 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
   /** every pointer currently down, so two-finger gestures can be detected */
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const gestureRef = useRef<PinchGesture | null>(null);
+  /** pending long-press timer, the touch equivalent of a right-click */
+  const longPressRef = useRef<number | null>(null);
   const guidesRef = useRef<SnapGuide[]>([]);
   const laserRef = useRef<LaserPoint[]>([]);
   const spaceHeldRef = useRef(false);
@@ -374,6 +378,12 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     guidesRef.current = [];
   };
 
+  const cancelLongPress = () => {
+    if (longPressRef.current === null) return;
+    window.clearTimeout(longPressRef.current);
+    longPressRef.current = null;
+  };
+
   const beginPinch = () => {
     const pair = readTouchPair();
     if (!pair) return;
@@ -467,8 +477,20 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
 
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointersRef.current.size >= 2) {
+      cancelLongPress();
       beginPinch();
       return;
+    }
+
+    // Touch has no right-click, so holding still for a moment opens the menu.
+    // Any movement or lift cancels it, so drawing is never interrupted.
+    if (event.pointerType === "touch") {
+      const { clientX, clientY } = event;
+      longPressRef.current = window.setTimeout(() => {
+        longPressRef.current = null;
+        abortActiveInteraction();
+        openContextMenu(clientX, clientY);
+      }, 500);
     }
 
     const [x, y] = toScene(event.clientX, event.clientY);
@@ -527,6 +549,14 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     }
 
     if (state.tool === "text") {
+      /*
+       * A click while an editor is open means "I'm done typing", not "start
+       * another text". Return without preventDefault so focus leaves the
+       * textarea and its blur commits — preventDefault would swallow that
+       * blur and leave the finished text and a fresh editor both on screen.
+       */
+      if (state.editingTextId) return;
+
       // keep the browser from moving focus to the canvas as we open the editor
       event.preventDefault();
       store.beginHistory();
@@ -668,6 +698,8 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     const dx = x - pointer.originX;
     const dy = y - pointer.originY;
     if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) pointer.hasMoved = true;
+    // a finger that has travelled is drawing or panning, not long-pressing
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) cancelLongPress();
 
     switch (pointer.mode) {
       case "panning": {
@@ -870,6 +902,7 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    cancelLongPress();
     pointersRef.current.delete(event.pointerId);
     if (gestureRef.current) {
       // lifting one finger of a pinch ends the gesture rather than resuming a draw
@@ -1051,6 +1084,36 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
       if (x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2) return el;
     }
     return null;
+  };
+
+  /**
+   * Opens the action menu for whatever is under the pointer. Right-click and
+   * long-press both land here.
+   *
+   * Clicking a shape that isn't selected selects it first, the way every other
+   * canvas app behaves — acting on an invisible selection is never what the
+   * user meant.
+   */
+  const openContextMenu = (clientX: number, clientY: number) => {
+    const [x, y] = toScene(clientX, clientY);
+    const hit = getElementAtPosition(store.visibleElements, x, y) ?? getContainerAt(x, y);
+
+    if (hit) {
+      const target = resolveSelectionTarget(hit);
+      const ids = expandSelectionToGroups([target.id]);
+      if (!ids.every((id) => store.appState.selectedIds.includes(id))) {
+        store.setAppState({ selectedIds: ids, tool: "selection" });
+      }
+    } else {
+      store.setAppState({ selectedIds: [] });
+    }
+
+    onContextMenu({
+      x: clientX,
+      y: clientY,
+      onEditLabel:
+        hit && isContainer(hit) ? () => onDoubleClickText(ensureBoundText(hit.id)) : null,
+    });
   };
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1236,7 +1299,10 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onDoubleClick={handleDoubleClick}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          openContextMenu(event.clientX, event.clientY);
+        }}
       />
     </div>
   );

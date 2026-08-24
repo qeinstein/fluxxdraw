@@ -6,6 +6,7 @@ import { applySpecToScene } from "../dsl/apply";
 import { canonical, type DiagramSpec } from "../dsl/spec";
 import { Tooltip } from "./Tooltip";
 import { IconClose } from "./icons";
+import { sc } from "../shortcuts";
 
 interface DiagramTextPanelProps {
   onClose: () => void;
@@ -102,7 +103,7 @@ export const DiagramTextPanel = ({ onClose }: DiagramTextPanelProps) => {
           <strong>Diagram as text</strong>
           <span className="hint">Edit either side — they stay in sync</span>
         </div>
-        <Tooltip label="Close" shortcut="⌘/" placement="bottom">
+        <Tooltip label="Close" shortcut={sc("diagramText")} placement="bottom">
           <button className="icon-button" aria-label="Close text panel" onClick={onClose}>
             <IconClose />
           </button>

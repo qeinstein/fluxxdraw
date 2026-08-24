@@ -12,6 +12,7 @@ import {
 } from "../actions";
 import { setZoom, zoomToFit } from "../components/ZoomControls";
 import { tidyUp } from "../layout";
+import { SHORTCUTS, matches, type ShortcutId } from "../shortcuts";
 import type { Tool } from "../types";
 
 const TOOL_KEYS: Record<string, Tool> = {
@@ -59,147 +60,86 @@ export interface KeyboardHandlers {
 
 export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
   useEffect(() => {
+    /**
+     * Actions keyed by shortcut id, so the combo that runs each one is the
+     * same string the menus and help sheet display. Order matters only in
+     * that the first match wins, and no two combos overlap.
+     */
+    const actions: Partial<Record<ShortcutId, () => void>> = {
+      undo: () => store.undo(),
+      redo: () => store.redo(),
+      redoAlt: () => store.redo(),
+      selectAll,
+      duplicate: () => duplicateSelection(),
+      group: groupSelection,
+      ungroup: ungroupSelection,
+      lock: toggleLockSelection,
+      bringToFront: () => changeZOrder("front"),
+      bringForward: () => changeZOrder("forward"),
+      sendToBack: () => changeZOrder("back"),
+      sendBackward: () => changeZOrder("backward"),
+      open: handlers.onOpen,
+      save: handlers.onSave,
+      saveAs: handlers.onSaveAs,
+      export: handlers.onExport,
+      diagramText: handlers.onToggleText,
+      history: handlers.onHistory,
+      present: handlers.onPresent,
+      tidyUp: () => tidyUp(),
+      zoomIn: () => setZoom(store.appState.zoom * 1.2),
+      zoomInAlt: () => setZoom(store.appState.zoom * 1.2),
+      zoomOut: () => setZoom(store.appState.zoom / 1.2),
+      zoomReset: () => setZoom(1),
+      zoomToFit: () => zoomToFit("all"),
+      toggleToolLock: () => store.setAppState({ toolLocked: !store.appState.toolLocked }),
+      help: handlers.onHelp,
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
-      const mod = event.metaKey || event.ctrlKey;
-      const key = event.key;
-      const lower = key.toLowerCase();
 
-      if (key === "Escape") {
+      if (event.key === "Escape") {
         handlers.onEscape();
         store.setAppState({ selectedIds: [], tool: "selection" });
         return;
       }
 
-      if (mod) {
-        switch (lower) {
-          case "z":
-            event.preventDefault();
-            if (event.shiftKey) store.redo();
-            else store.undo();
-            return;
-          case "y":
-            event.preventDefault();
-            store.redo();
-            return;
-          case "a":
-            event.preventDefault();
-            selectAll();
-            return;
-          case "d":
-            event.preventDefault();
-            duplicateSelection();
-            return;
-          case "g":
-            event.preventDefault();
-            if (event.shiftKey) ungroupSelection();
-            else groupSelection();
-            return;
-          case "l":
-            if (event.shiftKey) {
-              event.preventDefault();
-              toggleLockSelection();
-            }
-            return;
-          case "h":
-            event.preventDefault();
-            handlers.onHistory();
-            return;
-          case "p":
-            if (event.shiftKey) {
-              event.preventDefault();
-              handlers.onPresent();
-            }
-            return;
-          case "t":
-            if (event.shiftKey) {
-              event.preventDefault();
-              tidyUp();
-            }
-            return;
-          case "/":
-            event.preventDefault();
-            handlers.onToggleText();
-            return;
-          case "o":
-            event.preventDefault();
-            handlers.onOpen();
-            return;
-          case "s":
-            event.preventDefault();
-            if (event.shiftKey) handlers.onSaveAs();
-            else handlers.onSave();
-            return;
-          case "e":
-            if (event.shiftKey) {
-              event.preventDefault();
-              handlers.onExport();
-            }
-            return;
-          case "]":
-            event.preventDefault();
-            changeZOrder(event.shiftKey ? "forward" : "front");
-            return;
-          case "[":
-            event.preventDefault();
-            changeZOrder(event.shiftKey ? "backward" : "back");
-            return;
-          case "=":
-          case "+":
-            event.preventDefault();
-            setZoom(store.appState.zoom * 1.2);
-            return;
-          case "-":
-            event.preventDefault();
-            setZoom(store.appState.zoom / 1.2);
-            return;
-          case "0":
-            event.preventDefault();
-            setZoom(1);
-            return;
-        }
+      for (const [id, run] of Object.entries(actions)) {
+        if (!matches(event, SHORTCUTS[id as ShortcutId])) continue;
+        // Claim the key before the browser acts on it (⌘D bookmarks, ⌘O opens
+        // a file picker, ⌘S saves the page).
+        event.preventDefault();
+        run();
         return;
       }
 
-      if (key === "Delete" || key === "Backspace") {
+      if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         deleteSelection();
         return;
       }
 
-      if (key.startsWith("Arrow")) {
+      if (event.key.startsWith("Arrow")) {
         const ids = store.appState.selectedIds;
         if (ids.length === 0) return;
         event.preventDefault();
         const step = event.shiftKey ? 20 : store.appState.gridSize ?? 1;
-        const dx = key === "ArrowLeft" ? -step : key === "ArrowRight" ? step : 0;
-        const dy = key === "ArrowUp" ? -step : key === "ArrowDown" ? step : 0;
+        const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
+        const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0;
         store.mutate(() => moveElementsBy(ids, dx, dy));
         return;
       }
 
-      if (key === "?" || (event.shiftKey && key === "/")) {
+      // Tool letters are unmodified single presses; Shift and Ctrl combos above
+      // have already had their turn.
+      if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+      const tool = TOOL_KEYS[event.key.toLowerCase()];
+      if (tool) {
         event.preventDefault();
-        handlers.onHelp();
-        return;
-      }
-
-      if (event.shiftKey && key === "!") {
-        // Shift+1 fits everything on screen
-        event.preventDefault();
-        zoomToFit("all");
-        return;
-      }
-
-      if (lower === "q") {
-        store.setAppState({ toolLocked: !store.appState.toolLocked });
-        return;
-      }
-
-      const tool = TOOL_KEYS[lower];
-      if (tool && !event.shiftKey) {
-        event.preventDefault();
-        store.setAppState({ tool, selectedIds: tool === "selection" ? store.appState.selectedIds : [] });
+        store.setAppState({
+          tool,
+          selectedIds: tool === "selection" ? store.appState.selectedIds : [],
+        });
       }
     };
 

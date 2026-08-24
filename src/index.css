@@ -1700,7 +1700,7 @@ kbd {
  * from there down the tools move to a dock at the bottom edge — also where
  * a thumb can reach them.
  */
-@media (max-width: 940px) {
+@media (max-width: 940px), (pointer: coarse) and (max-width: 1024px) {
   :root {
     --edge: max(10px, env(safe-area-inset-left));
     --dock: calc(max(10px, env(safe-area-inset-bottom)) + 52px);
@@ -1785,12 +1785,30 @@ kbd {
  * controls move into a sheet behind the sliders button in the top bar and
  * the rarely-used tools fall into the toolbar overflow.
  */
-@media (max-width: 720px) {
+@media (max-width: 720px), (pointer: coarse) and (max-width: 1024px) {
   .top-left {
     top: max(10px, env(safe-area-inset-top));
     left: var(--edge);
     width: auto;
     max-width: calc(100vw - 150px);
+  }
+
+  /* the trigger is the whole island now, so make it a proper touch target */
+  .menu-trigger {
+    width: 40px;
+    height: 40px;
+  }
+
+  .menu-file {
+    padding: 4px 6px 6px;
+  }
+
+  .menu-file .file-meta {
+    max-width: none;
+  }
+
+  .menu-file .file-name-input {
+    width: 100%;
   }
 
   .top-right {
@@ -1982,5 +2000,73 @@ kbd {
 
   .file-meta:hover {
     background: transparent;
+  }
+}
+
+/* --- context menu ---------------------------------------------------------- */
+
+.context-menu {
+  position: fixed;
+  z-index: 150;
+  min-width: 216px;
+  max-width: calc(100vw - 12px);
+  padding: 5px;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: pop-in 120ms var(--ease);
+  transform-origin: top left;
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-weight: 450;
+  text-align: left;
+  color: var(--fg-muted);
+}
+
+.context-item span {
+  flex: 1;
+}
+
+.context-item kbd {
+  flex: none;
+  color: var(--fg-subtle);
+}
+
+.context-item:hover:not(:disabled) {
+  color: var(--fg);
+}
+
+.context-item.danger {
+  color: var(--danger);
+}
+
+.context-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
+}
+
+@media (hover: none) {
+  /* thumb-sized rows, since this menu is what long-press opens */
+  .context-item {
+    padding: 11px 12px;
+    font-size: 13.5px;
+  }
+}
+
+@media (hover: none) {
+  /* no keyboard to press them with, so the hints are just noise */
+  .context-item kbd {
+    display: none;
   }
 }

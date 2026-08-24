@@ -15,7 +15,15 @@ export const useMediaQuery = (query: string) => {
   return matches;
 };
 
-/** Kept in step with the `--mobile` breakpoint in index.css. */
-export const MOBILE_QUERY = "(max-width: 720px)";
+/**
+ * Kept in step with the mobile breakpoint in index.css.
+ *
+ * Width alone isn't enough: a phone in landscape is often wider than 720px but
+ * still wants the phone layout, and a touch laptop is wide with a coarse
+ * pointer. Matching either a narrow window or a coarse pointer on a
+ * tablet-sized screen covers both without mistaking a desktop for a phone.
+ */
+export const MOBILE_QUERY =
+  "(max-width: 720px), (pointer: coarse) and (max-width: 1024px)";
 
 export const useIsMobile = () => useMediaQuery(MOBILE_QUERY);
