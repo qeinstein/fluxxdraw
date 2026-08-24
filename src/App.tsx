@@ -113,7 +113,6 @@ export default function App() {
       theme: prefs.theme,
       gridSize: prefs.gridSize,
       snapToObjects: prefs.snapToObjects,
-      toolLocked: prefs.toolLocked,
     });
     getStoredExportDirectory().then((dir) => {
       if (dir && dir.name !== prefs.exportDirectoryName) {
@@ -126,15 +125,14 @@ export default function App() {
 
   // mirror view settings back into preferences when they change in the UI
   useEffect(() => {
-    const { viewBackgroundColor, theme, gridSize, snapToObjects, toolLocked } = scene.appState;
+    const { viewBackgroundColor, theme, gridSize, snapToObjects } = scene.appState;
     if (
       viewBackgroundColor !== prefs.viewBackgroundColor ||
       theme !== prefs.theme ||
       gridSize !== prefs.gridSize ||
-      snapToObjects !== prefs.snapToObjects ||
-      toolLocked !== prefs.toolLocked
+      snapToObjects !== prefs.snapToObjects
     ) {
-      updatePrefs({ viewBackgroundColor, theme, gridSize, snapToObjects, toolLocked });
+      updatePrefs({ viewBackgroundColor, theme, gridSize, snapToObjects });
     }
   }, [scene.appState, prefs, updatePrefs]);
 
@@ -531,16 +529,7 @@ export default function App() {
           key={editingTextId}
           elementId={editingTextId}
           onDone={() => {
-            /*
-             * A locked tool survives finishing a label, whichever tool it is.
-             * Checking specifically for "text" meant the sticky tool fell back
-             * to Select after every note, so each one had to be re-picked.
-             */
-            const { tool, toolLocked } = store.appState;
-            store.setAppState({
-              editingTextId: null,
-              tool: toolLocked ? tool : "selection",
-            });
+            store.setAppState({ editingTextId: null, tool: "selection" });
             reconcileFrameMembership();
           }}
         />

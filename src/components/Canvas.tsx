@@ -1077,7 +1077,7 @@ export const Canvas = ({
   // --- helpers -------------------------------------------------------------
 
   const resetTool = () => {
-    if (!store.appState.toolLocked && store.appState.tool !== "selection") {
+    if (store.appState.tool !== "selection") {
       store.setAppState({ tool: "selection" });
     }
   };

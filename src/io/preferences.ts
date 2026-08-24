@@ -10,13 +10,6 @@ export interface Preferences {
   theme: "light" | "dark";
   gridSize: number | null;
   snapToObjects: boolean;
-  /**
-   * Whether a tool stays selected after use, off by default to match
-   * Excalidraw. Some people want to place several of the same shape in a row
-   * without re-picking the tool each time, so the choice is remembered rather
-   * than reset every session once someone turns it on.
-   */
-  toolLocked: boolean;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -26,7 +19,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "light",
   gridSize: null,
   snapToObjects: true,
-  toolLocked: false,
 };
 
 export const loadPreferences = (): Preferences => {

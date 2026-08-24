@@ -13,8 +13,6 @@ import {
   IconImage,
   IconLaser,
   IconLine,
-  IconLockClosed,
-  IconLockOpen,
   IconMore,
   IconRectangle,
   IconSelection,
@@ -72,7 +70,7 @@ const MOBILE_PRIMARY: Tool[] = [
 export const Toolbar = () => {
   const scene = useScene();
   const isMobile = useIsMobile();
-  const { tool, toolLocked } = scene.appState;
+  const { tool } = scene.appState;
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -123,26 +121,6 @@ export const Toolbar = () => {
 
   return (
     <div className="toolbar island" role="toolbar" aria-label="Tools">
-      {!isMobile && (
-        <>
-          <Tooltip
-            label={toolLocked ? "Tool stays selected" : "Tool resets after drawing"}
-            shortcut="Q"
-          >
-            <button
-              className={`tool-button ${toolLocked ? "is-locked" : ""}`}
-              aria-pressed={toolLocked}
-              aria-label="Keep the selected tool active"
-              onClick={() => store.setAppState({ toolLocked: !toolLocked })}
-            >
-              {toolLocked ? <IconLockClosed /> : <IconLockOpen />}
-            </button>
-          </Tooltip>
-
-          <span className="toolbar-divider" />
-        </>
-      )}
-
       {primary.map((spec) => (
         <ToolButton key={spec.tool} spec={spec} />
       ))}
@@ -175,21 +153,6 @@ export const Toolbar = () => {
                 {spec.shortcut && <kbd>{spec.shortcut}</kbd>}
               </button>
             ))}
-
-            {isMobile && (
-              <>
-                <span className="overflow-separator" />
-                <button
-                  className={`overflow-item ${toolLocked ? "active" : ""}`}
-                  role="menuitemcheckbox"
-                  aria-checked={toolLocked}
-                  onClick={() => store.setAppState({ toolLocked: !toolLocked })}
-                >
-                  {toolLocked ? <IconLockClosed /> : <IconLockOpen />}
-                  <span>{toolLocked ? "Tool stays selected" : "Tool resets after drawing"}</span>
-                </button>
-              </>
-            )}
           </div>
         )}
       </div>

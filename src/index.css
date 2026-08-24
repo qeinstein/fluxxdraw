@@ -345,11 +345,6 @@ kbd {
   color: var(--accent);
 }
 
-.tool-button.is-locked {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
 .tool-shortcut {
   position: absolute;
   right: 3px;

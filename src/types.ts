@@ -191,8 +191,6 @@ export type Tool =
 
 export interface AppState {
   tool: Tool;
-  /** keep the active tool selected after drawing instead of reverting to selection */
-  toolLocked: boolean;
   selectedIds: string[];
   editingTextId: string | null;
   scrollX: number;

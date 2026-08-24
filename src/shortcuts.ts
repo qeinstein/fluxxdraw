@@ -69,7 +69,6 @@ export const SHORTCUTS = {
   zoomOut: "mod+minus",
   zoomReset: "mod+digit0",
   zoomToFit: "shift+digit1",
-  toggleToolLock: "q",
   help: "shift+slash",
 } as const;
 

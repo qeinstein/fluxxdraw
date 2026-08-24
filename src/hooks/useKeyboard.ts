@@ -95,7 +95,6 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
       zoomOut: () => setZoom(store.appState.zoom / 1.2),
       zoomReset: () => setZoom(1),
       zoomToFit: () => zoomToFit("all"),
-      toggleToolLock: () => store.setAppState({ toolLocked: !store.appState.toolLocked }),
       help: handlers.onHelp,
     };
 

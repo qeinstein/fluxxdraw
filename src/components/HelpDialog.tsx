@@ -23,7 +23,6 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
       ["Eraser", "0 / E"],
       ["Laser pointer", "K"],
       ["Hand (pan)", "H / hold Space"],
-      ["Keep tool active", sc("toggleToolLock")],
     ],
   },
   {
