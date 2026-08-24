@@ -53,6 +53,7 @@ export interface KeyboardHandlers {
   onHelp: () => void;
   onHistory: () => void;
   onPresent: () => void;
+  onToggleText: () => void;
   onEscape: () => void;
 }
 
@@ -115,6 +116,10 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
               event.preventDefault();
               tidyUp();
             }
+            return;
+          case "/":
+            event.preventDefault();
+            handlers.onToggleText();
             return;
           case "o":
             event.preventDefault();

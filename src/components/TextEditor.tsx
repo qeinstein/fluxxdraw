@@ -1,10 +1,9 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { store } from "../store";
 import { refreshBindings, refreshTextLayout } from "../actions";
-import { fontString, measureText, wrapText } from "../elements/text";
+import { fontString, getLabelBox, measureText, wrapText } from "../elements/text";
 import { CONTAINER_PADDING } from "../constants";
 import { fontStack } from "../fonts";
-import { getElementBounds } from "../geometry";
 import type { TextElement } from "../types";
 
 interface TextEditorProps {
@@ -96,17 +95,15 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
   let height: number;
 
   if (container) {
-    const cb = getElementBounds(container);
-    width = cb.x2 - cb.x1 - CONTAINER_PADDING * 2;
+    const measured = measureText(
+      value.length ? value.split("\n") : [""],
+      element,
+    ).width;
+    const box = getLabelBox(container, measured, contentHeight, element.verticalAlign);
+    width = box.width;
     height = contentHeight;
-    sceneX = cb.x1 + CONTAINER_PADDING;
-    // labels sit vertically centred in their shape
-    sceneY =
-      element.verticalAlign === "middle"
-        ? cb.y1 + (cb.y2 - cb.y1 - contentHeight) / 2
-        : element.verticalAlign === "bottom"
-          ? cb.y2 - contentHeight - CONTAINER_PADDING
-          : cb.y1 + CONTAINER_PADDING;
+    sceneX = box.x;
+    sceneY = box.y;
   } else {
     // a little slack past the caret keeps typing from feeling cramped
     width = Math.max(measuredWidth ?? 0, element.fontSize * 0.6) + element.fontSize * 0.75;

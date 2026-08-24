@@ -57,6 +57,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
       ["Export", "⇧⌘E"],
       ["Version history", "⌘H"],
       ["Present frames", "⇧⌘P"],
+      ["Diagram as text", "⌘/"],
       ["Paste image / open file", "⌘V or drag onto canvas"],
     ],
   },

@@ -9,6 +9,7 @@ import { HelpDialog } from "./components/HelpDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
+import { DiagramTextPanel } from "./components/DiagramTextPanel";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
@@ -48,6 +49,7 @@ export default function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [presenting, setPresenting] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
+  const [textPanelOpen, setTextPanelOpen] = useState(false);
   const [componentSession, setComponentSession] = useState<{
     session: ComponentEditSession;
     instanceId: string;
@@ -423,6 +425,7 @@ export default function App() {
         setHistoryOpen(false);
       },
       onPresent: () => setPresenting(true),
+      onToggleText: () => setTextPanelOpen((v) => !v),
     }),
     [handleOpen, handleSave, handleSaveAs],
   );
@@ -466,6 +469,7 @@ export default function App() {
             onHelp={() => setHelpOpen(true)}
             onHistory={() => setHistoryOpen(true)}
             onPresent={() => setPresenting(true)}
+            onToggleText={() => setTextPanelOpen((v) => !v)}
             currentFileName={fileName}
             dirty={dirty}
             onRename={renameDocument}
@@ -542,6 +546,8 @@ export default function App() {
       {historyOpen && <TimelinePanel onClose={() => setHistoryOpen(false)} />}
 
       {presenting && <Presentation onExit={() => setPresenting(false)} />}
+
+      {textPanelOpen && <DiagramTextPanel onClose={() => setTextPanelOpen(false)} />}
 
       {toast && <div className="toast">{toast}</div>}
 

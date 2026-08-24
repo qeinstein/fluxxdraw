@@ -15,6 +15,7 @@ interface MenuProps {
   onHelp: () => void;
   onHistory: () => void;
   onPresent: () => void;
+  onToggleText: () => void;
   currentFileName: string | null;
   dirty: boolean;
   onRename: (name: string) => void;
@@ -29,6 +30,7 @@ export const Menu = ({
   onHelp,
   onHistory,
   onPresent,
+  onToggleText,
   currentFileName,
   dirty,
   onRename,
@@ -89,6 +91,7 @@ export const Menu = ({
           <MenuItem label="Version history…" shortcut="⌘H" onClick={run(onHistory)} />
           <MenuItem label="Present frames" shortcut="⇧⌘P" onClick={run(onPresent)} />
           <MenuItem label="Tidy up layout" shortcut="⇧⌘T" onClick={run(() => tidyUp())} />
+          <MenuItem label="Diagram as text" shortcut="⌘/" onClick={run(onToggleText)} />
 
           <div className="menu-separator" />
 

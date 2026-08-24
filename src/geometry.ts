@@ -68,6 +68,37 @@ export const getRotatedBounds = (el: ExcaliElement): Bounds => {
   return { x1: Math.min(...xs), y1: Math.min(...ys), x2: Math.max(...xs), y2: Math.max(...ys) };
 };
 
+/**
+ * Point halfway along a polyline, measured by arc length. Used to sit a label
+ * in the middle of an arrow rather than in the middle of its bounding box,
+ * which for a diagonal connector is nowhere near the line.
+ */
+export const getLinearMidpoint = (el: LinearElement | FreedrawElement): [number, number] => {
+  const points = el.points;
+  if (points.length === 0) return [el.x, el.y];
+  if (points.length === 1) return [el.x + points[0][0], el.y + points[0][1]];
+
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    total += distance(points[i - 1][0], points[i - 1][1], points[i][0], points[i][1]);
+  }
+
+  let travelled = 0;
+  const half = total / 2;
+  for (let i = 1; i < points.length; i++) {
+    const [ax, ay] = points[i - 1];
+    const [bx, by] = points[i];
+    const segment = distance(ax, ay, bx, by);
+    if (travelled + segment >= half) {
+      const t = segment === 0 ? 0 : (half - travelled) / segment;
+      return [el.x + ax + (bx - ax) * t, el.y + ay + (by - ay) * t];
+    }
+    travelled += segment;
+  }
+  const last = points[points.length - 1];
+  return [el.x + last[0], el.y + last[1]];
+};
+
 export const getCommonBounds = (elements: ExcaliElement[]): Bounds => {
   if (elements.length === 0) return { x1: 0, y1: 0, x2: 0, y2: 0 };
   let x1 = Infinity;

@@ -12,9 +12,9 @@ So this is that whiteboard, built the way I wanted it. It runs entirely in your 
 
 **Exports at a resolution I choose.** PNG, JPEG, WebP, SVG and `.fluxx`, at 1×, 2×, 3×, 4K, 8K, or any multiplier you like. The 4K and 8K presets scale the drawing so its longest edge lands exactly on 3840 or 7680 pixels, and the dialog tells you the precise pixel size before you commit.
 
-**Exports that land where I put them.** Choose a folder once and every export afterwards is written straight into it, with no download prompts and no browser Downloads graveyard. The folder is remembered between sessions.
-
 **Presentations without paying for them.** Frames are slides. `⇧⌘P` goes full screen and steps through them with the arrow keys, letter-boxing each frame to the display and clipping to its bounds. The chrome fades away until you point at it, and the laser pointer is there for talking over a diagram.
+
+**A diagram I can write as well as draw.** `⌘/` opens a text view of the diagram beside the canvas, and the two stay in sync in both directions. Type `api -> db: queries` and the boxes appear, laid out properly. Drag a box or rename a label on the canvas and the text rewrites itself to match. Excalidraw's Mermaid support converts once and forgets; this round-trips, which means a diagram becomes something you can diff, review in a pull request, and edit from whichever side suits the moment. Anything the text cannot express — freehand strokes, images, frames — is left strictly alone.
 
 **Diagrams that tidy themselves.** `⇧⌘T` takes a scattered mess of boxes and arrows and lays it out properly — layered, evenly spaced, arrows re-routed onto their shapes — without losing the hand-drawn look. Shapes with no connections get parked on a neat grid below. It's one undo step if you hate the result.
 
@@ -24,7 +24,6 @@ So this is that whiteboard, built the way I wanted it. It runs entirely in your 
 
 **Handwriting that looks the same everywhere.** Six drawing fonts are bundled with the app rather than borrowed from whatever your machine happens to have, and SVG exports inline the fonts they use, so a drawing looks identical on a computer that has never seen it.
 
-**Dark mode that actually works.** Switching theme re-maps the palette rather than leaving black strokes to vanish into a dark canvas. Colours you picked yourself are left alone, because those were choices.
 
 ## The rest of the canvas
 
@@ -71,6 +70,28 @@ src/
   io/                 serialisation, exports, history, File System Access
   components/         canvas, toolbar, panels, dialogs
 ```
+
+## Writing a diagram as text
+
+The syntax is line-based and deliberately small. A node is a name, optionally a
+label after a colon, optionally a shape in brackets and a fill in braces. An
+edge is two names joined by an arrow, optionally with a label.
+
+```
+# a comment
+api: API Gateway
+db: Postgres [ellipse] {blue}
+cache: Redis [diamond]
+
+api -> db: queries     # a solid arrow
+api --> cache          # dashed
+db -- cache            # a plain line, no arrowhead
+```
+
+Shapes are `rectangle`, `ellipse` and `diamond`. Fills are `red`, `green`,
+`blue`, `yellow`, `grey`, or any hex value. Nodes mentioned in an edge but never
+declared are created for you. Mistakes are reported with a line number rather
+than throwing the diagram away.
 
 ## Contributing
 

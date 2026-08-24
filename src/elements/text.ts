@@ -1,4 +1,5 @@
 import { CONTAINER_PADDING } from "../constants";
+import { getElementBounds, getLinearMidpoint } from "../geometry";
 import { fontStack } from "../fonts";
 import type { ExcaliElement, TextElement } from "../types";
 
@@ -69,6 +70,11 @@ export const wrapText = (
  * width; standalone text only breaks on explicit newlines.
  */
 export const getTextLines = (el: TextElement, container: ExcaliElement | null): string[] => {
+  // A connector's box is as wide as the line is long, which for a steep arrow
+  // is a few pixels — wrapping to that turns the label into a vertical stack.
+  if (container && (container.type === "arrow" || container.type === "line")) {
+    return el.text.split("\n");
+  }
   if (container) {
     const maxWidth = Math.max(Math.abs(container.width) - CONTAINER_PADDING * 2, 20);
     return wrapText(el.text, el, maxWidth);
@@ -86,6 +92,41 @@ export const getTextLines = (el: TextElement, container: ExcaliElement | null): 
 export const baselineOffset = (
   el: Pick<TextElement, "fontSize" | "lineHeight">,
 ) => ((el.lineHeight - 1) / 2 + 0.8) * el.fontSize;
+
+export interface LabelBox {
+  x: number;
+  y: number;
+  width: number;
+}
+
+/**
+ * Where a bound label sits, given its container.
+ *
+ * Shapes hold their label inset from the box; connectors centre it on the
+ * midpoint of the line itself.
+ */
+export const getLabelBox = (
+  container: ExcaliElement,
+  textWidth: number,
+  textHeight: number,
+  verticalAlign: TextElement["verticalAlign"],
+): LabelBox => {
+  if (container.type === "arrow" || container.type === "line") {
+    const [cx, cy] = getLinearMidpoint(container);
+    return { x: cx - textWidth / 2, y: cy - textHeight / 2, width: textWidth };
+  }
+
+  const box = getElementBounds(container);
+  const width = box.x2 - box.x1 - CONTAINER_PADDING * 2;
+  const height = box.y2 - box.y1;
+  const y =
+    verticalAlign === "middle"
+      ? box.y1 + (height - textHeight) / 2
+      : verticalAlign === "bottom"
+        ? box.y2 - textHeight - CONTAINER_PADDING
+        : box.y1 + CONTAINER_PADDING;
+  return { x: box.x1 + CONTAINER_PADDING, y, width };
+};
 
 export const measureText = (
   lines: string[],

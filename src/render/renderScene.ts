@@ -6,9 +6,14 @@ import type {
   ExcaliElement,
   TextElement,
 } from "../types";
-import { getElementBounds, getElementCenter } from "../geometry";
-import { baselineOffset, fontString, getTextLines, measureText } from "../elements/text";
-import { CONTAINER_PADDING } from "../constants";
+import { getElementCenter } from "../geometry";
+import {
+  baselineOffset,
+  fontString,
+  getLabelBox,
+  getTextLines,
+  measureText,
+} from "../elements/text";
 import { freedrawPath, getDrawables } from "./shapes";
 import { getImage } from "./imageCache";
 import { FRAME_HEADER_HEIGHT } from "../elements/hitTest";
@@ -79,22 +84,16 @@ const drawTextElement = (
   ctx.fillStyle = el.strokeColor;
   ctx.textBaseline = "alphabetic";
 
-  const { height: textHeight } = measureText(lines, el);
+  const { width: textWidth, height: textHeight } = measureText(lines, el);
   let originX = el.x;
   let originY = el.y;
   let boxWidth = el.width;
 
   if (container) {
-    const cb = getElementBounds(container);
-    boxWidth = cb.x2 - cb.x1 - CONTAINER_PADDING * 2;
-    originX = cb.x1 + CONTAINER_PADDING;
-    const boxHeight = cb.y2 - cb.y1;
-    originY =
-      el.verticalAlign === "middle"
-        ? cb.y1 + (boxHeight - textHeight) / 2
-        : el.verticalAlign === "bottom"
-          ? cb.y2 - textHeight - CONTAINER_PADDING
-          : cb.y1 + CONTAINER_PADDING;
+    const box = getLabelBox(container, textWidth, textHeight, el.verticalAlign);
+    originX = box.x;
+    originY = box.y;
+    boxWidth = box.width;
   }
 
   const baseline = baselineOffset(el);

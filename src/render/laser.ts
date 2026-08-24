@@ -31,7 +31,7 @@ const DECAY_TIME = 1000;
 const DECAY_LENGTH = 50;
 
 /** Trail width in screen pixels, held constant regardless of zoom. */
-const LASER_SIZE = 12;
+const LASER_SIZE = 7;
 
 /** Excalidraw's DEFAULT_LASER_COLOR. */
 export const LASER_COLOR = "#ff0000";

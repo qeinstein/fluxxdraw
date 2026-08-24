@@ -1,9 +1,8 @@
 import rough from "roughjs/bin/rough";
 import type { BinaryFile, ExcaliElement, TextElement } from "../types";
-import { getCommonBounds, getElementBounds, getElementCenter } from "../geometry";
+import { getCommonBounds, getElementCenter } from "../geometry";
 import { freedrawPath, getDrawables } from "../render/shapes";
-import { baselineOffset, getTextLines, measureText } from "../elements/text";
-import { CONTAINER_PADDING } from "../constants";
+import { baselineOffset, getLabelBox, getTextLines, measureText } from "../elements/text";
 import { FONT_BY_ID, fontAsDataUrl, fontStack } from "../fonts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -31,23 +30,17 @@ const appendTextElement = (
 ) => {
   const lines = getTextLines(el, container);
   const lineHeightPx = el.fontSize * el.lineHeight;
-  const { height: textHeight } = measureText(lines, el);
+  const { width: textWidth, height: textHeight } = measureText(lines, el);
 
   let originX = el.x;
   let originY = el.y;
   let boxWidth = el.width;
 
   if (container) {
-    const cb = getElementBounds(container);
-    boxWidth = cb.x2 - cb.x1 - CONTAINER_PADDING * 2;
-    originX = cb.x1 + CONTAINER_PADDING;
-    const boxHeight = cb.y2 - cb.y1;
-    originY =
-      el.verticalAlign === "middle"
-        ? cb.y1 + (boxHeight - textHeight) / 2
-        : el.verticalAlign === "bottom"
-          ? cb.y2 - textHeight - CONTAINER_PADDING
-          : cb.y1 + CONTAINER_PADDING;
+    const box = getLabelBox(container, textWidth, textHeight, el.verticalAlign);
+    originX = box.x;
+    originY = box.y;
+    boxWidth = box.width;
   }
 
   const anchor =

@@ -1602,3 +1602,93 @@ kbd {
   font-size: 12px;
   color: var(--fg-muted);
 }
+
+/* --- diagram as text ------------------------------------------------------- */
+
+.diagram-text {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  z-index: 20;
+  animation: text-panel-in 170ms var(--ease);
+}
+
+@keyframes text-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.diagram-text-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.diagram-text-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.diagram-text-head strong {
+  font-size: 12.5px;
+}
+
+.diagram-text-input {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  padding: 10px 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.65;
+  tab-size: 2;
+  background: var(--surface-sunken);
+  border-color: transparent;
+  white-space: pre;
+  overflow: auto;
+}
+
+.diagram-text-input:focus-visible {
+  background: var(--surface);
+}
+
+.diagram-text-foot {
+  min-height: 18px;
+}
+
+.diagram-issues {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11.5px;
+  color: var(--danger);
+}
+
+.diagram-issues li {
+  display: flex;
+  gap: 7px;
+}
+
+.issue-line {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}

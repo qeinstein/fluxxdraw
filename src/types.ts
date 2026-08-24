@@ -43,6 +43,12 @@ interface BaseElement extends ElementStyle {
   locked: boolean;
   isDeleted: boolean;
   link: string | null;
+  /**
+   * Identifier this element carries in the text view of the diagram. Present
+   * only on elements the text panel manages, which is how an edit on either
+   * side finds its counterpart on the other.
+   */
+  dslKey?: string;
 }
 
 export interface GenericElement extends BaseElement {

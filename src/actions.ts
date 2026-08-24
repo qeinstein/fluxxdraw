@@ -3,7 +3,7 @@ import { store } from "./store";
 import { getBoundArrowPoints } from "./elements/binding";
 import { duplicateElement } from "./elements/factory";
 import { getCommonBounds, getElementBounds, getRotatedBounds } from "./geometry";
-import { getTextLines, measureText } from "./elements/text";
+import { getLabelBox, getTextLines, measureText } from "./elements/text";
 import { CONTAINER_PADDING } from "./constants";
 import type { ExcaliElement, GenericElement, LinearElement, TextElement } from "./types";
 
@@ -50,20 +50,13 @@ export const refreshTextLayout = (textIds: string[]) => {
       // Its position is derived from the container at render time, but bounds
       // maths (selection, export, components) reads x/y directly, so leaving
       // them stale drags those boxes off to wherever the label was created.
-      const box = getElementBounds(store.getElement(container.id) ?? container);
-      const boxHeight = box.y2 - box.y1;
-      const y =
-        text.verticalAlign === "middle"
-          ? box.y1 + (boxHeight - height) / 2
-          : text.verticalAlign === "bottom"
-            ? box.y2 - height - CONTAINER_PADDING
-            : box.y1 + CONTAINER_PADDING;
-      store.updateElement<TextElement>(id, () => ({
+      const box = getLabelBox(
+        store.getElement(container.id) ?? container,
         width,
         height,
-        x: box.x1 + CONTAINER_PADDING,
-        y,
-      }));
+        text.verticalAlign,
+      );
+      store.updateElement<TextElement>(id, () => ({ width, height, x: box.x, y: box.y }));
     } else {
       store.updateElement<TextElement>(id, () => ({ width, height }));
     }
