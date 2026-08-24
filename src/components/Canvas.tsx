@@ -1,0 +1,1113 @@
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { store, useScene } from "../store";
+import {
+  HANDLE_SIZE,
+  HIT_THRESHOLD,
+  LASER_FADE_MS,
+  MAX_ZOOM,
+  MIN_ZOOM,
+} from "../constants";
+import {
+  getCommonBounds,
+  getElementBounds,
+  getRotatedBounds,
+  type Bounds,
+} from "../geometry";
+import { drawGrid, renderElements } from "../render/renderScene";
+import { getElementAtPosition, hitTestElement } from "../elements/hitTest";
+import {
+  newEmbedElement,
+  newFrameElement,
+  newFreedrawElement,
+  newGenericElement,
+  newLinearElement,
+  newTextElement,
+} from "../elements/factory";
+import {
+  CURSOR_FOR_HANDLE,
+  computeRotation,
+  getHandleAtPosition,
+  getTransformHandles,
+  resizeElements,
+  type HandleName,
+} from "../interaction/transform";
+import { computeSnap, snapToGrid, type SnapGuide } from "../interaction/snapping";
+import {
+  defaultBinding,
+  getBindableElementAt,
+} from "../elements/binding";
+import {
+  duplicateSelection,
+  expandSelectionToGroups,
+  isContainer,
+  moveElementsBy,
+  reconcileFrameMembership,
+  refreshBindings,
+  refreshTextLayout,
+} from "../actions";
+import type { ExcaliElement, FreedrawElement, LinearElement, Tool } from "../types";
+
+type Mode =
+  | "none"
+  | "panning"
+  | "drawing"
+  | "drawing-linear"
+  | "dragging"
+  | "resizing"
+  | "rotating"
+  | "marquee"
+  | "point-dragging"
+  | "erasing"
+  | "lasering";
+
+interface PointerState {
+  mode: Mode;
+  /** scene coords where the gesture started */
+  originX: number;
+  originY: number;
+  lastX: number;
+  lastY: number;
+  /** element being created or point-edited */
+  activeId: string | null;
+  handle: HandleName | null;
+  /** clones captured at gesture start, used as the resize/rotate baseline */
+  snapshot: ExcaliElement[];
+  snapshotBounds: Bounds | null;
+  pointIndex: number;
+  marquee: Bounds | null;
+  hasMoved: boolean;
+  /** true while a multi-point line is being placed click-by-click */
+  placingPoints: boolean;
+}
+
+const freshPointerState = (): PointerState => ({
+  mode: "none",
+  originX: 0,
+  originY: 0,
+  lastX: 0,
+  lastY: 0,
+  activeId: null,
+  handle: null,
+  snapshot: [],
+  snapshotBounds: null,
+  pointIndex: -1,
+  marquee: null,
+  hasMoved: false,
+  placingPoints: false,
+});
+
+const DRAWING_TOOLS: Tool[] = [
+  "rectangle",
+  "diamond",
+  "ellipse",
+  "arrow",
+  "line",
+  "freedraw",
+  "frame",
+];
+
+interface LaserPoint {
+  x: number;
+  y: number;
+  time: number;
+}
+
+interface CanvasProps {
+  onDoubleClickText: (elementId: string) => void;
+  onRequestImage: () => void;
+}
+
+export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
+  // subscribing keeps the component in sync with store-driven UI state
+  useScene();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pointerRef = useRef<PointerState>(freshPointerState());
+  const guidesRef = useRef<SnapGuide[]>([]);
+  const laserRef = useRef<LaserPoint[]>([]);
+  const spaceHeldRef = useRef(false);
+  const frameRef = useRef<number>(0);
+  const sizeRef = useRef({ width: 0, height: 0 });
+
+  // --- coordinate helpers --------------------------------------------------
+
+  const toScene = useCallback((clientX: number, clientY: number): [number, number] => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const { scrollX, scrollY, zoom } = store.appState;
+    return [
+      (clientX - rect.left) / zoom - scrollX,
+      (clientY - rect.top) / zoom - scrollY,
+    ];
+  }, []);
+
+  // --- rendering -----------------------------------------------------------
+
+  const drawOverlay = useCallback((ctx: CanvasRenderingContext2D, zoom: number) => {
+    const state = store.appState;
+    const selected = store.getSelected();
+    const pointer = pointerRef.current;
+    const lineWidth = 1 / zoom;
+
+    // marquee
+    if (pointer.marquee) {
+      const m = pointer.marquee;
+      ctx.save();
+      ctx.strokeStyle = "#6965db";
+      ctx.fillStyle = "rgba(105, 101, 219, 0.08)";
+      ctx.lineWidth = lineWidth;
+      ctx.fillRect(m.x1, m.y1, m.x2 - m.x1, m.y2 - m.y1);
+      ctx.strokeRect(m.x1, m.y1, m.x2 - m.x1, m.y2 - m.y1);
+      ctx.restore();
+    }
+
+    // snap guides
+    if (guidesRef.current.length) {
+      ctx.save();
+      ctx.strokeStyle = "#ff6b6b";
+      ctx.lineWidth = lineWidth;
+      ctx.setLineDash([4 / zoom, 4 / zoom]);
+      for (const g of guidesRef.current) {
+        ctx.beginPath();
+        ctx.moveTo(g.x1, g.y1);
+        ctx.lineTo(g.x2, g.y2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if (selected.length > 0 && !state.editingTextId) {
+      ctx.save();
+      ctx.strokeStyle = "#6965db";
+      ctx.lineWidth = lineWidth;
+
+      // per-element outlines when several are selected
+      if (selected.length > 1) {
+        ctx.setLineDash([4 / zoom, 4 / zoom]);
+        for (const el of selected) {
+          const b = getRotatedBounds(el);
+          ctx.strokeRect(b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1);
+        }
+        ctx.setLineDash([]);
+      }
+
+      const single = selected.length === 1 ? selected[0] : null;
+      const bounds = single
+        ? getElementBounds(single)
+        : getCommonBounds(selected);
+      const angle = single?.angle ?? 0;
+      const cx = (bounds.x1 + bounds.x2) / 2;
+      const cy = (bounds.y1 + bounds.y2) / 2;
+
+      ctx.save();
+      if (angle) {
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.translate(-cx, -cy);
+      }
+      ctx.strokeRect(bounds.x1, bounds.y1, bounds.x2 - bounds.x1, bounds.y2 - bounds.y1);
+      ctx.restore();
+
+      if (!selected.every((el) => el.locked)) {
+        const handles = getTransformHandles(bounds, angle, zoom);
+        const size = HANDLE_SIZE / zoom;
+        ctx.fillStyle = "#ffffff";
+        for (const handle of handles) {
+          ctx.beginPath();
+          if (handle.name === "rotate") {
+            ctx.arc(handle.x, handle.y, size / 2, 0, Math.PI * 2);
+          } else {
+            ctx.rect(handle.x - size / 2, handle.y - size / 2, size, size);
+          }
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+
+      // endpoint handles for a single linear element
+      if (single && (single.type === "arrow" || single.type === "line")) {
+        ctx.fillStyle = "#ffffff";
+        const size = HANDLE_SIZE / zoom;
+        for (const [px, py] of single.points) {
+          ctx.beginPath();
+          ctx.arc(single.x + px, single.y + py, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    // laser trail
+    const now = performance.now();
+    const trail = laserRef.current.filter((p) => now - p.time < LASER_FADE_MS);
+    laserRef.current = trail;
+    if (trail.length > 1) {
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (let i = 1; i < trail.length; i++) {
+        const age = (now - trail[i].time) / LASER_FADE_MS;
+        ctx.globalAlpha = Math.max(0, 1 - age);
+        ctx.strokeStyle = "#f03e3e";
+        ctx.lineWidth = (6 * (1 - age * 0.5)) / zoom;
+        ctx.beginPath();
+        ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
+        ctx.lineTo(trail[i].x, trail[i].y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }, []);
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const { width, height } = sizeRef.current;
+    const state = store.appState;
+    const dpr = window.devicePixelRatio || 1;
+
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = state.viewBackgroundColor;
+    ctx.fillRect(0, 0, width, height);
+
+    if (state.gridSize) {
+      drawGrid(ctx, state.gridSize, width, height, {
+        scrollX: state.scrollX,
+        scrollY: state.scrollY,
+        zoom: state.zoom,
+        scale: dpr,
+        files: store.files,
+      });
+    }
+
+    ctx.scale(state.zoom, state.zoom);
+    ctx.translate(state.scrollX, state.scrollY);
+
+    // the element being edited as text is drawn by the textarea overlay instead
+    const hidden = state.editingTextId;
+    const elements = hidden
+      ? store.elements.filter((el) => el.id !== hidden)
+      : store.elements;
+
+    renderElements(ctx, elements, {
+      scrollX: state.scrollX,
+      scrollY: state.scrollY,
+      zoom: state.zoom,
+      scale: dpr,
+      files: store.files,
+    });
+
+    drawOverlay(ctx, state.zoom);
+    ctx.restore();
+  }, [drawOverlay]);
+
+  // continuous redraw keeps the laser trail fading and drags smooth
+  useEffect(() => {
+    const loop = () => {
+      draw();
+      frameRef.current = requestAnimationFrame(loop);
+    };
+    frameRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameRef.current);
+  }, [draw]);
+
+  // --- sizing --------------------------------------------------------------
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+
+    const resize = () => {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      sizeRef.current = { width: rect.width, height: rect.height };
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      draw();
+    };
+
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
+    window.addEventListener("resize", resize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", resize);
+    };
+  }, [draw]);
+
+  // --- gesture start -------------------------------------------------------
+
+  const startDrawing = (tool: Tool, x: number, y: number) => {
+    const state = store.appState;
+    const gx = snapToGrid(x, state.gridSize);
+    const gy = snapToGrid(y, state.gridSize);
+    const pointer = pointerRef.current;
+    store.beginHistory();
+
+    if (tool === "freedraw") {
+      const el = newFreedrawElement(state, x, y);
+      store.addElements(el);
+      pointer.mode = "drawing";
+      pointer.activeId = el.id;
+      return;
+    }
+    if (tool === "arrow" || tool === "line") {
+      const el = newLinearElement(tool, state, gx, gy);
+      const bindTarget =
+        tool === "arrow" ? getBindableElementAt(store.visibleElements, x, y) : null;
+      if (bindTarget) el.startBinding = defaultBinding(bindTarget.id);
+      el.points = [
+        [0, 0],
+        [0, 0],
+      ];
+      store.addElements(el);
+      pointer.mode = "drawing-linear";
+      pointer.activeId = el.id;
+      return;
+    }
+    if (tool === "frame") {
+      const el = newFrameElement(state, gx, gy);
+      store.addElements(el);
+      pointer.mode = "drawing";
+      pointer.activeId = el.id;
+      return;
+    }
+    const el = newGenericElement(tool as "rectangle" | "diamond" | "ellipse", state, gx, gy);
+    store.addElements(el);
+    pointer.mode = "drawing";
+    pointer.activeId = el.id;
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.button === 2) return; // context menu handled separately
+    const canvas = canvasRef.current!;
+    canvas.setPointerCapture(event.pointerId);
+
+    const [x, y] = toScene(event.clientX, event.clientY);
+    const pointer = pointerRef.current;
+    const state = store.appState;
+
+    pointer.originX = x;
+    pointer.originY = y;
+    pointer.lastX = x;
+    pointer.lastY = y;
+    pointer.hasMoved = false;
+    pointer.marquee = null;
+
+    // finish a multi-point line that's mid-placement
+    if (pointer.placingPoints && pointer.activeId) {
+      const el = store.getElement(pointer.activeId) as LinearElement | null;
+      if (el) {
+        const last = el.points[el.points.length - 1];
+        const prev = el.points[el.points.length - 2];
+        // clicking the same spot twice ends the line
+        if (prev && Math.hypot(last[0] - prev[0], last[1] - prev[1]) < 4) {
+          finishLinearPlacement();
+          return;
+        }
+        store.updateElement<LinearElement>(el.id, (cur) => ({
+          points: [...cur.points, [x - cur.x, y - cur.y]],
+        }));
+        store.emit();
+      }
+      return;
+    }
+
+    const panning =
+      event.button === 1 || spaceHeldRef.current || state.tool === "hand";
+    if (panning) {
+      pointer.mode = "panning";
+      return;
+    }
+
+    if (state.tool === "laser") {
+      pointer.mode = "lasering";
+      laserRef.current.push({ x, y, time: performance.now() });
+      return;
+    }
+
+    if (state.tool === "eraser") {
+      pointer.mode = "erasing";
+      store.beginHistory();
+      eraseAt(x, y);
+      return;
+    }
+
+    if (state.tool === "image") {
+      onRequestImage();
+      return;
+    }
+
+    if (state.tool === "text") {
+      store.beginHistory();
+      const target = getElementAtPosition(store.visibleElements, x, y) ?? getContainerAt(x, y);
+      if (target && isContainer(target)) {
+        onDoubleClickText(ensureBoundText(target.id));
+      } else {
+        const el = newTextElement(state, x, y);
+        store.addElements(el);
+        store.setAppState({ selectedIds: [el.id] });
+        onDoubleClickText(el.id);
+      }
+      return;
+    }
+
+    if (state.tool === "embed") {
+      const url = window.prompt("URL to embed");
+      if (url) {
+        store.mutate(() => {
+          const el = newEmbedElement(state, x, y, url);
+          el.width = 480;
+          el.height = 270;
+          store.addElements(el);
+          store.appState = { ...store.appState, selectedIds: [el.id], tool: "selection" };
+        });
+      }
+      return;
+    }
+
+    if (DRAWING_TOOLS.includes(state.tool)) {
+      startDrawing(state.tool, x, y);
+      return;
+    }
+
+    // --- selection tool ---
+    const selected = store.getSelected();
+
+    if (selected.length > 0 && !selected.every((el) => el.locked)) {
+      const single = selected.length === 1 ? selected[0] : null;
+      const bounds = single ? getElementBounds(single) : getCommonBounds(selected);
+      const angle = single?.angle ?? 0;
+      const handles = getTransformHandles(bounds, angle, state.zoom);
+      const handle = getHandleAtPosition(handles, x, y, state.zoom);
+
+      if (handle) {
+        store.beginHistory();
+        pointer.snapshot = selected.map((el) => structuredClone(el));
+        pointer.snapshotBounds = bounds;
+        pointer.handle = handle;
+        pointer.mode = handle === "rotate" ? "rotating" : "resizing";
+        return;
+      }
+
+      // dragging an individual point of a single linear element
+      if (single && (single.type === "arrow" || single.type === "line")) {
+        const radius = (HANDLE_SIZE + 4) / state.zoom;
+        const index = single.points.findIndex(
+          ([px, py]) => Math.hypot(single.x + px - x, single.y + py - y) <= radius,
+        );
+        if (index !== -1) {
+          store.beginHistory();
+          pointer.mode = "point-dragging";
+          pointer.activeId = single.id;
+          pointer.pointIndex = index;
+          return;
+        }
+      }
+    }
+
+    const hit = getElementAtPosition(store.visibleElements, x, y, HIT_THRESHOLD / state.zoom);
+
+    if (hit) {
+      const alreadySelected = state.selectedIds.includes(hit.id);
+      let nextIds: string[];
+      if (event.shiftKey) {
+        nextIds = alreadySelected
+          ? state.selectedIds.filter((id) => id !== hit.id)
+          : expandSelectionToGroups([...state.selectedIds, hit.id]);
+      } else if (alreadySelected) {
+        nextIds = state.selectedIds;
+      } else {
+        nextIds = expandSelectionToGroups([hit.id]);
+      }
+      store.setAppState({ selectedIds: nextIds });
+
+      if (!hit.locked && nextIds.length > 0) {
+        store.beginHistory();
+        // alt-drag duplicates, matching the usual whiteboard convention
+        if (event.altKey) duplicateSelection(0, 0);
+        pointer.mode = "dragging";
+        pointer.snapshot = store.getSelected().map((el) => structuredClone(el));
+      }
+      return;
+    }
+
+    if (!event.shiftKey) store.setAppState({ selectedIds: [] });
+    pointer.mode = "marquee";
+    pointer.marquee = { x1: x, y1: y, x2: x, y2: y };
+  };
+
+  // --- gesture move --------------------------------------------------------
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const pointer = pointerRef.current;
+    const state = store.appState;
+    const [x, y] = toScene(event.clientX, event.clientY);
+
+    if (pointer.mode === "none" && !pointer.placingPoints) {
+      updateCursor(x, y);
+      return;
+    }
+
+    const dx = x - pointer.originX;
+    const dy = y - pointer.originY;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) pointer.hasMoved = true;
+
+    switch (pointer.mode) {
+      case "panning": {
+        store.setAppState({
+          scrollX: state.scrollX + (x - pointer.lastX),
+          scrollY: state.scrollY + (y - pointer.lastY),
+        });
+        // scroll changed, so recompute where the pointer now sits
+        const [nx, ny] = toScene(event.clientX, event.clientY);
+        pointer.lastX = nx;
+        pointer.lastY = ny;
+        return;
+      }
+
+      case "lasering":
+        laserRef.current.push({ x, y, time: performance.now() });
+        return;
+
+      case "erasing":
+        eraseAt(x, y);
+        return;
+
+      case "drawing": {
+        const el = store.getElement(pointer.activeId!);
+        if (!el) return;
+        if (el.type === "freedraw") {
+          store.updateElement<FreedrawElement>(el.id, (cur) => ({
+            points: [...cur.points, [x - cur.x, y - cur.y]],
+            pressures: [...cur.pressures, event.pressure || 0.5],
+          }));
+        } else {
+          let width = x - pointer.originX;
+          let height = y - pointer.originY;
+          if (event.shiftKey) {
+            // square/circle constraint
+            const size = Math.max(Math.abs(width), Math.abs(height));
+            width = Math.sign(width) * size;
+            height = Math.sign(height) * size;
+          }
+          const gx = snapToGrid(pointer.originX + width, state.gridSize);
+          const gy = snapToGrid(pointer.originY + height, state.gridSize);
+          store.updateElement(el.id, (cur) => ({
+            width: gx - cur.x,
+            height: gy - cur.y,
+          }));
+        }
+        store.emit();
+        return;
+      }
+
+      case "drawing-linear": {
+        const el = store.getElement(pointer.activeId!) as LinearElement | null;
+        if (!el) return;
+        let px = x - el.x;
+        let py = y - el.y;
+        if (event.shiftKey) {
+          // snap the segment to 15° increments
+          const angle = Math.atan2(py, px);
+          const step = Math.PI / 12;
+          const snapped = Math.round(angle / step) * step;
+          const len = Math.hypot(px, py);
+          px = Math.cos(snapped) * len;
+          py = Math.sin(snapped) * len;
+        }
+        store.updateElement<LinearElement>(el.id, (cur) => {
+          const points = [...cur.points];
+          points[points.length - 1] = [px, py];
+          return { points };
+        });
+        store.emit();
+        return;
+      }
+
+      case "point-dragging": {
+        const el = store.getElement(pointer.activeId!) as LinearElement | null;
+        if (!el) return;
+        store.updateElement<LinearElement>(el.id, (cur) => {
+          const points = cur.points.map((p) => [...p] as [number, number]);
+          points[pointer.pointIndex] = [x - cur.x, y - cur.y];
+          return { points };
+        });
+        store.emit();
+        return;
+      }
+
+      case "dragging": {
+        let moveX = dx;
+        let moveY = dy;
+        guidesRef.current = [];
+
+        const ids = pointer.snapshot.map((el) => el.id);
+        // reset to the snapshot position, then apply the total delta
+        for (const original of pointer.snapshot) {
+          store.updateElement(original.id, () => ({ x: original.x, y: original.y }));
+        }
+
+        if (state.gridSize) {
+          moveX = snapToGrid(pointer.snapshot[0].x + moveX, state.gridSize) - pointer.snapshot[0].x;
+          moveY = snapToGrid(pointer.snapshot[0].y + moveY, state.gridSize) - pointer.snapshot[0].y;
+        } else if (state.snapToObjects && !event.metaKey && !event.ctrlKey) {
+          const movingBounds = getCommonBounds(pointer.snapshot);
+          const shifted: Bounds = {
+            x1: movingBounds.x1 + moveX,
+            y1: movingBounds.y1 + moveY,
+            x2: movingBounds.x2 + moveX,
+            y2: movingBounds.y2 + moveY,
+          };
+          const idSet = new Set(ids);
+          const others = store.visibleElements.filter(
+            (el) => !idSet.has(el.id) && el.type !== "frame",
+          );
+          const snap = computeSnap(shifted, others, state.zoom);
+          moveX += snap.dx;
+          moveY += snap.dy;
+          guidesRef.current = snap.guides;
+        }
+
+        moveElementsBy(ids, moveX, moveY);
+        store.emit();
+        return;
+      }
+
+      case "resizing": {
+        const results = resizeElements(
+          pointer.snapshot,
+          pointer.handle!,
+          x,
+          y,
+          event.shiftKey,
+        );
+        for (const { id, patch } of results) {
+          // the patch is built per element type, so the union widens here
+          store.updateElement(id, () => patch as never);
+        }
+        const textIds = results
+          .map((r) => r.id)
+          .filter((id) => store.getElement(id)?.type === "text");
+        // containers changed size, so labels need to re-wrap
+        const containerLabelIds = results
+          .map((r) => store.getElement(r.id))
+          .filter((el): el is ExcaliElement => !!el && "boundText" in el && !!el.boundText)
+          .map((el) => (el as { boundText: string }).boundText);
+        refreshTextLayout([...textIds, ...containerLabelIds]);
+        refreshBindings(results.map((r) => r.id));
+        store.emit();
+        return;
+      }
+
+      case "rotating": {
+        const bounds = pointer.snapshotBounds!;
+        const angle = computeRotation(bounds, x, y, event.shiftKey);
+        store.updateElements(
+          pointer.snapshot.map((el) => el.id),
+          () => ({ angle }),
+        );
+        store.emit();
+        return;
+      }
+
+      case "marquee": {
+        pointer.marquee = {
+          x1: Math.min(pointer.originX, x),
+          y1: Math.min(pointer.originY, y),
+          x2: Math.max(pointer.originX, x),
+          y2: Math.max(pointer.originY, y),
+        };
+        const box = pointer.marquee;
+        const hits = store.visibleElements.filter((el) => {
+          if (el.locked) return false;
+          const b = getRotatedBounds(el);
+          return b.x1 >= box.x1 && b.y1 >= box.y1 && b.x2 <= box.x2 && b.y2 <= box.y2;
+        });
+        store.setAppState({ selectedIds: expandSelectionToGroups(hits.map((el) => el.id)) });
+        return;
+      }
+    }
+  };
+
+  // --- gesture end ---------------------------------------------------------
+
+  const finishLinearPlacement = () => {
+    const pointer = pointerRef.current;
+    const el = store.getElement(pointer.activeId!) as LinearElement | null;
+    pointer.placingPoints = false;
+    if (el) {
+      // drop the trailing preview point
+      if (el.points.length > 2) {
+        store.updateElement<LinearElement>(el.id, (cur) => ({
+          points: cur.points.slice(0, -1),
+        }));
+      }
+      normalizeLinear(el.id);
+      store.setAppState({ selectedIds: [el.id] });
+    }
+    store.commit();
+    resetTool();
+    pointer.activeId = null;
+    store.emit();
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const pointer = pointerRef.current;
+    const [x, y] = toScene(event.clientX, event.clientY);
+    const mode = pointer.mode;
+
+    guidesRef.current = [];
+
+    switch (mode) {
+      case "drawing": {
+        const el = store.getElement(pointer.activeId!);
+        if (el) {
+          if (el.type === "freedraw") {
+            normalizeFreedraw(el.id);
+          } else if (Math.abs(el.width) < 4 && Math.abs(el.height) < 4) {
+            // a click without a drag creates a default-sized shape
+            store.updateElement(el.id, () => ({ width: 120, height: 80 }));
+          }
+          store.setAppState({ selectedIds: [el.id] });
+          if (el.type === "frame") reconcileFrameMembership();
+        }
+        store.commit();
+        resetTool();
+        break;
+      }
+
+      case "drawing-linear": {
+        const el = store.getElement(pointer.activeId!) as LinearElement | null;
+        if (el) {
+          const [lx, ly] = el.points[el.points.length - 1];
+          if (Math.hypot(lx, ly) < 4) {
+            // click without drag => start multi-point placement
+            pointer.placingPoints = true;
+            store.updateElement<LinearElement>(el.id, (cur) => ({
+              points: [...cur.points, [lx, ly]],
+            }));
+            store.emit();
+            return;
+          }
+          if (el.type === "arrow") bindArrowEnd(el.id, x, y);
+          normalizeLinear(el.id);
+          store.setAppState({ selectedIds: [el.id] });
+        }
+        store.commit();
+        resetTool();
+        break;
+      }
+
+      case "point-dragging": {
+        const el = store.getElement(pointer.activeId!) as LinearElement | null;
+        if (el && el.type === "arrow") {
+          const isEnd = pointer.pointIndex === el.points.length - 1;
+          const isStart = pointer.pointIndex === 0;
+          if (isEnd) bindArrowEnd(el.id, x, y);
+          else if (isStart) bindArrowStart(el.id, x, y);
+        }
+        store.commit();
+        break;
+      }
+
+      case "dragging":
+        reconcileFrameMembership();
+        store.commit();
+        break;
+
+      case "resizing":
+      case "rotating":
+        refreshBindings(pointer.snapshot.map((el) => el.id));
+        reconcileFrameMembership();
+        store.commit();
+        break;
+
+      case "erasing":
+        store.commit();
+        break;
+    }
+
+    const keepActive = pointer.placingPoints;
+    const activeId = pointer.activeId;
+    pointerRef.current = freshPointerState();
+    if (keepActive) {
+      pointerRef.current.placingPoints = true;
+      pointerRef.current.activeId = activeId;
+    }
+    store.emit();
+  };
+
+  // --- helpers -------------------------------------------------------------
+
+  const resetTool = () => {
+    if (!store.appState.toolLocked && store.appState.tool !== "selection") {
+      store.setAppState({ tool: "selection" });
+    }
+  };
+
+  /** Re-bases a linear element so x/y sit at its first point. */
+  const normalizeLinear = (id: string) => {
+    const el = store.getElement(id) as LinearElement | null;
+    if (!el || el.points.length === 0) return;
+    const [ox, oy] = el.points[0];
+    const points = el.points.map(([px, py]) => [px - ox, py - oy] as [number, number]);
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    store.updateElement<LinearElement>(id, () => ({
+      x: el.x + ox,
+      y: el.y + oy,
+      points,
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    }));
+  };
+
+  const normalizeFreedraw = (id: string) => {
+    const el = store.getElement(id) as FreedrawElement | null;
+    if (!el || el.points.length === 0) return;
+    const xs = el.points.map((p) => p[0]);
+    const ys = el.points.map((p) => p[1]);
+    store.updateElement<FreedrawElement>(id, () => ({
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    }));
+  };
+
+  const bindArrowEnd = (arrowId: string, x: number, y: number) => {
+    const target = getBindableElementAt(store.visibleElements, x, y, arrowId);
+    store.updateElement<LinearElement>(arrowId, () => ({
+      endBinding: target ? defaultBinding(target.id) : null,
+    }));
+    refreshBindings([arrowId]);
+  };
+
+  const bindArrowStart = (arrowId: string, x: number, y: number) => {
+    const target = getBindableElementAt(store.visibleElements, x, y, arrowId);
+    store.updateElement<LinearElement>(arrowId, () => ({
+      startBinding: target ? defaultBinding(target.id) : null,
+    }));
+    refreshBindings([arrowId]);
+  };
+
+  const eraseAt = (x: number, y: number) => {
+    const threshold = HIT_THRESHOLD / store.appState.zoom;
+    const victims = store.visibleElements.filter(
+      (el) => !el.locked && hitTestElement(el, x, y, threshold),
+    );
+    if (victims.length === 0) return;
+    store.deleteElements(victims.map((el) => el.id));
+    store.emit();
+  };
+
+  /** Returns the id of a container's label, creating one if needed. */
+  const ensureBoundText = (containerId: string): string => {
+    const container = store.getElement(containerId);
+    if (container && "boundText" in container && container.boundText) {
+      return container.boundText;
+    }
+    const b = getElementBounds(container!);
+    const text = newTextElement(store.appState, b.x1, b.y1, containerId);
+    store.addElements(text);
+    store.updateElement(containerId, () => ({ boundText: text.id }));
+    return text.id;
+  };
+
+  /**
+   * Topmost container whose box surrounds the point. Double-clicking anywhere
+   * inside a shape should label it, even when the shape has no fill and so
+   * wouldn't register as a normal hit.
+   */
+  const getContainerAt = (x: number, y: number) => {
+    for (let i = store.visibleElements.length - 1; i >= 0; i--) {
+      const el = store.visibleElements[i];
+      if (el.locked || !isContainer(el)) continue;
+      const b = getElementBounds(el);
+      if (x >= b.x1 && x <= b.x2 && y >= b.y1 && y <= b.y2) return el;
+    }
+    return null;
+  };
+
+  const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const [x, y] = toScene(event.clientX, event.clientY);
+    const hit = getElementAtPosition(store.visibleElements, x, y) ?? getContainerAt(x, y);
+
+    store.beginHistory();
+    if (!hit) {
+      const el = newTextElement(store.appState, x, y);
+      store.addElements(el);
+      store.setAppState({ selectedIds: [el.id] });
+      onDoubleClickText(el.id);
+      return;
+    }
+    if (hit.type === "text") {
+      onDoubleClickText(hit.id);
+      return;
+    }
+    if (isContainer(hit) || hit.type === "arrow" || hit.type === "line") {
+      if (hit.type === "arrow" || hit.type === "line") {
+        // double-clicking a segment inserts a midpoint there
+        const el = hit as LinearElement;
+        const localX = x - el.x;
+        const localY = y - el.y;
+        let insertAt = el.points.length - 1;
+        let best = Infinity;
+        for (let i = 0; i < el.points.length - 1; i++) {
+          const mx = (el.points[i][0] + el.points[i + 1][0]) / 2;
+          const my = (el.points[i][1] + el.points[i + 1][1]) / 2;
+          const d = Math.hypot(mx - localX, my - localY);
+          if (d < best) {
+            best = d;
+            insertAt = i + 1;
+          }
+        }
+        store.updateElement<LinearElement>(el.id, (cur) => {
+          const points = cur.points.map((p) => [...p] as [number, number]);
+          points.splice(insertAt, 0, [localX, localY]);
+          return { points };
+        });
+        store.commit();
+        store.emit();
+        return;
+      }
+      onDoubleClickText(ensureBoundText(hit.id));
+    }
+  };
+
+  const updateCursor = (x: number, y: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const state = store.appState;
+
+    if (spaceHeldRef.current || state.tool === "hand") {
+      canvas.style.cursor = "grab";
+      return;
+    }
+    if (state.tool === "eraser") {
+      canvas.style.cursor = "cell";
+      return;
+    }
+    if (state.tool === "text") {
+      canvas.style.cursor = "text";
+      return;
+    }
+    if (state.tool !== "selection") {
+      canvas.style.cursor = "crosshair";
+      return;
+    }
+
+    const selected = store.getSelected();
+    if (selected.length > 0) {
+      const single = selected.length === 1 ? selected[0] : null;
+      const bounds = single ? getElementBounds(single) : getCommonBounds(selected);
+      const handles = getTransformHandles(bounds, single?.angle ?? 0, state.zoom);
+      const handle = getHandleAtPosition(handles, x, y, state.zoom);
+      if (handle) {
+        canvas.style.cursor = CURSOR_FOR_HANDLE[handle];
+        return;
+      }
+    }
+    const hit = getElementAtPosition(store.visibleElements, x, y, HIT_THRESHOLD / state.zoom);
+    canvas.style.cursor = hit ? "move" : "default";
+  };
+
+  // --- wheel: zoom & scroll ------------------------------------------------
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const state = store.appState;
+
+      if (event.ctrlKey || event.metaKey) {
+        const rect = canvas.getBoundingClientRect();
+        const cursorX = event.clientX - rect.left;
+        const cursorY = event.clientY - rect.top;
+        const sceneX = cursorX / state.zoom - state.scrollX;
+        const sceneY = cursorY / state.zoom - state.scrollY;
+
+        const factor = Math.exp(-event.deltaY / 200);
+        const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom * factor));
+        // keep the point under the cursor pinned while zooming
+        store.setAppState({
+          zoom,
+          scrollX: cursorX / zoom - sceneX,
+          scrollY: cursorY / zoom - sceneY,
+        });
+        return;
+      }
+
+      store.setAppState({
+        scrollX: state.scrollX - event.deltaX / state.zoom,
+        scrollY: state.scrollY - event.deltaY / state.zoom,
+      });
+    };
+
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // --- space-to-pan --------------------------------------------------------
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.code === "Space" && !isTypingTarget(event.target)) {
+        spaceHeldRef.current = true;
+        if (canvasRef.current) canvasRef.current.style.cursor = "grab";
+      }
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.code === "Space") {
+        spaceHeldRef.current = false;
+        if (canvasRef.current) canvasRef.current.style.cursor = "default";
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, []);
+
+  // escape cancels an in-progress multi-point line
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && pointerRef.current.placingPoints) {
+        finishLinearPlacement();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  return (
+    <div ref={containerRef} className="canvas-container">
+      <canvas
+        ref={canvasRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onDoubleClick={handleDoubleClick}
+        onContextMenu={(e) => e.preventDefault()}
+      />
+    </div>
+  );
+};
+
+const isTypingTarget = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.isContentEditable);
