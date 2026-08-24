@@ -11,6 +11,7 @@ import {
   ungroupSelection,
 } from "../actions";
 import { setZoom, zoomToFit } from "../components/ZoomControls";
+import { tidyUp } from "../layout";
 import type { Tool } from "../types";
 
 const TOOL_KEYS: Record<string, Tool> = {
@@ -107,6 +108,12 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
             if (event.shiftKey) {
               event.preventDefault();
               handlers.onPresent();
+            }
+            return;
+          case "t":
+            if (event.shiftKey) {
+              event.preventDefault();
+              tidyUp();
             }
             return;
           case "o":

@@ -35,6 +35,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
       ["Send to back", "⌘["],
       ["Nudge", "Arrow keys"],
       ["Nudge further", "⇧ + arrows"],
+      ["Tidy up layout", "⇧⌘T"],
     ],
   },
   {
@@ -54,6 +55,8 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
       ["Save", "⌘S"],
       ["Save as", "⇧⌘S"],
       ["Export", "⇧⌘E"],
+      ["Version history", "⌘H"],
+      ["Present frames", "⇧⌘P"],
       ["Paste image / open file", "⌘V or drag onto canvas"],
     ],
   },

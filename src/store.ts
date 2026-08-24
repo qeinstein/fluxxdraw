@@ -1,7 +1,12 @@
 import { useSyncExternalStore } from "react";
 import { DEFAULT_APP_STATE } from "./constants";
 import { Timeline } from "./io/history";
-import type { AppState, BinaryFile, ExcaliElement } from "./types";
+import type {
+  AppState,
+  BinaryFile,
+  ComponentDefinition,
+  ExcaliElement,
+} from "./types";
 import type { Checkpoint } from "./io/history";
 
 interface Snapshot {
@@ -19,6 +24,8 @@ const HISTORY_LIMIT = 200;
 class SceneStore {
   elements: ExcaliElement[] = [];
   files: Record<string, BinaryFile> = {};
+  /** reusable component definitions, keyed by id */
+  components: Record<string, ComponentDefinition> = {};
   appState: AppState = structuredClone(DEFAULT_APP_STATE);
 
   private undoStack: Snapshot[] = [];
@@ -178,6 +185,7 @@ class SceneStore {
     files: Record<string, BinaryFile>,
     appStatePatch: Partial<AppState> = {},
     checkpoints?: Checkpoint[],
+    components: Record<string, ComponentDefinition> = {},
   ) {
     this.undoStack = [];
     this.redoStack = [];
@@ -191,6 +199,7 @@ class SceneStore {
     }
     this.elements = elements;
     this.files = files;
+    this.components = components;
     this.appState = {
       ...this.appState,
       ...appStatePatch,

@@ -114,7 +114,7 @@ export const buildExportBlob = async (settings: ExportSettings): Promise<Blob> =
   // History describes the document as a whole, so it only rides along with a
   // full-canvas export — a cropped selection isn't what those checkpoints hold.
   const history = settings.scope === "canvas" ? store.timeline.checkpoints : undefined;
-  const doc = serializeScene(elements, files, store.appState, history);
+  const doc = serializeScene(elements, files, store.appState, history, store.components);
   const sceneJson = sceneToJson(doc);
 
   if (settings.format === "json") {
@@ -144,6 +144,7 @@ export const buildExportBlob = async (settings: ExportSettings): Promise<Blob> =
   return exportToRasterBlob({
     elements,
     files,
+    components: store.components,
     format: settings.format,
     scale,
     targetLongEdge,

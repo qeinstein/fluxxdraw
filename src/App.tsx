@@ -8,6 +8,8 @@ import { ExportDialog } from "./components/ExportDialog";
 import { HelpDialog } from "./components/HelpDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { Presentation } from "./components/Presentation";
+import { ComponentControls } from "./components/ComponentControls";
+import type { ComponentEditSession } from "./components-model";
 import { TextEditor } from "./components/TextEditor";
 import { Tooltip } from "./components/Tooltip";
 import { IconRedo, IconUndo } from "./components/icons";
@@ -43,6 +45,10 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [presenting, setPresenting] = useState(false);
+  const [componentSession, setComponentSession] = useState<{
+    session: ComponentEditSession;
+    instanceId: string;
+  } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
@@ -130,7 +136,13 @@ export default function App() {
 
   const currentDocument = useCallback(
     (): SceneDocument =>
-      serializeScene(store.elements, store.files, store.appState, store.timeline.checkpoints),
+      serializeScene(
+        store.elements,
+        store.files,
+        store.appState,
+        store.timeline.checkpoints,
+        store.components,
+      ),
     [],
   );
 
@@ -152,7 +164,7 @@ export default function App() {
     try {
       const doc = JSON.parse(raw) as SceneDocument;
       if (!doc.elements?.length) return;
-      store.loadScene(doc.elements, doc.files ?? {}, doc.appState, doc.history);
+      store.loadScene(doc.elements, doc.files ?? {}, doc.appState, doc.history, doc.components);
       syncFrameCounter(doc.elements);
       preloadFiles(doc.files ?? {});
     } catch {
@@ -183,6 +195,7 @@ export default function App() {
           result.doc.files,
           { ...result.doc.appState, theme },
           result.doc.history,
+          result.doc.components,
         );
         syncFrameCounter(result.doc.elements);
         await preloadFiles(result.doc.files);
@@ -429,6 +442,13 @@ export default function App() {
             dirty={dirty}
           />
           <StylePanel />
+          <ComponentControls
+            session={componentSession?.session ?? null}
+            editingInstanceId={componentSession?.instanceId ?? null}
+            onSessionChange={(session, instanceId) =>
+              setComponentSession(session && instanceId ? { session, instanceId } : null)
+            }
+          />
         </div>
 
         <div className="top-centre">

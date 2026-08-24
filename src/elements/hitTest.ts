@@ -66,6 +66,7 @@ export const hitTestElement = (
     case "text":
     case "image":
     case "embed":
+    case "instance":
       return inside;
     case "frame":
       // frames are selected by their header/border, not their empty interior

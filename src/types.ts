@@ -110,6 +110,27 @@ export interface EmbedElement extends BaseElement {
   url: string;
 }
 
+/**
+ * A placed copy of a component. Instances hold no geometry of their own beyond
+ * their box — everything they draw comes from the definition, which is why
+ * editing the master updates every instance at once.
+ */
+export interface InstanceElement extends BaseElement {
+  type: "instance";
+  componentId: string;
+}
+
+/** A reusable symbol: elements in local coordinates with origin at (0, 0). */
+export interface ComponentDefinition {
+  id: string;
+  name: string;
+  elements: ExcaliElement[];
+  width: number;
+  height: number;
+  /** bumped on every edit, so instance render caches invalidate */
+  version: number;
+}
+
 export type ExcaliElement =
   | GenericElement
   | LinearElement
@@ -117,7 +138,8 @@ export type ExcaliElement =
   | TextElement
   | ImageElement
   | FrameElement
-  | EmbedElement;
+  | EmbedElement
+  | InstanceElement;
 
 export type ElementType = ExcaliElement["type"];
 
@@ -191,6 +213,8 @@ export interface SceneDocument {
   };
   /** durable version history travelling with the document */
   history?: Checkpoint[];
+  /** reusable component definitions referenced by instance elements */
+  components?: Record<string, ComponentDefinition>;
 }
 
 export const FILE_VERSION = 1;

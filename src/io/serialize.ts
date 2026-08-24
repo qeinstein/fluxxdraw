@@ -9,6 +9,7 @@ import {
   type SceneDocument,
 } from "../types";
 import type { Checkpoint } from "./history";
+import type { ComponentDefinition } from "../types";
 
 /** Files actually referenced by the given elements, so exports stay lean. */
 export const collectUsedFiles = (
@@ -27,6 +28,7 @@ export const serializeScene = (
   files: Record<string, BinaryFile>,
   appState: Pick<AppState, "viewBackgroundColor" | "gridSize" | "theme">,
   history?: Checkpoint[],
+  components?: Record<string, ComponentDefinition>,
 ): SceneDocument => ({
   type: DOCUMENT_TYPE,
   version: FILE_VERSION,
@@ -39,6 +41,7 @@ export const serializeScene = (
     theme: appState.theme,
   },
   ...(history?.length ? { history } : {}),
+  ...(components && Object.keys(components).length ? { components } : {}),
 });
 
 export const sceneToJson = (doc: SceneDocument) => JSON.stringify(doc, null, 2);
@@ -84,5 +87,8 @@ export const parseSceneDocument = (raw: unknown): SceneDocument => {
       theme: appState.theme === "dark" ? "dark" : "light",
     },
     ...(Array.isArray(raw.history) ? { history: raw.history as Checkpoint[] } : {}),
+    ...(isPlainObject(raw.components)
+      ? { components: raw.components as Record<string, ComponentDefinition> }
+      : {}),
   };
 };

@@ -154,6 +154,7 @@ export const Presentation = ({ onExit }: PresentationProps) => {
         scale: dpr,
         files: store.files,
         theme: store.appState.theme,
+        components: store.components,
         exporting: true,
       });
 

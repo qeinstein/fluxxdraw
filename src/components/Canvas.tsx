@@ -296,6 +296,7 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
         scale: dpr,
         files: store.files,
         theme: state.theme,
+        components: store.components,
       });
     }
 
@@ -315,6 +316,7 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
       scale: dpr,
       files: store.files,
       theme: state.theme,
+      components: store.components,
     });
 
     drawOverlay(ctx, state.zoom);

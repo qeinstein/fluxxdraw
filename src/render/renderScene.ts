@@ -1,6 +1,11 @@
 import rough from "roughjs/bin/rough";
 import type { RoughCanvas } from "roughjs/bin/canvas";
-import type { BinaryFile, ExcaliElement, TextElement } from "../types";
+import type {
+  BinaryFile,
+  ComponentDefinition,
+  ExcaliElement,
+  TextElement,
+} from "../types";
 import { getElementBounds, getElementCenter } from "../geometry";
 import { baselineOffset, fontString, getTextLines, measureText } from "../elements/text";
 import { CONTAINER_PADDING } from "../constants";
@@ -15,6 +20,8 @@ export interface RenderConfig {
   /** device pixel ratio or export scale multiplier */
   scale: number;
   files: Record<string, BinaryFile>;
+  /** definitions backing any instance elements in the scene */
+  components?: Record<string, ComponentDefinition>;
   /** set while exporting so interactive-only affordances are skipped */
   exporting?: boolean;
   theme?: "light" | "dark";
@@ -161,7 +168,6 @@ export const renderElement = (
   elementsById: Map<string, ExcaliElement>,
   config: RenderConfig,
 ) => {
-  void config;
   if (el.isDeleted) return;
   ctx.save();
   ctx.globalAlpha = el.opacity / 100;
@@ -188,6 +194,28 @@ export const renderElement = (
     case "embed":
       drawEmbedElement(ctx, el);
       break;
+    case "instance": {
+      const definition = config.components?.[el.componentId];
+      if (definition) {
+        ctx.save();
+        ctx.translate(el.x, el.y);
+        // stretch the master to whatever box this instance occupies
+        ctx.scale(el.width / definition.width, el.height / definition.height);
+        const innerById = new Map(definition.elements.map((child) => [child.id, child]));
+        for (const child of definition.elements) {
+          renderElement(ctx, child, innerById, config);
+        }
+        ctx.restore();
+      } else {
+        // a missing definition should be visible, not silently blank
+        ctx.save();
+        ctx.strokeStyle = "#e03131";
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(el.x, el.y, el.width, el.height);
+        ctx.restore();
+      }
+      break;
+    }
     case "freedraw": {
       const path = freedrawPath(el);
       if (path) {

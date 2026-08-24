@@ -1431,3 +1431,88 @@ kbd {
   padding: 8px 16px;
   border-radius: var(--radius-md);
 }
+
+/* --- components ----------------------------------------------------------- */
+
+.component-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px 12px;
+}
+
+.component-make,
+.component-library-toggle {
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 7px 8px;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  background: var(--surface-sunken);
+}
+
+.component-make:hover,
+.component-library-toggle:hover {
+  color: var(--fg);
+  background: var(--hover);
+}
+
+.component-library-toggle {
+  font-size: 11.5px;
+}
+
+.component-library {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.component-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.component-editing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px 9px 12px;
+  border: 1px solid var(--accent);
+}
+
+.component-editing-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.component-editing-text strong {
+  font-size: 12.5px;
+}
+
+.component-editing button {
+  padding: 6px 10px;
+  font-size: 12px;
+  background: var(--surface-sunken);
+  color: var(--fg-muted);
+}
+
+.component-editing button:hover {
+  color: var(--fg);
+  background: var(--hover);
+}
+
+.component-editing button.primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}

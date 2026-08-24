@@ -41,12 +41,29 @@ export const refreshTextLayout = (textIds: string[]) => {
     const { width, height } = measureText(lines, text);
 
     if (container) {
-      store.updateElement<TextElement>(id, () => ({ width, height }));
       const needed = height + CONTAINER_PADDING * 2;
       if (Math.abs(container.height) < needed) {
         store.updateElement(container.id, () => ({ height: needed }));
         refreshBindings([container.id]);
       }
+      // Keep the label's own geometry in step with where it actually draws.
+      // Its position is derived from the container at render time, but bounds
+      // maths (selection, export, components) reads x/y directly, so leaving
+      // them stale drags those boxes off to wherever the label was created.
+      const box = getElementBounds(store.getElement(container.id) ?? container);
+      const boxHeight = box.y2 - box.y1;
+      const y =
+        text.verticalAlign === "middle"
+          ? box.y1 + (boxHeight - height) / 2
+          : text.verticalAlign === "bottom"
+            ? box.y2 - height - CONTAINER_PADDING
+            : box.y1 + CONTAINER_PADDING;
+      store.updateElement<TextElement>(id, () => ({
+        width,
+        height,
+        x: box.x1 + CONTAINER_PADDING,
+        y,
+      }));
     } else {
       store.updateElement<TextElement>(id, () => ({ width, height }));
     }

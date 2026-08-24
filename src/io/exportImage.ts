@@ -1,4 +1,4 @@
-import type { BinaryFile, ExcaliElement } from "../types";
+import type { BinaryFile, ComponentDefinition, ExcaliElement } from "../types";
 import { getCommonBounds } from "../geometry";
 import { renderElements } from "../render/renderScene";
 import { preloadFiles } from "../render/imageCache";
@@ -17,6 +17,8 @@ export interface ExportImageOptions {
   padding: number;
   background: boolean;
   backgroundColor: string;
+  /** definitions backing any instance elements being exported */
+  components?: Record<string, ComponentDefinition>;
   /** JPEG/WebP quality, 0..1 */
   quality: number;
   /** embed the scene JSON so the image can be reopened for editing (PNG only) */
@@ -96,6 +98,7 @@ export const exportToCanvas = async (
     zoom: 1,
     scale,
     files,
+    components: opts.components,
     exporting: true,
   });
   ctx.restore();

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { store, useScene } from "../store";
 import { APP_NAME, PALETTE } from "../constants";
 import { setTheme } from "../theme";
+import { tidyUp } from "../layout";
 import { Tooltip } from "./Tooltip";
 import { IconMenu } from "./icons";
 
@@ -88,6 +89,7 @@ export const Menu = ({
 
           <MenuItem label="Version history…" shortcut="⌘H" onClick={run(onHistory)} />
           <MenuItem label="Present frames" shortcut="⇧⌘P" onClick={run(onPresent)} />
+          <MenuItem label="Tidy up layout" shortcut="⇧⌘T" onClick={run(() => tidyUp())} />
 
           <div className="menu-separator" />
 
