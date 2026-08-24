@@ -1,4 +1,6 @@
 import { store, useScene } from "../store";
+import { Tooltip } from "./Tooltip";
+import { IconFit, IconMinus, IconPlus } from "./icons";
 import { MAX_ZOOM, MIN_ZOOM } from "../constants";
 import { getCommonBounds } from "../geometry";
 
@@ -59,23 +61,27 @@ export const ZoomControls = () => {
 
   return (
     <div className="zoom-controls island">
-      <button onClick={() => setZoom(zoom / 1.2)} title="Zoom out (⌘−)">
-        −
-      </button>
-      <button
-        className="zoom-value"
-        onClick={() => setZoom(1)}
-        title="Reset zoom to 100%"
-      >
-        {Math.round(zoom * 100)}%
-      </button>
-      <button onClick={() => setZoom(zoom * 1.2)} title="Zoom in (⌘+)">
-        +
-      </button>
-      <div className="toolbar-divider vertical" />
-      <button onClick={() => zoomToFit("all")} title="Zoom to fit (⇧1)">
-        ⤢
-      </button>
+      <Tooltip label="Zoom out" shortcut="⌘−" placement="top">
+        <button aria-label="Zoom out" onClick={() => setZoom(zoom / 1.2)}>
+          <IconMinus />
+        </button>
+      </Tooltip>
+      <Tooltip label="Reset to 100%" shortcut="⌘0" placement="top">
+        <button className="zoom-value" aria-label="Reset zoom" onClick={() => setZoom(1)}>
+          {Math.round(zoom * 100)}%
+        </button>
+      </Tooltip>
+      <Tooltip label="Zoom in" shortcut="⌘+" placement="top">
+        <button aria-label="Zoom in" onClick={() => setZoom(zoom * 1.2)}>
+          <IconPlus />
+        </button>
+      </Tooltip>
+      <span className="toolbar-divider" />
+      <Tooltip label="Zoom to fit" shortcut="⇧1" placement="top">
+        <button aria-label="Zoom to fit" onClick={() => zoomToFit("all")}>
+          <IconFit />
+        </button>
+      </Tooltip>
     </div>
   );
 };

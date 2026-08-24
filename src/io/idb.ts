@@ -1,6 +1,6 @@
 /** Tiny promise wrapper over a single-store IndexedDB database. */
 
-const DB_NAME = "excali-free";
+const DB_NAME = "fluxxdraw";
 const STORE = "kv";
 const DB_VERSION = 1;
 

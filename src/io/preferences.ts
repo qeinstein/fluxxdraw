@@ -1,6 +1,6 @@
 import { DEFAULT_EXPORT_SETTINGS, type ExportSettings } from "./exportController";
 
-const KEY = "excali-free:preferences";
+const KEY = "fluxxdraw:preferences";
 
 export interface Preferences {
   exportSettings: ExportSettings;

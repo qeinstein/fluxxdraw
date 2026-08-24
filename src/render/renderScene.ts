@@ -17,6 +17,7 @@ export interface RenderConfig {
   files: Record<string, BinaryFile>;
   /** set while exporting so interactive-only affordances are skipped */
   exporting?: boolean;
+  theme?: "light" | "dark";
 }
 
 const roughCanvases = new WeakMap<CanvasRenderingContext2D, RoughCanvas>();
@@ -41,7 +42,9 @@ export const drawGrid = (
   const step = gridSize * zoom;
   if (step < 4) return; // too dense to be useful
   ctx.save();
-  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  // the grid has to read as a faint tint over whichever canvas colour is set
+  ctx.strokeStyle =
+    config.theme === "dark" ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   const offsetX = (scrollX * zoom) % step;

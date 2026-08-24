@@ -169,9 +169,9 @@ export interface Scene {
   files: Record<string, BinaryFile>;
 }
 
-/** On-disk `.excali` / `.json` document. */
+/** On-disk `.fluxx` / `.json` document. */
 export interface SceneDocument {
-  type: "excalidraw";
+  type: "fluxxdraw";
   version: number;
   source: string;
   elements: ExcaliElement[];
@@ -184,4 +184,7 @@ export interface SceneDocument {
 }
 
 export const FILE_VERSION = 1;
-export const FILE_SOURCE = "excalidraw-free-alternative";
+export const FILE_SOURCE = "fluxxdraw";
+export const DOCUMENT_TYPE = "fluxxdraw";
+/** Document types we can read in addition to our own. */
+export const COMPATIBLE_DOCUMENT_TYPES = ["fluxxdraw", "excalidraw"];

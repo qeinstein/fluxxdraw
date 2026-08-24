@@ -1,0 +1,407 @@
+import type { ReactNode } from "react";
+
+/**
+ * A single 20×20 stroke-icon set. Everything is drawn on the same grid with the
+ * same stroke weight so the toolbar reads as one family, and `currentColor`
+ * lets icons inherit hover/active/disabled states from their button.
+ */
+const Icon = ({ children, filled }: { children: ReactNode; filled?: boolean }) => (
+  <svg
+    className="icon"
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    focusable="false"
+  >
+    {children}
+  </svg>
+);
+
+export const IconSelection = () => (
+  <Icon>
+    <path d="M4.5 3.2l11 5.4-4.7 1.4-1.9 4.6z" />
+  </Icon>
+);
+
+export const IconHand = () => (
+  <Icon>
+    <path d="M7 9V4.8a1.15 1.15 0 012.3 0V9m0-.7V4a1.15 1.15 0 012.3 0v4.9m0-.6a1.15 1.15 0 012.3 0V12" />
+    <path d="M7 9.4V7.6a1.15 1.15 0 00-2.3 0v4.1a5 5 0 005 5h1.6a4.3 4.3 0 004.3-4.3" />
+  </Icon>
+);
+
+export const IconRectangle = () => (
+  <Icon>
+    <rect x="3.2" y="4.6" width="13.6" height="10.8" rx="2" />
+  </Icon>
+);
+
+export const IconDiamond = () => (
+  <Icon>
+    <path d="M10 3.2l6.8 6.8-6.8 6.8L3.2 10z" />
+  </Icon>
+);
+
+export const IconEllipse = () => (
+  <Icon>
+    <ellipse cx="10" cy="10" rx="7.2" ry="5.8" />
+  </Icon>
+);
+
+export const IconArrow = () => (
+  <Icon>
+    <path d="M3.5 14.5L15 3.8" />
+    <path d="M9.6 3.8H15v5.4" />
+  </Icon>
+);
+
+export const IconLine = () => (
+  <Icon>
+    <path d="M3.5 15L16 4.4" />
+  </Icon>
+);
+
+export const IconDraw = () => (
+  <Icon>
+    <path d="M3.6 16.4l1-3.2 8.6-8.6a1.7 1.7 0 012.4 2.4l-8.6 8.6z" />
+    <path d="M11.8 5.8l2.4 2.4" />
+  </Icon>
+);
+
+export const IconText = () => (
+  <Icon>
+    <path d="M4.6 5.2V3.8h10.8v1.4M10 3.8v12.4M7.4 16.2h5.2" />
+  </Icon>
+);
+
+export const IconImage = () => (
+  <Icon>
+    <rect x="3.2" y="4.4" width="13.6" height="11.2" rx="2" />
+    <circle cx="7.6" cy="8.4" r="1.2" />
+    <path d="M3.6 13.4l3.6-3.2 3.2 2.8 2.6-2.2 3.4 3" />
+  </Icon>
+);
+
+export const IconFrame = () => (
+  <Icon>
+    <path d="M6.4 2.8v14.4M13.6 2.8v14.4M2.8 6.4h14.4M2.8 13.6h14.4" />
+  </Icon>
+);
+
+export const IconEmbed = () => (
+  <Icon>
+    <path d="M8.4 11.6a2.8 2.8 0 004.2.3l2.2-2.2a2.8 2.8 0 00-4-4l-1.2 1.2" />
+    <path d="M11.6 8.4a2.8 2.8 0 00-4.2-.3L5.2 10.3a2.8 2.8 0 004 4l1.2-1.2" />
+  </Icon>
+);
+
+export const IconEraser = () => (
+  <Icon>
+    <path d="M8.9 15.4l-3.6-3.6a1.6 1.6 0 010-2.3l5-5a1.6 1.6 0 012.3 0l2.7 2.7a1.6 1.6 0 010 2.3l-5.9 5.9z" />
+    <path d="M6.2 15.4h9" />
+  </Icon>
+);
+
+export const IconLaser = () => (
+  <Icon>
+    <circle cx="10" cy="10" r="2.2" fill="currentColor" />
+    <path d="M10 2.6v2.2M10 15.2v2.2M2.6 10h2.2M15.2 10h2.2M5 5l1.5 1.5M13.5 13.5L15 15M15 5l-1.5 1.5M6.5 13.5L5 15" />
+  </Icon>
+);
+
+export const IconLockOpen = () => (
+  <Icon>
+    <rect x="4.6" y="8.8" width="10.8" height="7.4" rx="1.8" />
+    <path d="M7 8.8V6.6a3 3 0 015.6-1.5" />
+  </Icon>
+);
+
+export const IconLockClosed = () => (
+  <Icon>
+    <rect x="4.6" y="8.8" width="10.8" height="7.4" rx="1.8" />
+    <path d="M7 8.8V6.6a3 3 0 016 0v2.2" />
+  </Icon>
+);
+
+export const IconMenu = () => (
+  <Icon>
+    <path d="M3.6 5.6h12.8M3.6 10h12.8M3.6 14.4h12.8" />
+  </Icon>
+);
+
+export const IconUndo = () => (
+  <Icon>
+    <path d="M7.4 6.2L4 9.6l3.4 3.4" />
+    <path d="M4 9.6h7.6a4.4 4.4 0 010 8.8" />
+  </Icon>
+);
+
+export const IconRedo = () => (
+  <Icon>
+    <path d="M12.6 6.2L16 9.6l-3.4 3.4" />
+    <path d="M16 9.6H8.4a4.4 4.4 0 000 8.8" />
+  </Icon>
+);
+
+export const IconPlus = () => (
+  <Icon>
+    <path d="M10 4.6v10.8M4.6 10h10.8" />
+  </Icon>
+);
+
+export const IconMinus = () => (
+  <Icon>
+    <path d="M4.6 10h10.8" />
+  </Icon>
+);
+
+export const IconFit = () => (
+  <Icon>
+    <path d="M7.4 3.4H3.4v4M12.6 3.4h4v4M12.6 16.6h4v-4M7.4 16.6h-4v-4" />
+  </Icon>
+);
+
+export const IconClose = () => (
+  <Icon>
+    <path d="M5.4 5.4l9.2 9.2M14.6 5.4l-9.2 9.2" />
+  </Icon>
+);
+
+export const IconTrash = () => (
+  <Icon>
+    <path d="M3.8 5.8h12.4M8.2 5.8V4.4a1 1 0 011-1h1.6a1 1 0 011 1v1.4" />
+    <path d="M5.4 5.8l.7 9.6a1.4 1.4 0 001.4 1.3h5a1.4 1.4 0 001.4-1.3l.7-9.6" />
+  </Icon>
+);
+
+export const IconDuplicate = () => (
+  <Icon>
+    <rect x="3.4" y="3.4" width="9.2" height="9.2" rx="1.6" />
+    <path d="M7.4 16.6h7.6a1.6 1.6 0 001.6-1.6V7.4" />
+  </Icon>
+);
+
+export const IconGroup = () => (
+  <Icon>
+    <rect x="3.2" y="3.2" width="6.4" height="6.4" rx="1.2" />
+    <rect x="10.4" y="10.4" width="6.4" height="6.4" rx="1.2" />
+    <path d="M10.4 6.4h6.4M6.4 10.4v6.4" strokeDasharray="2 2" />
+  </Icon>
+);
+
+export const IconUngroup = () => (
+  <Icon>
+    <rect x="3.2" y="3.2" width="6" height="6" rx="1.2" />
+    <rect x="10.8" y="10.8" width="6" height="6" rx="1.2" />
+  </Icon>
+);
+
+export const IconFolder = () => (
+  <Icon>
+    <path d="M3.2 15.2V5.6a1.4 1.4 0 011.4-1.4h3.1l1.7 2.1h5.9a1.4 1.4 0 011.4 1.4v7.5a1.4 1.4 0 01-1.4 1.4H4.6a1.4 1.4 0 01-1.4-1.4z" />
+  </Icon>
+);
+
+// --- layer order ----------------------------------------------------------
+
+export const IconSendToBack = () => (
+  <Icon>
+    <rect x="6.4" y="6.4" width="7.2" height="7.2" rx="1.2" strokeDasharray="2 2" />
+    <path d="M10 16.6V13M7.8 14.6L10 16.8l2.2-2.2" />
+  </Icon>
+);
+
+export const IconSendBackward = () => (
+  <Icon>
+    <rect x="6.4" y="3.6" width="7.2" height="7.2" rx="1.2" />
+    <path d="M10 13v3.6M7.8 14.6L10 16.8l2.2-2.2" />
+  </Icon>
+);
+
+export const IconBringForward = () => (
+  <Icon>
+    <rect x="6.4" y="9.2" width="7.2" height="7.2" rx="1.2" />
+    <path d="M10 7V3.4M7.8 5.4L10 3.2l2.2 2.2" />
+  </Icon>
+);
+
+export const IconBringToFront = () => (
+  <Icon>
+    <rect x="6.4" y="6.4" width="7.2" height="7.2" rx="1.2" strokeDasharray="2 2" />
+    <path d="M10 3.4V7M7.8 5.4L10 3.2l2.2 2.2" />
+  </Icon>
+);
+
+// --- alignment ------------------------------------------------------------
+
+export const IconAlignLeft = () => (
+  <Icon>
+    <path d="M3.4 3.2v13.6" />
+    <rect x="6.2" y="5" width="9.4" height="3.4" rx="1" />
+    <rect x="6.2" y="11.6" width="6.2" height="3.4" rx="1" />
+  </Icon>
+);
+
+export const IconAlignCentreX = () => (
+  <Icon>
+    <path d="M10 3.2v13.6" />
+    <rect x="4" y="5" width="12" height="3.4" rx="1" />
+    <rect x="6.4" y="11.6" width="7.2" height="3.4" rx="1" />
+  </Icon>
+);
+
+export const IconAlignRight = () => (
+  <Icon>
+    <path d="M16.6 3.2v13.6" />
+    <rect x="4.4" y="5" width="9.4" height="3.4" rx="1" />
+    <rect x="7.6" y="11.6" width="6.2" height="3.4" rx="1" />
+  </Icon>
+);
+
+export const IconAlignTop = () => (
+  <Icon>
+    <path d="M3.2 3.4h13.6" />
+    <rect x="5" y="6.2" width="3.4" height="9.4" rx="1" />
+    <rect x="11.6" y="6.2" width="3.4" height="6.2" rx="1" />
+  </Icon>
+);
+
+export const IconAlignCentreY = () => (
+  <Icon>
+    <path d="M3.2 10h13.6" />
+    <rect x="5" y="4" width="3.4" height="12" rx="1" />
+    <rect x="11.6" y="6.4" width="3.4" height="7.2" rx="1" />
+  </Icon>
+);
+
+export const IconAlignBottom = () => (
+  <Icon>
+    <path d="M3.2 16.6h13.6" />
+    <rect x="5" y="4.4" width="3.4" height="9.4" rx="1" />
+    <rect x="11.6" y="7.6" width="3.4" height="6.2" rx="1" />
+  </Icon>
+);
+
+export const IconDistributeX = () => (
+  <Icon>
+    <path d="M3.4 3.6v12.8M16.6 3.6v12.8" />
+    <rect x="8.2" y="6.4" width="3.6" height="7.2" rx="1" />
+  </Icon>
+);
+
+export const IconDistributeY = () => (
+  <Icon>
+    <path d="M3.6 3.4h12.8M3.6 16.6h12.8" />
+    <rect x="6.4" y="8.2" width="7.2" height="3.6" rx="1" />
+  </Icon>
+);
+
+// --- text alignment -------------------------------------------------------
+
+export const IconTextLeft = () => (
+  <Icon>
+    <path d="M3.8 5.4h12.4M3.8 10h7.6M3.8 14.6h10" />
+  </Icon>
+);
+
+export const IconTextCentre = () => (
+  <Icon>
+    <path d="M3.8 5.4h12.4M6.2 10h7.6M5 14.6h10" />
+  </Icon>
+);
+
+export const IconTextRight = () => (
+  <Icon>
+    <path d="M3.8 5.4h12.4M8.6 10h7.6M6.2 14.6h10" />
+  </Icon>
+);
+
+// --- shape style ----------------------------------------------------------
+
+export const IconEdgeSharp = () => (
+  <Icon>
+    <path d="M4 16V7.4A3.4 3.4 0 017.4 4H16" />
+  </Icon>
+);
+
+export const IconEdgeRound = () => (
+  <Icon>
+    <path d="M4 16V11a7 7 0 017-7h5" />
+  </Icon>
+);
+
+export const IconFillHachure = () => (
+  <Icon>
+    <rect x="3.4" y="3.4" width="13.2" height="13.2" rx="1.6" />
+    <path d="M5.4 12.6l7.2-7.2M8.6 15.4l6.8-6.8" strokeWidth="1.1" />
+  </Icon>
+);
+
+export const IconFillCross = () => (
+  <Icon>
+    <rect x="3.4" y="3.4" width="13.2" height="13.2" rx="1.6" />
+    <path d="M5.4 12.6l7.2-7.2M8.6 15.4l6.8-6.8M12.6 14.6l-7.2-7.2" strokeWidth="1.1" />
+  </Icon>
+);
+
+export const IconFillSolid = () => (
+  <Icon>
+    <rect x="3.4" y="3.4" width="13.2" height="13.2" rx="1.6" fill="currentColor" />
+  </Icon>
+);
+
+export const IconFillZigzag = () => (
+  <Icon>
+    <rect x="3.4" y="3.4" width="13.2" height="13.2" rx="1.6" />
+    <path d="M5.4 8l3-2.6 3 5 3-2.6" strokeWidth="1.1" />
+    <path d="M5.4 13.4l3-2.6 3 5" strokeWidth="1.1" />
+  </Icon>
+);
+
+export const IconStrokeSolid = () => (
+  <Icon>
+    <path d="M3.4 10h13.2" strokeWidth="2" />
+  </Icon>
+);
+
+export const IconStrokeDashed = () => (
+  <Icon>
+    <path d="M3.4 10h13.2" strokeWidth="2" strokeDasharray="4 3" />
+  </Icon>
+);
+
+export const IconStrokeDotted = () => (
+  <Icon>
+    <path d="M3.4 10h13.2" strokeWidth="2" strokeDasharray="0.5 3.2" />
+  </Icon>
+);
+
+export const IconWidthThin = () => (
+  <Icon>
+    <path d="M3.4 10h13.2" strokeWidth="1.2" />
+  </Icon>
+);
+
+export const IconWidthBold = () => (
+  <Icon>
+    <path d="M3.4 10h13.2" strokeWidth="2.4" />
+  </Icon>
+);
+
+export const IconWidthExtraBold = () => (
+  <Icon>
+    <path d="M3.4 10h13.2" strokeWidth="4" />
+  </Icon>
+);
+
+export const IconCheck = () => (
+  <Icon>
+    <path d="M4.4 10.4l3.6 3.6 7.6-8" />
+  </Icon>
+);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconFolder } from "./icons";
 import {
   clearExportDirectory,
   pickExportDirectory,
@@ -49,7 +50,10 @@ export const ExportDestination = ({
     <div className="destination">
       {directoryName ? (
         <>
-          <span className="folder">📁 {directoryName}</span>
+          <span className="folder">
+            <IconFolder />
+            {directoryName}
+          </span>
           <button onClick={choose}>Change…</button>
           <button onClick={clear}>Use downloads</button>
         </>

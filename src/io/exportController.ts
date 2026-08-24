@@ -1,4 +1,5 @@
 import { store } from "../store";
+import { FILE_EXTENSION } from "../constants";
 import type { ExcaliElement } from "../types";
 import { getFrameContents } from "../actions";
 import { sceneToJson, serializeScene, collectUsedFiles } from "./serialize";
@@ -84,7 +85,7 @@ const EXTENSION: Record<ExportFormat, string> = {
   jpeg: "jpg",
   webp: "webp",
   svg: "svg",
-  json: "excali",
+  json: FILE_EXTENSION,
 };
 
 export const buildFilename = (settings: ExportSettings) => {

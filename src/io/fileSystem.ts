@@ -54,7 +54,7 @@ export const pickExportDirectory = async (): Promise<FileSystemDirectoryHandle |
   if (!supportsDirectoryPicker()) return null;
   try {
     const handle = await window.showDirectoryPicker!({
-      id: "excali-exports",
+      id: "fluxxdraw-exports",
       mode: "readwrite",
       startIn: "documents",
     });
@@ -183,7 +183,7 @@ const OPEN_TYPES: PickerType[] = [
   {
     description: "Drawings and exported images",
     accept: {
-      "application/json": [".excali", ".excalidraw", ".json"],
+      "application/json": [".fluxx", ".excalidraw", ".excali", ".json"],
       "image/png": [".png"],
       "image/svg+xml": [".svg"],
     },
@@ -211,7 +211,7 @@ export const openWithPicker = async (): Promise<{
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".excali,.excalidraw,.json,.png,.svg";
+    input.accept = ".fluxx,.excalidraw,.excali,.json,.png,.svg";
     input.onchange = () => {
       const file = input.files?.[0];
       resolve(file ? { file, handle: null } : null);

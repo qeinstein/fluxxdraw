@@ -2,9 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>FluxxDraw</title>
+    <meta
+      name="description"
+      content="A files-first hand-drawn whiteboard. Draw, export at up to 8K, and reopen your exports as editable drawings. No account, no cloud."
+    />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>excalidraw-free-alternative</title>
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12121a" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <meta property="og:title" content="FluxxDraw" />
+    <meta
+      property="og:description"
+      content="A files-first hand-drawn whiteboard. Your drawings stay on your disk."
+    />
+    <meta property="og:type" content="website" />
+
+    <script>
+      // Match the saved theme before first paint so the app never flashes white.
+      try {
+        const saved = JSON.parse(localStorage.getItem("fluxxdraw:preferences") || "{}");
+        document.documentElement.dataset.theme = saved.theme === "dark" ? "dark" : "light";
+      } catch {
+        document.documentElement.dataset.theme = "light";
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

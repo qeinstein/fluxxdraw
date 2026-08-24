@@ -69,6 +69,17 @@ export const moveElementsBy = (ids: string[], dx: number, dy: number) => {
 
 // --- selection -------------------------------------------------------------
 
+/**
+ * A bound label is part of its container, not a thing you select on its own —
+ * clicking the text inside a shape should select the shape.
+ */
+export const resolveSelectionTarget = (el: ExcaliElement): ExcaliElement => {
+  if (el.type === "text" && el.containerId) {
+    return store.getElement(el.containerId) ?? el;
+  }
+  return el;
+};
+
 /** Expands an id set to include every member of any group it touches. */
 export const expandSelectionToGroups = (ids: string[]): string[] => {
   const groupIds = new Set<string>();
@@ -86,7 +97,9 @@ export const expandSelectionToGroups = (ids: string[]): string[] => {
 
 export const selectAll = () => {
   store.setAppState({
-    selectedIds: store.visibleElements.filter((el) => !el.locked).map((el) => el.id),
+    selectedIds: store.visibleElements
+      .filter((el) => !el.locked && !(el.type === "text" && el.containerId))
+      .map((el) => el.id),
   });
 };
 

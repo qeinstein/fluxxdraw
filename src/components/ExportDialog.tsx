@@ -12,6 +12,8 @@ import {
   type ResolutionPreset,
 } from "../io/exportController";
 import { ExportDestination } from "./ExportDestination";
+import { Tooltip } from "./Tooltip";
+import { IconClose } from "./icons";
 
 interface ExportDialogProps {
   settings: ExportSettings;
@@ -26,7 +28,7 @@ const FORMATS: { value: ExportFormat; label: string; hint: string }[] = [
   { value: "jpeg", label: "JPEG", hint: "Smaller, lossy, no transparency." },
   { value: "webp", label: "WebP", hint: "Smaller than PNG at similar quality." },
   { value: "svg", label: "SVG", hint: "Vector. Can carry the scene for re-editing." },
-  { value: "json", label: ".excali", hint: "The editable source file itself." },
+  { value: "json", label: ".fluxx", hint: "The editable source file itself." },
 ];
 
 const RESOLUTIONS: { value: ResolutionPreset; label: string }[] = [
@@ -109,9 +111,11 @@ export const ExportDialog = ({
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
         <header>
           <h2>Export</h2>
-          <button className="icon-button" onClick={onClose} title="Close">
-            ✕
-          </button>
+          <Tooltip label="Close" shortcut="Esc" placement="top">
+            <button className="icon-button" aria-label="Close" onClick={onClose}>
+              <IconClose />
+            </button>
+          </Tooltip>
         </header>
 
         <div className="dialog-body">

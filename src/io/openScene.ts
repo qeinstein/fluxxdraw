@@ -46,7 +46,10 @@ const asImageResult = async (blob: Blob, mimeType: string): Promise<OpenResult> 
 export const readFile = async (file: File): Promise<OpenResult> => {
   const name = file.name.toLowerCase();
   const isJson =
-    name.endsWith(".json") || name.endsWith(".excali") || name.endsWith(".excalidraw");
+    name.endsWith(".fluxx") ||
+    name.endsWith(".json") ||
+    name.endsWith(".excali") ||
+    name.endsWith(".excalidraw");
 
   if (isJson || file.type === "application/json") {
     const text = await readAsText(file);

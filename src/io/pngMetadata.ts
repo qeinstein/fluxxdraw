@@ -4,7 +4,9 @@
  */
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-export const METADATA_KEYWORD = "excalidraw";
+export const METADATA_KEYWORD = "fluxxdraw";
+/** Also read Excalidraw's keyword, so its exported PNGs open here. */
+export const COMPATIBLE_KEYWORDS = [METADATA_KEYWORD, "excalidraw"];
 
 const crcTable = (() => {
   const table = new Uint32Array(256);
@@ -71,10 +73,13 @@ export const encodePngMetadata = async (
   return new Blob([out], { type: "image/png" });
 };
 
-/** Extracts previously embedded text, or null if the PNG carries none. */
+/**
+ * Extracts previously embedded text, or null if the PNG carries none. Any of
+ * `keywords` matches, so PNGs exported by Excalidraw open here too.
+ */
 export const decodePngMetadata = async (
   blob: Blob,
-  keyword = METADATA_KEYWORD,
+  keywords: string[] = COMPATIBLE_KEYWORDS,
 ): Promise<string | null> => {
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (!isPng(bytes)) return null;
@@ -89,7 +94,7 @@ export const decodePngMetadata = async (
     if (type === "tEXt") {
       const data = bytes.subarray(offset + 8, offset + 8 + length);
       const sep = data.indexOf(0);
-      if (sep !== -1 && decoder.decode(data.subarray(0, sep)) === keyword) {
+      if (sep !== -1 && keywords.includes(decoder.decode(data.subarray(0, sep)))) {
         return decoder.decode(data.subarray(sep + 1));
       }
     }

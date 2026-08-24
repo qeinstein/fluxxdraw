@@ -44,6 +44,7 @@ import {
   reconcileFrameMembership,
   refreshBindings,
   refreshTextLayout,
+  resolveSelectionTarget,
 } from "../actions";
 import type { ExcaliElement, FreedrawElement, LinearElement, Tool } from "../types";
 
@@ -281,6 +282,7 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
         zoom: state.zoom,
         scale: dpr,
         files: store.files,
+        theme: state.theme,
       });
     }
 
@@ -299,6 +301,7 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
       zoom: state.zoom,
       scale: dpr,
       files: store.files,
+      theme: state.theme,
     });
 
     drawOverlay(ctx, state.zoom);
@@ -514,7 +517,8 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
       }
     }
 
-    const hit = getElementAtPosition(store.visibleElements, x, y, HIT_THRESHOLD / state.zoom);
+    const rawHit = getElementAtPosition(store.visibleElements, x, y, HIT_THRESHOLD / state.zoom);
+    const hit = rawHit ? resolveSelectionTarget(rawHit) : null;
 
     if (hit) {
       const alreadySelected = state.selectedIds.includes(hit.id);
@@ -729,6 +733,7 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
         const box = pointer.marquee;
         const hits = store.visibleElements.filter((el) => {
           if (el.locked) return false;
+          if (el.type === "text" && el.containerId) return false;
           const b = getRotatedBounds(el);
           return b.x1 >= box.x1 && b.y1 >= box.y1 && b.x2 <= box.x2 && b.y2 <= box.y2;
         });

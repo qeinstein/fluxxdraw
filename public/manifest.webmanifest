@@ -1,0 +1,30 @@
+{
+  "name": "FluxxDraw",
+  "short_name": "FluxxDraw",
+  "description": "A files-first hand-drawn whiteboard. Your drawings stay on your disk.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5b57d1",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "name": "FluxxDraw drawing",
+      "accept": {
+        "application/fluxxdraw+json": [".fluxx"],
+        "application/json": [".excalidraw"],
+        "image/png": [".png"],
+        "image/svg+xml": [".svg"]
+      },
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }],
+      "launch_type": "single-client"
+    }
+  ],
+  "launch_handler": { "client_mode": "focus-existing" }
+}

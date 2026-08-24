@@ -1,3 +1,5 @@
+import { IconClose } from "./icons";
+
 const GROUPS: { title: string; items: [string, string][] }[] = [
   {
     title: "Tools",
@@ -73,8 +75,8 @@ export const HelpDialog = ({ onClose }: { onClose: () => void }) => (
     <div className="dialog wide" onClick={(e) => e.stopPropagation()}>
       <header>
         <h2>Keyboard shortcuts</h2>
-        <button className="icon-button" onClick={onClose} title="Close">
-          ✕
+        <button className="icon-button" aria-label="Close" onClick={onClose}>
+          <IconClose />
         </button>
       </header>
       <div className="dialog-body shortcut-grid">

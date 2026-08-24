@@ -1,5 +1,5 @@
 {
-  "name": "excalidraw-free-alternative",
+  "name": "fluxxdraw",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "shots": "node scripts/shots.mjs",
+    "icons": "node scripts/icons.mjs"
   },
   "dependencies": {
     "nanoid": "^6.0.1",

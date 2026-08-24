@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { store, useScene } from "../store";
-import { CANVAS_COLORS } from "../constants";
+import { APP_NAME, PALETTE } from "../constants";
+import { setTheme } from "../theme";
+import { Tooltip } from "./Tooltip";
+import { IconMenu } from "./icons";
 
 interface MenuProps {
   onOpen: () => void;
@@ -32,102 +35,138 @@ export const Menu = ({
     const onDown = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
     };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   const { appState } = scene;
+  const isDark = appState.theme === "dark";
+  const run = (action: () => void) => () => {
+    setOpen(false);
+    action();
+  };
 
   return (
     <div className="menu island" ref={ref}>
-      <button className="menu-trigger" onClick={() => setOpen((v) => !v)} title="Menu">
-        ☰
-      </button>
-      <span className="file-name" title={currentFileName ?? "Unsaved drawing"}>
-        {currentFileName ?? "Untitled"}
-        {dirty && <span className="dirty-dot" title="Unsaved changes" />}
-      </span>
+      <Tooltip label="Menu" placement="bottom">
+        <button
+          className={`menu-trigger ${open ? "active" : ""}`}
+          aria-label="Menu"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <IconMenu />
+        </button>
+      </Tooltip>
+
+      <div className="file-meta">
+        <span className="file-name" title={currentFileName ?? `Unsaved ${APP_NAME} drawing`}>
+          {currentFileName ?? "Untitled"}
+        </span>
+        <span className={`file-status ${dirty ? "is-dirty" : ""}`}>
+          {dirty ? "Unsaved changes" : "Saved"}
+        </span>
+      </div>
 
       {open && (
-        <div className="menu-popover">
-          <button onClick={() => { setOpen(false); onOpen(); }}>
-            Open… <kbd>⌘O</kbd>
-          </button>
-          <button onClick={() => { setOpen(false); onSave(); }}>
-            Save <kbd>⌘S</kbd>
-          </button>
-          <button onClick={() => { setOpen(false); onSaveAs(); }}>
-            Save as… <kbd>⇧⌘S</kbd>
-          </button>
-          <button onClick={() => { setOpen(false); onExport(); }}>
-            Export… <kbd>⇧⌘E</kbd>
-          </button>
+        <div className="menu-popover" role="menu">
+          <MenuItem label="Open…" shortcut="⌘O" onClick={run(onOpen)} />
+          <MenuItem label="Save" shortcut="⌘S" onClick={run(onSave)} />
+          <MenuItem label="Save as…" shortcut="⇧⌘S" onClick={run(onSaveAs)} />
+          <MenuItem label="Export…" shortcut="⇧⌘E" onClick={run(onExport)} />
+
           <div className="menu-separator" />
 
-          <label className="menu-row">
-            <input
-              type="checkbox"
-              checked={appState.gridSize !== null}
-              onChange={(e) => store.setAppState({ gridSize: e.target.checked ? 20 : null })}
-            />
-            Show grid
-          </label>
-          <label className="menu-row">
-            <input
-              type="checkbox"
-              checked={appState.snapToObjects}
-              onChange={(e) => store.setAppState({ snapToObjects: e.target.checked })}
-            />
-            Snap to objects
-          </label>
-          <label className="menu-row">
-            <input
-              type="checkbox"
-              checked={appState.theme === "dark"}
-              onChange={(e) =>
-                store.setAppState({
-                  theme: e.target.checked ? "dark" : "light",
-                  viewBackgroundColor: e.target.checked ? "#121212" : "#ffffff",
-                })
-              }
-            />
-            Dark mode
-          </label>
+          <MenuToggle
+            label="Dark mode"
+            checked={isDark}
+            onChange={(next) => setTheme(next ? "dark" : "light")}
+          />
+          <MenuToggle
+            label="Show grid"
+            checked={appState.gridSize !== null}
+            onChange={(next) => store.setAppState({ gridSize: next ? 20 : null })}
+          />
+          <MenuToggle
+            label="Snap to objects"
+            checked={appState.snapToObjects}
+            onChange={(next) => store.setAppState({ snapToObjects: next })}
+          />
 
           <div className="menu-separator" />
           <div className="menu-label">Canvas background</div>
           <div className="swatches menu-swatches">
-            {CANVAS_COLORS.map((color) => (
-              <button
-                key={color}
-                className={`swatch ${appState.viewBackgroundColor === color ? "active" : ""}`}
-                style={{ background: color }}
-                onClick={() => store.setAppState({ viewBackgroundColor: color })}
-              />
+            {PALETTE[appState.theme].canvas.map((color) => (
+              <Tooltip key={color} label={color}>
+                <button
+                  className={`swatch ${appState.viewBackgroundColor === color ? "active" : ""}`}
+                  style={{ background: color }}
+                  aria-label={color}
+                  onClick={() => store.setAppState({ viewBackgroundColor: color })}
+                />
+              </Tooltip>
             ))}
-            <input
-              type="color"
-              className="color-input"
-              value={appState.viewBackgroundColor}
-              onChange={(e) => store.setAppState({ viewBackgroundColor: e.target.value })}
-            />
+            <span className="swatch-divider" />
+            <span className="swatch custom-swatch" style={{ background: appState.viewBackgroundColor }}>
+              <input
+                type="color"
+                aria-label="Custom canvas colour"
+                value={appState.viewBackgroundColor}
+                onChange={(e) => store.setAppState({ viewBackgroundColor: e.target.value })}
+              />
+            </span>
           </div>
 
           <div className="menu-separator" />
-          <button onClick={() => { setOpen(false); onHelp(); }}>
-            Keyboard shortcuts <kbd>?</kbd>
-          </button>
-          <button
-            className="danger"
-            onClick={() => {
-              setOpen(false);
-              onReset();
-            }}
-          >
-            Reset canvas
-          </button>
+          <MenuItem label="Keyboard shortcuts" shortcut="?" onClick={run(onHelp)} />
+          <MenuItem label="Reset canvas" onClick={run(onReset)} danger />
         </div>
       )}
     </div>
   );
 };
+
+const MenuItem = ({
+  label,
+  shortcut,
+  onClick,
+  danger,
+}: {
+  label: string;
+  shortcut?: string;
+  onClick: () => void;
+  danger?: boolean;
+}) => (
+  <button className={`menu-item ${danger ? "danger" : ""}`} role="menuitem" onClick={onClick}>
+    <span>{label}</span>
+    {shortcut && <kbd>{shortcut}</kbd>}
+  </button>
+);
+
+const MenuToggle = ({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) => (
+  <label className="menu-item menu-toggle">
+    <span>{label}</span>
+    <input
+      type="checkbox"
+      role="switch"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+    />
+    <span className="switch" aria-hidden="true" />
+  </label>
+);

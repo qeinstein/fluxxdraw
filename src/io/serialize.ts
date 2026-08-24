@@ -1,4 +1,6 @@
 import {
+  COMPATIBLE_DOCUMENT_TYPES,
+  DOCUMENT_TYPE,
   FILE_SOURCE,
   FILE_VERSION,
   type AppState,
@@ -24,7 +26,7 @@ export const serializeScene = (
   files: Record<string, BinaryFile>,
   appState: Pick<AppState, "viewBackgroundColor" | "gridSize" | "theme">,
 ): SceneDocument => ({
-  type: "excalidraw",
+  type: DOCUMENT_TYPE,
   version: FILE_VERSION,
   source: FILE_SOURCE,
   elements: elements.filter((el) => !el.isDeleted),
@@ -47,7 +49,8 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  */
 export const parseSceneDocument = (raw: unknown): SceneDocument => {
   if (!isPlainObject(raw)) throw new Error("File is not a valid scene: expected an object");
-  if (raw.type !== "excalidraw") {
+  // Excalidraw documents share our shape, so they open here too
+  if (typeof raw.type !== "string" || !COMPATIBLE_DOCUMENT_TYPES.includes(raw.type)) {
     throw new Error(`File is not a valid scene: unexpected type "${String(raw.type)}"`);
   }
   if (!Array.isArray(raw.elements)) throw new Error("File is missing an elements array");
@@ -66,7 +69,7 @@ export const parseSceneDocument = (raw: unknown): SceneDocument => {
   }));
 
   return {
-    type: "excalidraw",
+    type: DOCUMENT_TYPE,
     version: typeof raw.version === "number" ? raw.version : FILE_VERSION,
     source: typeof raw.source === "string" ? raw.source : "unknown",
     elements,

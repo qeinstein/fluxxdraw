@@ -232,12 +232,12 @@ const jsonRoundTrip = await page.evaluate(async () => {
     ...exporter.DEFAULT_EXPORT_SETTINGS,
     format: "json",
   });
-  const file = new File([blob], "round-trip.excali", { type: "application/json" });
+  const file = new File([blob], "round-trip.fluxx", { type: "application/json" });
   const result = await opener.readFile(file);
   return { kind: result.kind, after: result.kind === "scene" ? result.doc.elements.length : 0 };
 });
 check(
-  ".excali round-trips back to an editable scene",
+  ".fluxx round-trips back to an editable scene",
   jsonRoundTrip.kind === "scene" && jsonRoundTrip.after > 0,
   JSON.stringify(jsonRoundTrip),
 );

@@ -7,6 +7,8 @@ import { ZoomControls } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { HelpDialog } from "./components/HelpDialog";
 import { TextEditor } from "./components/TextEditor";
+import { Tooltip } from "./components/Tooltip";
+import { IconRedo, IconUndo } from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
 import { readFile } from "./io/openScene";
@@ -19,12 +21,15 @@ import {
   writeToFileHandle,
 } from "./io/fileSystem";
 import { loadPreferences, savePreferences, type Preferences } from "./io/preferences";
+import { consumeLaunchFiles, registerServiceWorker } from "./io/launchHandler";
 import { newImageElement, syncFrameCounter } from "./elements/factory";
 import { preloadFiles } from "./render/imageCache";
 import { reconcileFrameMembership } from "./actions";
+import { APP_NAME, FILE_EXTENSION } from "./constants";
+import { inferTheme } from "./theme";
 import type { BinaryFile, SceneDocument } from "./types";
 
-const AUTOSAVE_KEY = "excali-free:autosave";
+const AUTOSAVE_KEY = "fluxxdraw:autosave";
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
 export default function App() {
@@ -141,7 +146,12 @@ export default function App() {
       const result = await readFile(file);
 
       if (result.kind === "scene") {
-        store.loadScene(result.doc.elements, result.doc.files, result.doc.appState);
+        // files from other tools may not record a theme, so infer one
+        const theme = inferTheme(result.doc.appState.viewBackgroundColor);
+        store.loadScene(result.doc.elements, result.doc.files, {
+          ...result.doc.appState,
+          theme,
+        });
         syncFrameCounter(result.doc.elements);
         await preloadFiles(result.doc.files);
         fileHandleRef.current = handle;
@@ -198,16 +208,28 @@ export default function App() {
     }
   }, [applyOpenResult, showToast]);
 
+  // Files double-clicked in the OS arrive here, once the app is installed.
+  useEffect(() => {
+    registerServiceWorker();
+    consumeLaunchFiles((file, handle) => {
+      applyOpenResult(file, handle).catch((error) =>
+        showToast(`Could not open ${file.name}: ${(error as Error).message}`),
+      );
+    });
+    // the launch queue only accepts one consumer, so register on mount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // --- saving --------------------------------------------------------------
 
   const handleSaveAs = useCallback(async () => {
     const blob = new Blob([sceneToJson(currentDocument())], { type: "application/json" });
-    const suggested = `${(fileName ?? "drawing").replace(/\.[^.]+$/, "")}.excali`;
+    const suggested = `${(fileName ?? "drawing").replace(/\.[^.]+$/, "")}.${FILE_EXTENSION}`;
     try {
       const saved = await saveWithPicker(blob, suggested, [
         {
           description: "Drawing",
-          accept: { "application/json": [".excali", ".excalidraw", ".json"] },
+          accept: { "application/json": [`.${FILE_EXTENSION}`, ".excalidraw", ".json"] },
         },
       ]);
       if (!saved) {
@@ -250,7 +272,7 @@ export default function App() {
   /** Quick export straight into the configured folder, bypassing the dialog. */
   const quickExportJson = useCallback(async () => {
     const blob = new Blob([sceneToJson(currentDocument())], { type: "application/json" });
-    const result = await saveExport(blob, `${prefs.exportSettings.filename || "drawing"}.excali`);
+    const result = await saveExport(blob, `${prefs.exportSettings.filename || "drawing"}.${FILE_EXTENSION}`);
     showToast(
       result.destination === "directory"
         ? `Saved ${result.filename} to ${result.directoryName}`
@@ -301,7 +323,7 @@ export default function App() {
       const text = event.clipboardData?.getData("text/plain");
       if (text?.trim().startsWith("{")) {
         try {
-          const file = new File([text], "pasted.excali", { type: "application/json" });
+          const file = new File([text], `pasted.${FILE_EXTENSION}`, { type: "application/json" });
           await applyOpenResult(file, null);
           event.preventDefault();
         } catch {
@@ -360,7 +382,7 @@ export default function App() {
             onSaveAs={handleSaveAs}
             onExport={() => setExportOpen(true)}
             onReset={() => {
-              if (!window.confirm("Clear the canvas? This can't be undone.")) return;
+              if (!window.confirm(`Clear the ${APP_NAME} canvas? This can't be undone.`)) return;
               store.resetScene();
               fileHandleRef.current = null;
               setFileName(null);
@@ -378,23 +400,34 @@ export default function App() {
         </div>
 
         <div className="top-right">
-          <button className="island export-button" onClick={() => setExportOpen(true)}>
-            Export
-          </button>
-          <button className="island" onClick={quickExportJson} title="Save a .excali copy to your export folder">
-            Quick save
-          </button>
+          <Tooltip
+            label={`Save a .${FILE_EXTENSION} copy to your export folder`}
+            placement="bottom"
+          >
+            <button className="island ghost-button" onClick={quickExportJson}>
+              Quick save
+            </button>
+          </Tooltip>
+          <Tooltip label="Export as an image or file" shortcut="⇧⌘E" placement="bottom">
+            <button className="island export-button" onClick={() => setExportOpen(true)}>
+              Export
+            </button>
+          </Tooltip>
         </div>
 
         <div className="bottom-left">
           <ZoomControls />
           <div className="island history-controls">
-            <button onClick={() => store.undo()} disabled={!scene.canUndo()} title="Undo (⌘Z)">
-              ↶
-            </button>
-            <button onClick={() => store.redo()} disabled={!scene.canRedo()} title="Redo (⇧⌘Z)">
-              ↷
-            </button>
+            <Tooltip label="Undo" shortcut="⌘Z" placement="top">
+              <button aria-label="Undo" onClick={() => store.undo()} disabled={!scene.canUndo()}>
+                <IconUndo />
+              </button>
+            </Tooltip>
+            <Tooltip label="Redo" shortcut="⇧⌘Z" placement="top">
+              <button aria-label="Redo" onClick={() => store.redo()} disabled={!scene.canRedo()}>
+                <IconRedo />
+              </button>
+            </Tooltip>
           </div>
         </div>
       </div>

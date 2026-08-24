@@ -1,10 +1,6 @@
+import type { ReactNode } from "react";
 import { useScene } from "../store";
-import {
-  BACKGROUND_COLORS,
-  FONT_SIZES,
-  STROKE_COLORS,
-  STROKE_WIDTHS,
-} from "../constants";
+import { FONT_SIZES, PALETTE, STROKE_WIDTHS } from "../constants";
 import {
   alignSelection,
   applyStyleToSelection,
@@ -16,9 +12,52 @@ import {
   toggleLockSelection,
   ungroupSelection,
 } from "../actions";
+import { Tooltip } from "./Tooltip";
+import {
+  IconAlignBottom,
+  IconAlignCentreX,
+  IconAlignCentreY,
+  IconAlignLeft,
+  IconAlignRight,
+  IconAlignTop,
+  IconBringForward,
+  IconBringToFront,
+  IconDistributeX,
+  IconDistributeY,
+  IconDuplicate,
+  IconEdgeRound,
+  IconEdgeSharp,
+  IconFillCross,
+  IconFillHachure,
+  IconFillSolid,
+  IconFillZigzag,
+  IconGroup,
+  IconLockClosed,
+  IconSendBackward,
+  IconSendToBack,
+  IconStrokeDashed,
+  IconStrokeDotted,
+  IconStrokeSolid,
+  IconTextCentre,
+  IconTextLeft,
+  IconTextRight,
+  IconTrash,
+  IconUngroup,
+  IconWidthBold,
+  IconWidthExtraBold,
+  IconWidthThin,
+} from "./icons";
 import type { Arrowhead, ExcaliElement, FontFamily, Tool } from "../types";
 
-const SHAPE_TOOLS: Tool[] = ["rectangle", "diamond", "ellipse", "arrow", "line", "freedraw", "frame"];
+const SHAPE_TOOLS: Tool[] = [
+  "rectangle",
+  "diamond",
+  "ellipse",
+  "arrow",
+  "line",
+  "freedraw",
+  "frame",
+];
 
 /** Which controls make sense for the current selection (or active tool). */
 const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
@@ -34,7 +73,6 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
       : has("rectangle", "diamond", "ellipse", "arrow", "line", "freedraw", "frame");
 
   return {
-    stroke: true,
     background: shapeLike && (selected.length === 0 ? tool !== "freedraw" : !has("freedraw")),
     strokeWidth: shapeLike,
     sloppiness: shapeLike,
@@ -43,23 +81,22 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
         ? ["rectangle", "arrow", "line"].includes(tool)
         : has("rectangle", "arrow", "line"),
     arrowheads: selected.length === 0 ? tool === "arrow" : has("arrow"),
-    elbow: selected.length === 0 ? tool === "arrow" : has("arrow"),
     font: selected.length === 0 ? tool === "text" : has("text"),
     layout: selected.length > 0,
   };
 };
 
 const ARROWHEADS: { value: Arrowhead; label: string }[] = [
-  { value: "none", label: "—" },
-  { value: "arrow", label: "→" },
-  { value: "triangle", label: "▶" },
-  { value: "triangle-outline", label: "▷" },
-  { value: "bar", label: "|" },
-  { value: "dot", label: "●" },
+  { value: "none", label: "None" },
+  { value: "arrow", label: "Arrow" },
+  { value: "triangle", label: "Triangle" },
+  { value: "triangle-outline", label: "Triangle outline" },
+  { value: "bar", label: "Bar" },
+  { value: "dot", label: "Dot" },
 ];
 
 const FONTS: { value: FontFamily; label: string }[] = [
-  { value: "hand", label: "Hand-drawn" },
+  { value: "hand", label: "Hand" },
   { value: "normal", label: "Normal" },
   { value: "code", label: "Code" },
 ];
@@ -68,6 +105,7 @@ export const StylePanel = () => {
   const scene = useScene();
   const selected = scene.getSelected();
   const style = scene.appState.currentStyle;
+  const palette = PALETTE[scene.appState.theme];
   const controls = relevantControls(selected, scene.appState.tool);
 
   if (!controls) return null;
@@ -87,67 +125,43 @@ export const StylePanel = () => {
 
   const set = (patch: Record<string, unknown>) => applyStyleToSelection(patch);
 
+  const strokeColor = String(valueOf("strokeColor", style.strokeColor) ?? palette.stroke[0]);
+  const backgroundColor = String(
+    valueOf("backgroundColor", style.backgroundColor) ?? "transparent",
+  );
+
   return (
     <div className="style-panel island">
       <Section label="Stroke">
-        <div className="swatches">
-          {STROKE_COLORS.map((color) => (
-            <button
-              key={color}
-              className={`swatch ${valueOf("strokeColor", style.strokeColor) === color ? "active" : ""}`}
-              style={{ background: color }}
-              onClick={() => set({ strokeColor: color })}
-              title={color}
-            />
-          ))}
-          <input
-            type="color"
-            className="color-input"
-            value={String(valueOf("strokeColor", style.strokeColor) ?? "#1e1e1e")}
-            onChange={(e) => set({ strokeColor: e.target.value })}
-            title="Custom stroke colour"
-          />
-        </div>
+        <Swatches
+          colors={palette.stroke}
+          value={strokeColor}
+          onPick={(color) => set({ strokeColor: color })}
+          customValue={strokeColor}
+          onCustom={(color) => set({ strokeColor: color })}
+        />
       </Section>
 
       {controls.background && (
         <Section label="Background">
-          <div className="swatches">
-            {BACKGROUND_COLORS.map((color) => (
-              <button
-                key={color}
-                className={`swatch ${color === "transparent" ? "transparent" : ""} ${
-                  valueOf("backgroundColor", style.backgroundColor) === color ? "active" : ""
-                }`}
-                style={color === "transparent" ? undefined : { background: color }}
-                onClick={() => set({ backgroundColor: color })}
-                title={color}
-              />
-            ))}
-            <input
-              type="color"
-              className="color-input"
-              value={
-                String(valueOf("backgroundColor", style.backgroundColor) ?? "#ffffff") ===
-                "transparent"
-                  ? "#ffffff"
-                  : String(valueOf("backgroundColor", style.backgroundColor) ?? "#ffffff")
-              }
-              onChange={(e) => set({ backgroundColor: e.target.value })}
-              title="Custom fill colour"
-            />
-          </div>
+          <Swatches
+            colors={palette.background}
+            value={backgroundColor}
+            onPick={(color) => set({ backgroundColor: color })}
+            customValue={backgroundColor === "transparent" ? palette.background[1] : backgroundColor}
+            onCustom={(color) => set({ backgroundColor: color })}
+          />
         </Section>
       )}
 
-      {controls.background && (
+      {controls.background && backgroundColor !== "transparent" && (
         <Section label="Fill">
           <Choice
             options={[
-              ["hachure", "▨"],
-              ["cross-hatch", "▩"],
-              ["solid", "■"],
-              ["zigzag", "☰"],
+              ["hachure", "Hachure", <IconFillHachure key="h" />],
+              ["cross-hatch", "Cross-hatch", <IconFillCross key="c" />],
+              ["solid", "Solid", <IconFillSolid key="s" />],
+              ["zigzag", "Zigzag", <IconFillZigzag key="z" />],
             ]}
             value={valueOf("fillStyle", style.fillStyle)}
             onChange={(v) => set({ fillStyle: v })}
@@ -159,9 +173,9 @@ export const StylePanel = () => {
         <Section label="Stroke width">
           <Choice
             options={[
-              [STROKE_WIDTHS.thin, "▁"],
-              [STROKE_WIDTHS.bold, "▃"],
-              [STROKE_WIDTHS.extraBold, "▅"],
+              [STROKE_WIDTHS.thin, "Thin", <IconWidthThin key="1" />],
+              [STROKE_WIDTHS.bold, "Bold", <IconWidthBold key="2" />],
+              [STROKE_WIDTHS.extraBold, "Extra bold", <IconWidthExtraBold key="3" />],
             ]}
             value={valueOf("strokeWidth", style.strokeWidth)}
             onChange={(v) => set({ strokeWidth: v })}
@@ -173,9 +187,9 @@ export const StylePanel = () => {
         <Section label="Stroke style">
           <Choice
             options={[
-              ["solid", "───"],
-              ["dashed", "╌╌╌"],
-              ["dotted", "┈┈┈"],
+              ["solid", "Solid", <IconStrokeSolid key="1" />],
+              ["dashed", "Dashed", <IconStrokeDashed key="2" />],
+              ["dotted", "Dotted", <IconStrokeDotted key="3" />],
             ]}
             value={valueOf("strokeStyle", style.strokeStyle)}
             onChange={(v) => set({ strokeStyle: v })}
@@ -186,14 +200,14 @@ export const StylePanel = () => {
       {controls.sloppiness && (
         <Section label="Sloppiness">
           <Choice
+            variant="text"
             options={[
-              [0, "Architect"],
-              [1, "Artist"],
-              [2, "Cartoonist"],
+              [0, "Architect", "Architect"],
+              [1, "Artist", "Artist"],
+              [2, "Cartoonist", "Cartoon"],
             ]}
             value={valueOf("roughness", style.roughness)}
             onChange={(v) => set({ roughness: v })}
-            wide
           />
         </Section>
       )}
@@ -202,8 +216,8 @@ export const StylePanel = () => {
         <Section label="Edges">
           <Choice
             options={[
-              ["sharp", "◺"],
-              ["round", "◜"],
+              ["sharp", "Sharp", <IconEdgeSharp key="1" />],
+              ["round", "Round", <IconEdgeRound key="2" />],
             ]}
             value={valueOf("edges", style.edges)}
             onChange={(v) => set({ edges: v })}
@@ -213,26 +227,26 @@ export const StylePanel = () => {
 
       {controls.arrowheads && (
         <Section label="Arrowheads">
-          <div className="row">
+          <div className="row split">
             <select
+              aria-label="Start arrowhead"
               value={String(valueOf("startArrowhead", style.startArrowhead) ?? "none")}
               onChange={(e) => set({ startArrowhead: e.target.value })}
-              title="Start"
             >
               {ARROWHEADS.map((a) => (
                 <option key={a.value} value={a.value}>
-                  {a.label} start
+                  {a.label}
                 </option>
               ))}
             </select>
             <select
+              aria-label="End arrowhead"
               value={String(valueOf("endArrowhead", style.endArrowhead) ?? "arrow")}
               onChange={(e) => set({ endArrowhead: e.target.value })}
-              title="End"
             >
               {ARROWHEADS.map((a) => (
                 <option key={a.value} value={a.value}>
-                  {a.label} end
+                  {a.label}
                 </option>
               ))}
             </select>
@@ -243,7 +257,7 @@ export const StylePanel = () => {
               checked={Boolean(valueOf("elbowed", style.elbowed))}
               onChange={(e) => set({ elbowed: e.target.checked })}
             />
-            Elbowed (90° routing)
+            <span>Elbowed routing</span>
           </label>
         </Section>
       )}
@@ -252,27 +266,30 @@ export const StylePanel = () => {
         <>
           <Section label="Font">
             <Choice
-              options={FONTS.map((f) => [f.value, f.label] as [string, string])}
+              variant="text"
+              options={FONTS.map(
+                (f) => [f.value, f.label, f.label] as [string, string, string],
+              )}
               value={valueOf("fontFamily", style.fontFamily)}
               onChange={(v) => set({ fontFamily: v })}
-              wide
             />
           </Section>
           <Section label="Font size">
             <Choice
+              variant="text"
               options={Object.entries(FONT_SIZES).map(
-                ([label, size]) => [size, label] as [number, string],
+                ([label, size]) => [size, `${label} (${size}px)`, label] as [number, string, string],
               )}
               value={valueOf("fontSize", style.fontSize)}
               onChange={(v) => set({ fontSize: v })}
             />
           </Section>
-          <Section label="Align">
+          <Section label="Text align">
             <Choice
               options={[
-                ["left", "⇤"],
-                ["center", "↔"],
-                ["right", "⇥"],
+                ["left", "Left", <IconTextLeft key="1" />],
+                ["center", "Centre", <IconTextCentre key="2" />],
+                ["right", "Right", <IconTextRight key="3" />],
               ]}
               value={valueOf("textAlign", style.textAlign)}
               onChange={(v) => set({ textAlign: v })}
@@ -283,7 +300,9 @@ export const StylePanel = () => {
 
       <Section label="Opacity">
         <input
+          className="slider"
           type="range"
+          aria-label="Opacity"
           min={0}
           max={100}
           step={10}
@@ -296,71 +315,91 @@ export const StylePanel = () => {
         <>
           <Section label="Layers">
             <div className="row">
-              <button onClick={() => changeZOrder("back")} title="Send to back">
-                ⤓
-              </button>
-              <button onClick={() => changeZOrder("backward")} title="Send backward">
-                ↓
-              </button>
-              <button onClick={() => changeZOrder("forward")} title="Bring forward">
-                ↑
-              </button>
-              <button onClick={() => changeZOrder("front")} title="Bring to front">
-                ⤒
-              </button>
+              <IconAction label="Send to back" shortcut="⌘[" onClick={() => changeZOrder("back")}>
+                <IconSendToBack />
+              </IconAction>
+              <IconAction
+                label="Send backward"
+                shortcut="⇧⌘["
+                onClick={() => changeZOrder("backward")}
+              >
+                <IconSendBackward />
+              </IconAction>
+              <IconAction
+                label="Bring forward"
+                shortcut="⇧⌘]"
+                onClick={() => changeZOrder("forward")}
+              >
+                <IconBringForward />
+              </IconAction>
+              <IconAction
+                label="Bring to front"
+                shortcut="⌘]"
+                onClick={() => changeZOrder("front")}
+              >
+                <IconBringToFront />
+              </IconAction>
             </div>
           </Section>
 
           {selected.length > 1 && (
             <Section label="Align">
               <div className="row">
-                <button onClick={() => alignSelection("left")} title="Align left">
-                  ⇤
-                </button>
-                <button onClick={() => alignSelection("center-x")} title="Centre horizontally">
-                  ↔
-                </button>
-                <button onClick={() => alignSelection("right")} title="Align right">
-                  ⇥
-                </button>
-                <button onClick={() => alignSelection("top")} title="Align top">
-                  ⤒
-                </button>
-                <button onClick={() => alignSelection("center-y")} title="Centre vertically">
-                  ↕
-                </button>
-                <button onClick={() => alignSelection("bottom")} title="Align bottom">
-                  ⤓
-                </button>
+                <IconAction label="Align left" onClick={() => alignSelection("left")}>
+                  <IconAlignLeft />
+                </IconAction>
+                <IconAction label="Centre horizontally" onClick={() => alignSelection("center-x")}>
+                  <IconAlignCentreX />
+                </IconAction>
+                <IconAction label="Align right" onClick={() => alignSelection("right")}>
+                  <IconAlignRight />
+                </IconAction>
+                <IconAction label="Align top" onClick={() => alignSelection("top")}>
+                  <IconAlignTop />
+                </IconAction>
+                <IconAction label="Centre vertically" onClick={() => alignSelection("center-y")}>
+                  <IconAlignCentreY />
+                </IconAction>
+                <IconAction label="Align bottom" onClick={() => alignSelection("bottom")}>
+                  <IconAlignBottom />
+                </IconAction>
+                {selected.length > 2 && (
+                  <>
+                    <IconAction
+                      label="Distribute horizontally"
+                      onClick={() => distributeSelection("horizontal")}
+                    >
+                      <IconDistributeX />
+                    </IconAction>
+                    <IconAction
+                      label="Distribute vertically"
+                      onClick={() => distributeSelection("vertical")}
+                    >
+                      <IconDistributeY />
+                    </IconAction>
+                  </>
+                )}
               </div>
-              {selected.length > 2 && (
-                <div className="row">
-                  <button onClick={() => distributeSelection("horizontal")}>
-                    Distribute ↔
-                  </button>
-                  <button onClick={() => distributeSelection("vertical")}>Distribute ↕</button>
-                </div>
-              )}
             </Section>
           )}
 
           <Section label="Actions">
             <div className="row">
-              <button onClick={() => duplicateSelection()} title="Duplicate (Cmd+D)">
-                ⧉
-              </button>
-              <button onClick={() => groupSelection()} title="Group (Cmd+G)">
-                ⛶
-              </button>
-              <button onClick={() => ungroupSelection()} title="Ungroup (Cmd+Shift+G)">
-                ⛞
-              </button>
-              <button onClick={toggleLockSelection} title="Lock/unlock">
-                🔒
-              </button>
-              <button onClick={deleteSelection} title="Delete" className="danger">
-                🗑
-              </button>
+              <IconAction label="Duplicate" shortcut="⌘D" onClick={() => duplicateSelection()}>
+                <IconDuplicate />
+              </IconAction>
+              <IconAction label="Group" shortcut="⌘G" onClick={groupSelection}>
+                <IconGroup />
+              </IconAction>
+              <IconAction label="Ungroup" shortcut="⇧⌘G" onClick={ungroupSelection}>
+                <IconUngroup />
+              </IconAction>
+              <IconAction label="Lock" shortcut="⇧⌘L" onClick={toggleLockSelection}>
+                <IconLockClosed />
+              </IconAction>
+              <IconAction label="Delete" shortcut="Del" onClick={deleteSelection} danger>
+                <IconTrash />
+              </IconAction>
             </div>
           </Section>
         </>
@@ -369,35 +408,92 @@ export const StylePanel = () => {
   );
 };
 
-const Section = ({ label, children }: { label: string; children: React.ReactNode }) => (
+const Section = ({ label, children }: { label: string; children: ReactNode }) => (
   <div className="style-section">
     <div className="style-label">{label}</div>
     {children}
   </div>
 );
 
+interface SwatchesProps {
+  colors: readonly string[];
+  value: string;
+  onPick: (color: string) => void;
+  customValue: string;
+  onCustom: (color: string) => void;
+}
+
+const Swatches = ({ colors, value, onPick, customValue, onCustom }: SwatchesProps) => (
+  <div className="swatches">
+    {colors.map((color) => (
+      <Tooltip key={color} label={color === "transparent" ? "Transparent" : color}>
+        <button
+          className={`swatch ${color === "transparent" ? "is-transparent" : ""} ${
+            value === color ? "active" : ""
+          }`}
+          style={color === "transparent" ? undefined : { background: color }}
+          aria-label={color}
+          aria-pressed={value === color}
+          onClick={() => onPick(color)}
+        />
+      </Tooltip>
+    ))}
+    <span className="swatch-divider" />
+    <Tooltip label="Custom colour">
+      <span className="swatch custom-swatch" style={{ background: customValue }}>
+        <input
+          type="color"
+          aria-label="Custom colour"
+          value={customValue}
+          onChange={(e) => onCustom(e.target.value)}
+        />
+      </span>
+    </Tooltip>
+  </div>
+);
+
 interface ChoiceProps<T> {
-  options: [T, string][];
+  /** [value, tooltip label, visible content] */
+  options: [T, string, ReactNode][];
   value: unknown;
   onChange: (value: T) => void;
-  wide?: boolean;
+  variant?: "icon" | "text";
 }
 
 const Choice = <T extends string | number>({
   options,
   value,
   onChange,
-  wide,
+  variant = "icon",
 }: ChoiceProps<T>) => (
-  <div className={`row ${wide ? "wide" : ""}`}>
-    {options.map(([optionValue, label]) => (
-      <button
-        key={String(optionValue)}
-        className={value === optionValue ? "active" : ""}
-        onClick={() => onChange(optionValue)}
-      >
-        {label}
-      </button>
+  <div className={`row choice choice--${variant}`}>
+    {options.map(([optionValue, label, content]) => (
+      <Tooltip key={String(optionValue)} label={label}>
+        <button
+          className={value === optionValue ? "active" : ""}
+          aria-label={label}
+          aria-pressed={value === optionValue}
+          onClick={() => onChange(optionValue)}
+        >
+          {content}
+        </button>
+      </Tooltip>
     ))}
   </div>
+);
+
+interface IconActionProps {
+  label: string;
+  shortcut?: string;
+  onClick: () => void;
+  danger?: boolean;
+  children: ReactNode;
+}
+
+const IconAction = ({ label, shortcut, onClick, danger, children }: IconActionProps) => (
+  <Tooltip label={label} shortcut={shortcut}>
+    <button className={danger ? "danger" : ""} aria-label={label} onClick={onClick}>
+      {children}
+    </button>
+  </Tooltip>
 );

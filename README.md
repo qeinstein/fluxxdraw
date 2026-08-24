@@ -1,4 +1,6 @@
-# Excalidraw-style whiteboard — files-first, no backend
+# FluxxDraw
+
+**A files-first hand-drawn whiteboard. No backend, no account, no cloud.**
 
 A hand-drawn-style infinite canvas that runs entirely in the browser. There is
 no server, no account, and no cloud storage: your drawings are files on your
@@ -11,7 +13,7 @@ Every export can also *be* the source file:
 
 | Format | Extension | Re-openable | Notes |
 | --- | --- | --- | --- |
-| Drawing | `.excali` | yes | Plain JSON. The canonical save format. |
+| Drawing | `.fluxx` | yes | Plain JSON. The canonical save format. |
 | PNG | `.png` | yes | Scene JSON is embedded in a `tEXt` chunk. |
 | SVG | `.svg` | yes | Scene JSON is embedded in a `<metadata>` element. |
 | JPEG | `.jpg` | no | Flat image; no transparency. |
@@ -28,6 +30,15 @@ The 4K/8K presets scale the drawing so its *longest side* is exactly 3840 or
 7680 px, and the dialog shows the exact pixel output before you commit. Very
 large exports are clamped to the browser's maximum canvas dimension, and the
 dialog says so when that happens.
+
+### Opening `.fluxx` files from your desktop
+
+Install FluxxDraw as an app (in Chrome/Edge: the install button in the address
+bar) and the operating system registers `.fluxx` as a FluxxDraw document.
+Double-clicking one then opens it straight in the app, via the web
+[File Handling API](https://developer.chrome.com/docs/capabilities/web-apis/file-handling).
+This requires installation — a plain browser tab cannot claim a file type — and
+is Chromium-only for now. Drag-and-drop and **Open** work everywhere regardless.
 
 ### Where exports go
 
@@ -81,11 +92,12 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # production build into dist/
 npm run smoke    # browser end-to-end checks (needs the dev server running)
+npm run shots    # capture light/dark UI screenshots into .smoke/
 ```
 
 `npm run smoke` drives a real Chromium instance: it draws every element type,
 verifies arrow binding, container labels, undo/redo and grouping, exports in all
-five formats, and asserts that PNG, SVG and `.excali` exports all round-trip
+five formats, and asserts that PNG, SVG and `.fluxx` exports all round-trip
 back into an identical editable scene.
 
 ## How it's put together
@@ -100,6 +112,7 @@ src/
   interaction/        resize/rotate maths, snapping
   render/             rough.js drawable generation, canvas renderer, image cache
   io/                 serialisation, PNG/SVG/raster export, File System Access, preferences
+  theme.ts            light/dark switching with palette re-mapping
   components/         canvas, toolbar, style panel, dialogs
 ```
 
