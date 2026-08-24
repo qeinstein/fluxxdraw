@@ -621,6 +621,12 @@ kbd {
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  /*
+   * A hard outer cap, so however wide `.file-name` decides to be, the button
+   * itself can't grow past this and push `.menu` — which sizes itself to its
+   * content rather than stretching to the 226px column — beyond the sidebar.
+   */
+  max-width: 150px;
   line-height: 1.25;
 }
 
@@ -630,6 +636,16 @@ kbd {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /*
+   * The truncation above is inert without this: `.file-meta` further down
+   * this file sets `align-items: flex-start`, which stops a column flex
+   * container from stretching its children to its own width, so this span
+   * was sizing to its full content and never actually overflowing anything —
+   * a long filename just grew the button and spilled into the toolbar. A
+   * fixed length rather than a percentage, since a percentage here can't
+   * reliably resolve against a parent that is itself sized to fit content.
+   */
+  max-width: 148px;
 }
 
 .file-status {

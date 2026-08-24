@@ -77,12 +77,12 @@ export const LASER_FADE_MS = 1000;
 export const DEFAULT_APP_STATE: AppState = {
   tool: "selection",
   /*
-   * Tools stay selected after a shape is drawn. Resetting to Select each time
-   * meant re-picking the tool for every single shape, which is a keystroke on a
-   * desktop but a hunt for a small button on a phone. Q (or the padlock in the
-   * toolbar) turns it off for anyone who wants one shape at a time.
+   * Off by default, same as Excalidraw: draw one shape and the tool reverts to
+   * Select. Q (or the padlock in the toolbar) locks a tool for anyone who wants
+   * to place several in a row, and the choice is remembered — see
+   * DEFAULT_PREFERENCES.toolLocked in io/preferences.ts.
    */
-  toolLocked: true,
+  toolLocked: false,
   selectedIds: [],
   editingTextId: null,
   scrollX: 0,

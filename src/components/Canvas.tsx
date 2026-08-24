@@ -154,6 +154,14 @@ export const Canvas = ({
   /** every pointer currently down, so two-finger gestures can be detected */
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const gestureRef = useRef<PinchGesture | null>(null);
+  /**
+   * The element whose link badge should show right now because the pointer is
+   * over it, Excalidraw-style — a badge on every linked element at once would
+   * be clutter on a diagram with more than a couple of links. Read every frame
+   * by the RAF loop below rather than through React state, the same pattern
+   * `updateCursor` already uses for hover-driven visuals.
+   */
+  const hoveredLinkIdRef = useRef<string | null>(null);
   /** pending long-press timer, the touch equivalent of a right-click */
   const longPressRef = useRef<number | null>(null);
   const guidesRef = useRef<SnapGuide[]>([]);
@@ -313,6 +321,9 @@ export const Canvas = ({
       ? store.elements.filter((el) => el.id !== hidden)
       : store.elements;
 
+    const linkBadgeIds = new Set(state.selectedIds);
+    if (hoveredLinkIdRef.current) linkBadgeIds.add(hoveredLinkIdRef.current);
+
     renderElements(ctx, elements, {
       scrollX: state.scrollX,
       scrollY: state.scrollY,
@@ -321,6 +332,7 @@ export const Canvas = ({
       files: store.files,
       theme: state.theme,
       components: store.components,
+      linkBadgeIds,
     });
 
     drawOverlay(ctx, state.zoom);
@@ -654,11 +666,15 @@ export const Canvas = ({
     // --- selection tool ---
 
     /*
-     * The link badge is tested first. It sits just above the top-right corner,
-     * next door to the resize handle, and a handle that swallowed the click
-     * would leave the badge decorative.
+     * The link badge is tested first, and only among elements it's currently
+     * shown for — selected or hovered, the same set the renderer just drew it
+     * for. It sits just above the top-right corner, next door to the resize
+     * handle, and a handle that swallowed the click would leave the badge
+     * decorative.
      */
-    const badge = hitLinkBadge(x, y, state.zoom);
+    const visibleLinkIds = new Set(state.selectedIds);
+    if (hoveredLinkIdRef.current) visibleLinkIds.add(hoveredLinkIdRef.current);
+    const badge = hitLinkBadge(x, y, state.zoom, visibleLinkIds);
     if (badge) {
       const problem = followLink(badge.link!);
       if (problem) onLinkProblem(problem);
@@ -1294,7 +1310,18 @@ export const Canvas = ({
         return;
       }
     }
+
+    // hovering the badge of an already-visible link: a pointer cursor invites the click
+    const visibleLinkIds = new Set(state.selectedIds);
+    if (hoveredLinkIdRef.current) visibleLinkIds.add(hoveredLinkIdRef.current);
+    if (hitLinkBadge(x, y, state.zoom, visibleLinkIds)) {
+      canvas.style.cursor = "pointer";
+      return;
+    }
+
     const hit = getElementAtPosition(store.visibleElements, x, y, HIT_THRESHOLD / state.zoom);
+    // hovering a linked element's body reveals its badge, same discoverability as Excalidraw
+    hoveredLinkIdRef.current = hit?.link ? hit.id : null;
     canvas.style.cursor = hit ? "move" : "default";
   };
 

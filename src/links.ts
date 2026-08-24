@@ -1,4 +1,5 @@
 import { store } from "./store";
+import { getElementCenter } from "./geometry";
 import type { ExcaliElement } from "./types";
 
 /**
@@ -68,12 +69,56 @@ export const linkBadgeBox = (el: ExcaliElement, zoom: number) => {
   return { x: left + Math.abs(el.width) - size, y: top - size - gap, size };
 };
 
-export const hitLinkBadge = (x: number, y: number, zoom: number): ExcaliElement | null => {
+/**
+ * A few extra scene pixels of hit tolerance around the visible badge, the way
+ * every other small handle in this app is padded — a 20px badge is an easy
+ * miss on a trackpad and a near-impossible one on a finger otherwise.
+ */
+const HIT_PAD = 5;
+
+/**
+ * The badge for an element, only among elements currently allowed to show
+ * one — selected or hovered, same as `visibleIds` passed to the renderer, so
+ * a badge is never clickable in a spot where nothing is actually drawn.
+ *
+ * Rotation-aware: the badge is drawn inside the element's own rotated
+ * transform, so a rotated element's badge lives at a rotated screen position.
+ * The pointer is rotated back into the element's local space before testing
+ * against the same unrotated box the renderer draws — skipping this was a
+ * real bug, silently making the badge unclickable on any rotated element.
+ */
+export const hitLinkBadge = (
+  x: number,
+  y: number,
+  zoom: number,
+  visibleIds: ReadonlySet<string>,
+): ExcaliElement | null => {
+  const pad = HIT_PAD / zoom;
   for (let i = store.visibleElements.length - 1; i >= 0; i--) {
     const el = store.visibleElements[i];
-    if (!el.link) continue;
+    if (!el.link || !visibleIds.has(el.id)) continue;
+
+    let px = x;
+    let py = y;
+    if (el.angle) {
+      const [cx, cy] = getElementCenter(el);
+      const cos = Math.cos(-el.angle);
+      const sin = Math.sin(-el.angle);
+      const dx = x - cx;
+      const dy = y - cy;
+      px = cx + dx * cos - dy * sin;
+      py = cy + dx * sin + dy * cos;
+    }
+
     const box = linkBadgeBox(el, zoom);
-    if (x >= box.x && x <= box.x + box.size && y >= box.y && y <= box.y + box.size) return el;
+    if (
+      px >= box.x - pad &&
+      px <= box.x + box.size + pad &&
+      py >= box.y - pad &&
+      py <= box.y + box.size + pad
+    ) {
+      return el;
+    }
   }
   return null;
 };

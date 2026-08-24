@@ -31,6 +31,12 @@ export interface RenderConfig {
   /** set while exporting so interactive-only affordances are skipped */
   exporting?: boolean;
   theme?: "light" | "dark";
+  /**
+   * Ids allowed to show their link badge this frame — selected or hovered,
+   * same as Excalidraw. A badge on every linked element regardless of
+   * attention would be clutter on a diagram with more than a couple of links.
+   */
+  linkBadgeIds?: ReadonlySet<string>;
 }
 
 const roughCanvases = new WeakMap<CanvasRenderingContext2D, RoughCanvas>();
@@ -286,7 +292,7 @@ export const renderElement = (
   }
 
   // a linked element needs somewhere to click that isn't "select me"
-  if (el.link && !config.exporting) {
+  if (el.link && !config.exporting && config.linkBadgeIds?.has(el.id)) {
     drawLinkBadge(ctx, el, config);
   }
 

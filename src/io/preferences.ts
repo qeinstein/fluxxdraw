@@ -11,10 +11,10 @@ export interface Preferences {
   gridSize: number | null;
   snapToObjects: boolean;
   /**
-   * Whether a tool stays selected after use. On by default — re-picking the
-   * tool for every shape is a keystroke on a desktop and a hunt for a small
-   * button on a phone — but plenty of people want one shape at a time, so the
-   * choice is remembered rather than reset every session.
+   * Whether a tool stays selected after use, off by default to match
+   * Excalidraw. Some people want to place several of the same shape in a row
+   * without re-picking the tool each time, so the choice is remembered rather
+   * than reset every session once someone turns it on.
    */
   toolLocked: boolean;
 }
@@ -26,7 +26,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "light",
   gridSize: null,
   snapToObjects: true,
-  toolLocked: true,
+  toolLocked: false,
 };
 
 export const loadPreferences = (): Preferences => {
