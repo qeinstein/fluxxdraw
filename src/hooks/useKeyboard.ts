@@ -50,6 +50,7 @@ export interface KeyboardHandlers {
   onSaveAs: () => void;
   onExport: () => void;
   onHelp: () => void;
+  onHistory: () => void;
   onEscape: () => void;
 }
 
@@ -96,6 +97,10 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
               event.preventDefault();
               toggleLockSelection();
             }
+            return;
+          case "h":
+            event.preventDefault();
+            handlers.onHistory();
             return;
           case "o":
             event.preventDefault();

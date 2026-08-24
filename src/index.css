@@ -1169,3 +1169,145 @@ kbd {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- version timeline ----------------------------------------------------- */
+
+.timeline {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, calc(100vw - 28px));
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 90;
+  animation: timeline-in 180ms var(--ease);
+}
+
+@keyframes timeline-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.timeline-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.timeline-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-title strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timeline-play {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  padding: 0;
+  font-size: 11px;
+  background: var(--surface-sunken);
+  color: var(--fg-muted);
+}
+
+.timeline-play:hover {
+  color: var(--fg);
+}
+
+.timeline-slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.timeline-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+  background: var(--surface-sunken);
+  color: var(--fg-muted);
+}
+
+.timeline-actions button:hover:not(:disabled) {
+  color: var(--fg);
+  background: var(--hover);
+}
+
+.timeline-actions button.primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.timeline-actions button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+}
+
+.diff-summary {
+  display: inline-flex;
+  gap: 7px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.diff.added {
+  color: #2f9e44;
+}
+
+.diff.changed {
+  color: #f08c00;
+}
+
+.diff.removed {
+  color: var(--danger);
+}
+
+.timeline-marks {
+  position: relative;
+  height: 5px;
+  margin: -6px 44px 0 44px;
+}
+
+.timeline-mark {
+  position: absolute;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--fg-subtle);
+  transform: translateX(-50%);
+}
+
+.timeline-mark:hover,
+.timeline-mark.active {
+  background: var(--accent);
+}

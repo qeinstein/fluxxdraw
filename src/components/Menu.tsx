@@ -12,6 +12,7 @@ interface MenuProps {
   onExport: () => void;
   onReset: () => void;
   onHelp: () => void;
+  onHistory: () => void;
   currentFileName: string | null;
   dirty: boolean;
 }
@@ -23,6 +24,7 @@ export const Menu = ({
   onExport,
   onReset,
   onHelp,
+  onHistory,
   currentFileName,
   dirty,
 }: MenuProps) => {
@@ -81,6 +83,8 @@ export const Menu = ({
           <MenuItem label="Save" shortcut="⌘S" onClick={run(onSave)} />
           <MenuItem label="Save as…" shortcut="⇧⌘S" onClick={run(onSaveAs)} />
           <MenuItem label="Export…" shortcut="⇧⌘E" onClick={run(onExport)} />
+
+          <MenuItem label="Version history…" shortcut="⌘H" onClick={run(onHistory)} />
 
           <div className="menu-separator" />
 

@@ -111,7 +111,10 @@ export const buildExportBlob = async (settings: ExportSettings): Promise<Blob> =
   if (elements.length === 0) throw new Error("Nothing to export");
 
   const files = collectUsedFiles(elements, store.files);
-  const doc = serializeScene(elements, files, store.appState);
+  // History describes the document as a whole, so it only rides along with a
+  // full-canvas export — a cropped selection isn't what those checkpoints hold.
+  const history = settings.scope === "canvas" ? store.timeline.checkpoints : undefined;
+  const doc = serializeScene(elements, files, store.appState, history);
   const sceneJson = sceneToJson(doc);
 
   if (settings.format === "json") {

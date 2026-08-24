@@ -6,6 +6,7 @@ import { Menu } from "./components/Menu";
 import { ZoomControls } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { HelpDialog } from "./components/HelpDialog";
+import { TimelinePanel } from "./components/TimelinePanel";
 import { TextEditor } from "./components/TextEditor";
 import { Tooltip } from "./components/Tooltip";
 import { IconRedo, IconUndo } from "./components/icons";
@@ -37,6 +38,7 @@ export default function App() {
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences());
   const [exportOpen, setExportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
@@ -248,6 +250,7 @@ export default function App() {
       fileHandleRef.current = saved.handle;
       setFileName(saved.handle.name);
       lastSavedVersion.current = store.getVersion();
+      store.timeline.labelLatest(`Saved ${saved.handle.name}`);
       showToast(`Saved ${saved.handle.name}`);
     } catch (error) {
       showToast(`Save failed: ${(error as Error).message}`);
@@ -269,6 +272,7 @@ export default function App() {
         return;
       }
       lastSavedVersion.current = store.getVersion();
+      store.timeline.labelLatest(`Saved ${result.filename}`);
       showToast(`Saved ${result.filename}`);
     } catch (error) {
       showToast(`Save failed: ${(error as Error).message}`);
@@ -350,9 +354,11 @@ export default function App() {
       onSaveAs: handleSaveAs,
       onExport: () => setExportOpen(true),
       onHelp: () => setHelpOpen(true),
+      onHistory: () => setHistoryOpen(true),
       onEscape: () => {
         setExportOpen(false);
         setHelpOpen(false);
+        setHistoryOpen(false);
       },
     }),
     [handleOpen, handleSave, handleSaveAs],
@@ -395,6 +401,7 @@ export default function App() {
               localStorage.removeItem(AUTOSAVE_KEY);
             }}
             onHelp={() => setHelpOpen(true)}
+            onHistory={() => setHistoryOpen(true)}
             currentFileName={fileName}
             dirty={dirty}
           />
@@ -449,6 +456,8 @@ export default function App() {
       )}
 
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
+
+      {historyOpen && <TimelinePanel onClose={() => setHistoryOpen(false)} />}
 
       {toast && <div className="toast">{toast}</div>}
 
