@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { store, useScene } from "../store";
 import { APP_NAME, PALETTE } from "../constants";
 import { setTheme } from "../theme";
@@ -17,6 +17,7 @@ interface MenuProps {
   onPresent: () => void;
   currentFileName: string | null;
   dirty: boolean;
+  onRename: (name: string) => void;
 }
 
 export const Menu = ({
@@ -30,6 +31,7 @@ export const Menu = ({
   onPresent,
   currentFileName,
   dirty,
+  onRename,
 }: MenuProps) => {
   const scene = useScene();
   const [open, setOpen] = useState(false);
@@ -71,14 +73,11 @@ export const Menu = ({
         </button>
       </Tooltip>
 
-      <div className="file-meta">
-        <span className="file-name" title={currentFileName ?? `Unsaved ${APP_NAME} drawing`}>
-          {currentFileName ?? "Untitled"}
-        </span>
-        <span className={`file-status ${dirty ? "is-dirty" : ""}`}>
-          {dirty ? "Unsaved changes" : "Saved"}
-        </span>
-      </div>
+      <FileName
+        name={currentFileName}
+        dirty={dirty}
+        onRename={onRename}
+      />
 
       {open && (
         <div className="menu-popover" role="menu">
@@ -179,3 +178,72 @@ const MenuToggle = ({
     <span className="switch" aria-hidden="true" />
   </label>
 );
+
+/** The document title, editable in place — click it and type. */
+const FileName = ({
+  name,
+  dirty,
+  onRename,
+}: {
+  name: string | null;
+  dirty: boolean;
+  onRename: (next: string) => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useLayoutEffect(() => {
+    if (!editing) return;
+    const input = inputRef.current;
+    if (!input) return;
+    input.focus();
+    // select the stem, leaving any extension out of the way
+    const dot = input.value.lastIndexOf(".");
+    input.setSelectionRange(0, dot > 0 ? dot : input.value.length);
+  }, [editing]);
+
+  const start = () => {
+    setDraft(name ?? "Untitled");
+    setEditing(true);
+  };
+
+  const commit = () => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== name) onRename(trimmed);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="file-name-input"
+        value={draft}
+        aria-label="Drawing name"
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit();
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setEditing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <button className="file-meta" onClick={start} title={`Rename this ${APP_NAME} drawing`}>
+      <span className="file-name">{name ?? "Untitled"}</span>
+      <span className={`file-status ${dirty ? "is-dirty" : ""}`}>
+        {dirty ? "Unsaved changes" : "Saved"}
+      </span>
+    </button>
+  );
+};

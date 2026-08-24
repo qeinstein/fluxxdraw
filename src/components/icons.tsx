@@ -405,3 +405,11 @@ export const IconCheck = () => (
     <path d="M4.4 10.4l3.6 3.6 7.6-8" />
   </Icon>
 );
+
+export const IconMore = () => (
+  <Icon>
+    <circle cx="4.6" cy="10" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="10" cy="10" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="15.4" cy="10" r="1.3" fill="currentColor" stroke="none" />
+  </Icon>
+);

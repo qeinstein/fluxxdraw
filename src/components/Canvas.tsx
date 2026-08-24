@@ -32,6 +32,7 @@ import {
   type HandleName,
 } from "../interaction/transform";
 import { computeSnap, snapToGrid, type SnapGuide } from "../interaction/snapping";
+import { drawLaserTrail, type LaserPoint } from "../render/laser";
 import {
   defaultBinding,
   getBindableElementAt,
@@ -46,7 +47,8 @@ import {
   refreshTextLayout,
   resolveSelectionTarget,
 } from "../actions";
-import type { ExcaliElement, FreedrawElement, LinearElement, Tool } from "../types";
+import type { EmbedElement, ExcaliElement, FreedrawElement, LinearElement, Tool } from "../types";
+import { promptForInput } from "../prompt";
 
 type Mode =
   | "none"
@@ -117,11 +119,6 @@ interface PinchGesture {
   scrollY: number;
 }
 
-interface LaserPoint {
-  x: number;
-  y: number;
-  time: number;
-}
 
 interface CanvasProps {
   onDoubleClickText: (elementId: string) => void;
@@ -255,22 +252,7 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     const now = performance.now();
     const trail = laserRef.current.filter((p) => now - p.time < LASER_FADE_MS);
     laserRef.current = trail;
-    if (trail.length > 1) {
-      ctx.save();
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      for (let i = 1; i < trail.length; i++) {
-        const age = (now - trail[i].time) / LASER_FADE_MS;
-        ctx.globalAlpha = Math.max(0, 1 - age);
-        ctx.strokeStyle = "#f03e3e";
-        ctx.lineWidth = (6 * (1 - age * 0.5)) / zoom;
-        ctx.beginPath();
-        ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
-        ctx.lineTo(trail[i].x, trail[i].y);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+    if (trail.length > 1) drawLaserTrail(ctx, trail, zoom, now);
   }, []);
 
   const draw = useCallback(() => {
@@ -561,16 +543,27 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
     }
 
     if (state.tool === "embed") {
-      const url = window.prompt("URL to embed");
-      if (url) {
+      promptForInput({
+        title: "Embed a link",
+        label: "URL",
+        placeholder: "https://example.com",
+        confirmLabel: "Add link",
+        hint: "The link appears as a card you can click to open.",
+        validate: (value) => (normaliseUrl(value) ? null : "That doesn't look like a URL."),
+      }).then((value) => {
+        const url = value && normaliseUrl(value);
+        if (!url) {
+          store.setAppState({ tool: "selection" });
+          return;
+        }
         store.mutate(() => {
-          const el = newEmbedElement(state, x, y, url);
-          el.width = 480;
-          el.height = 270;
+          const el = newEmbedElement(store.appState, x, y, url);
+          el.width = 420;
+          el.height = 180;
           store.addElements(el);
           store.appState = { ...store.appState, selectedIds: [el.id], tool: "selection" };
         });
-      }
+      });
       return;
     }
 
@@ -616,6 +609,12 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
 
     const rawHit = getElementAtPosition(store.visibleElements, x, y, HIT_THRESHOLD / state.zoom);
     const hit = rawHit ? resolveSelectionTarget(rawHit) : null;
+
+    if (hit?.type === "embed" && state.selectedIds.includes(hit.id)) {
+      // second click on a selected card follows the link
+      openEmbed(hit as EmbedElement);
+      return;
+    }
 
     if (hit) {
       const alreadySelected = state.selectedIds.includes(hit.id);
@@ -1070,6 +1069,21 @@ export const Canvas = ({ onDoubleClickText, onRequestImage }: CanvasProps) => {
       onDoubleClickText(hit.id);
       return;
     }
+    if (hit.type === "embed") {
+      const embed = hit as EmbedElement;
+      promptForInput({
+        title: "Edit link",
+        label: "URL",
+        initialValue: embed.url,
+        confirmLabel: "Update",
+        validate: (value) => (normaliseUrl(value) ? null : "That doesn't look like a URL."),
+      }).then((value) => {
+        const url = value && normaliseUrl(value);
+        if (!url) return;
+        store.mutate(() => store.updateElement<EmbedElement>(embed.id, () => ({ url })));
+      });
+      return;
+    }
     if (isContainer(hit) || hit.type === "arrow" || hit.type === "line") {
       if (hit.type === "arrow" || hit.type === "line") {
         // double-clicking a segment inserts a midpoint there
@@ -1233,3 +1247,35 @@ const isTypingTarget = (target: EventTarget | null) =>
   (target.tagName === "INPUT" ||
     target.tagName === "TEXTAREA" ||
     target.isContentEditable);
+
+/**
+ * Accepts bare hostnames by assuming https, and rejects anything that isn't
+ * plausibly a web address.
+ *
+ * `new URL()` alone is too permissive here: it happily reads "not a url at all"
+ * as the host "not" with the rest as a path, so the hostname is checked
+ * explicitly rather than trusting the parse to fail.
+ */
+const normaliseUrl = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed || /\s/.test(trimmed)) return null;
+
+  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(candidate);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    const host = url.hostname;
+    // a real host is either dotted, or a bare name we recognise locally
+    const dotted = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(host);
+    const local = host === "localhost" || /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+    if (!dotted && !local) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+};
+
+/** Opens an embedded link in a new tab, without handing it opener access. */
+const openEmbed = (el: EmbedElement) => {
+  window.open(el.url, "_blank", "noopener,noreferrer");
+};

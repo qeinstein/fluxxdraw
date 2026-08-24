@@ -1516,3 +1516,89 @@ kbd {
   background: var(--accent);
   color: var(--accent-contrast);
 }
+
+/* --- toolbar overflow ------------------------------------------------------ */
+
+.toolbar-overflow {
+  position: relative;
+  display: inline-flex;
+}
+
+.overflow-popover {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  min-width: 190px;
+  padding: 5px;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  z-index: 40;
+  animation: pop-in 130ms var(--ease);
+  transform-origin: top right;
+}
+
+.overflow-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  font-size: 12.5px;
+  font-weight: 450;
+  text-align: left;
+  color: var(--fg-muted);
+}
+
+.overflow-item span {
+  flex: 1;
+}
+
+.overflow-item:hover {
+  color: var(--fg);
+}
+
+.overflow-item.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* --- editable file name ---------------------------------------------------- */
+
+.file-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.25;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: text;
+}
+
+.file-meta:hover {
+  background: var(--hover);
+}
+
+.file-name-input {
+  width: 148px;
+  padding: 3px 6px;
+  font-size: 12.5px;
+  font-weight: 550;
+}
+
+.dialog.compact {
+  width: min(420px, calc(100vw - 32px));
+}
+
+.dialog.compact .field-label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  color: var(--fg-muted);
+}

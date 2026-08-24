@@ -10,6 +10,8 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
 import type { ComponentEditSession } from "./components-model";
+import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
+import { cancelPrompt, setPromptHandler } from "./prompt";
 import { TextEditor } from "./components/TextEditor";
 import { Tooltip } from "./components/Tooltip";
 import { IconRedo, IconUndo } from "./components/icons";
@@ -45,6 +47,7 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [presenting, setPresenting] = useState(false);
+  const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [componentSession, setComponentSession] = useState<{
     session: ComponentEditSession;
     instanceId: string;
@@ -242,6 +245,25 @@ export default function App() {
     preloadFiles({ [file.id]: file });
   };
 
+  /**
+   * Renames the document. The extension is kept (or added), and the name is
+   * also used as the default for exports so both stay in step.
+   */
+  const renameDocument = useCallback(
+    (next: string) => {
+      const stem = next.replace(/\.[^.]+$/, "").trim();
+      if (!stem) return;
+      const extension = fileName?.match(/\.[^.]+$/)?.[0] ?? `.${FILE_EXTENSION}`;
+      setFileName(`${stem}${extension}`);
+      updatePrefs({
+        exportSettings: { ...prefs.exportSettings, filename: stem },
+      });
+      // the handle still points at the old file, so Save must ask again
+      fileHandleRef.current = null;
+    },
+    [fileName, prefs.exportSettings, updatePrefs],
+  );
+
   const handleOpen = useCallback(async () => {
     try {
       const picked = await openWithPicker();
@@ -251,6 +273,12 @@ export default function App() {
       showToast(`Could not open the file: ${(error as Error).message}`);
     }
   }, [applyOpenResult, showToast]);
+
+  // route in-app prompts (embed URLs, component names) through the dialog
+  useEffect(() => {
+    setPromptHandler(setPromptRequest);
+    return () => setPromptHandler(null);
+  }, []);
 
   // Files double-clicked in the OS arrive here, once the app is installed.
   useEffect(() => {
@@ -440,6 +468,7 @@ export default function App() {
             onPresent={() => setPresenting(true)}
             currentFileName={fileName}
             dirty={dirty}
+            onRename={renameDocument}
           />
           <StylePanel />
           <ComponentControls
@@ -499,6 +528,16 @@ export default function App() {
       )}
 
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
+
+      {promptRequest && (
+        <InputDialog
+          request={promptRequest}
+          onClose={() => {
+            cancelPrompt();
+            setPromptRequest(null);
+          }}
+        />
+      )}
 
       {historyOpen && <TimelinePanel onClose={() => setHistoryOpen(false)} />}
 

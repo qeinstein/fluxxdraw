@@ -137,18 +137,76 @@ const drawImageElement = (ctx: CanvasRenderingContext2D, el: ExcaliElement) => {
   }
 };
 
-const drawEmbedElement = (ctx: CanvasRenderingContext2D, el: ExcaliElement) => {
+/** Domain, for the embed card's title line. */
+export const embedDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url.replace(/^https?:\/\//, "").split("/")[0];
+  }
+};
+
+const roundRectPath = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) => {
+  const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+};
+
+const drawEmbedElement = (
+  ctx: CanvasRenderingContext2D,
+  el: ExcaliElement,
+  theme: "light" | "dark",
+) => {
   if (el.type !== "embed") return;
+  const dark = theme === "dark";
+  const w = Math.abs(el.width);
+  const h = Math.abs(el.height);
+  const x = Math.min(el.x, el.x + el.width);
+  const y = Math.min(el.y, el.y + el.height);
+
   ctx.save();
-  ctx.fillStyle = "#f1f3f5";
-  ctx.fillRect(el.x, el.y, el.width, el.height);
-  ctx.strokeStyle = "#adb5bd";
+  roundRectPath(ctx, x, y, w, h, 10);
+  ctx.fillStyle = dark ? "#22222a" : "#f6f7f9";
+  ctx.fill();
+  ctx.strokeStyle = dark ? "#3c3c48" : "#d7d7de";
   ctx.lineWidth = 1;
-  ctx.strokeRect(el.x, el.y, el.width, el.height);
-  ctx.fillStyle = "#495057";
-  ctx.font = "13px system-ui, sans-serif";
-  const label = el.url.replace(/^https?:\/\//, "").slice(0, 48);
-  ctx.fillText(label, el.x + 10, el.y + 22);
+  ctx.stroke();
+
+  // header strip carrying the domain
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = dark ? "#2b2b35" : "#eceef2";
+  ctx.fillRect(x, y, w, Math.min(34, h));
+  ctx.restore();
+
+  const domain = embedDomain(el.url);
+  ctx.fillStyle = dark ? "#e6e6ee" : "#2a2a33";
+  ctx.font = "600 13px system-ui, -apple-system, sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.fillText(domain.slice(0, 42), x + 12, y + 17, Math.max(w - 70, 20));
+
+  ctx.fillStyle = dark ? "#8b87f5" : "#5b57d1";
+  ctx.font = "600 11px system-ui, -apple-system, sans-serif";
+  ctx.fillText("OPEN ↗", x + w - 58, y + 17);
+
+  if (h > 48) {
+    ctx.fillStyle = dark ? "#9c9caa" : "#6b6b76";
+    ctx.font = "12px system-ui, -apple-system, sans-serif";
+    const path = el.url.replace(/^https?:\/\//, "");
+    ctx.fillText(path.slice(0, 60), x + 12, y + 52, Math.max(w - 24, 20));
+  }
   ctx.restore();
 };
 
@@ -192,7 +250,7 @@ export const renderElement = (
       drawImageElement(ctx, el);
       break;
     case "embed":
-      drawEmbedElement(ctx, el);
+      drawEmbedElement(ctx, el, config.theme ?? "light");
       break;
     case "instance": {
       const definition = config.components?.[el.componentId];

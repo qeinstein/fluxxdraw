@@ -11,6 +11,7 @@ import {
   type ComponentEditSession,
 } from "../components-model";
 import { Tooltip } from "./Tooltip";
+import { promptForInput } from "../prompt";
 import { IconDuplicate, IconGroup, IconUngroup } from "./icons";
 import type { InstanceElement } from "../types";
 
@@ -118,9 +119,16 @@ export const ComponentControls = ({
           <button
             className="component-make"
             onClick={() => {
-              const name = window.prompt("Name this component");
-              if (name === null) return;
-              createComponentFromSelection(name);
+              promptForInput({
+                title: "Make a component",
+                label: "Name",
+                placeholder: "Service box",
+                confirmLabel: "Create",
+                hint: "Editing the master later updates every instance.",
+              }).then((name) => {
+                if (name === null) return;
+                createComponentFromSelection(name);
+              });
             }}
           >
             <IconGroup />

@@ -5,16 +5,11 @@ import { renderElements } from "../render/renderScene";
 import { getElementBounds } from "../geometry";
 import { preloadFiles } from "../render/imageCache";
 import { LASER_FADE_MS } from "../constants";
+import { drawLaserTrail, type LaserPoint } from "../render/laser";
 import type { FrameElement } from "../types";
 
 interface PresentationProps {
   onExit: () => void;
-}
-
-interface LaserPoint {
-  x: number;
-  y: number;
-  time: number;
 }
 
 /** Frames, in canvas order, are the slides. */
@@ -158,25 +153,12 @@ export const Presentation = ({ onExit }: PresentationProps) => {
         exporting: true,
       });
 
-      // laser trail, in screen space over the slide
+      // laser trail, in the slide's own coordinates
       const now = performance.now();
       const trail = laserRef.current.filter((p) => now - p.time < LASER_FADE_MS);
       laserRef.current = trail;
-      if (trail.length > 1) {
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        for (let i = 1; i < trail.length; i++) {
-          const age = (now - trail[i].time) / LASER_FADE_MS;
-          ctx.globalAlpha = Math.max(0, 1 - age);
-          ctx.strokeStyle = "#f03e3e";
-          ctx.lineWidth = (5 * (1 - age * 0.5)) / zoom;
-          ctx.beginPath();
-          ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
-          ctx.lineTo(trail[i].x, trail[i].y);
-          ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
-      }
+      if (trail.length > 1) drawLaserTrail(ctx, trail, zoom, now);
+
       ctx.restore();
     };
 

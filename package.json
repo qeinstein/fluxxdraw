@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "smoke": "node scripts/smoke.mjs",
     "shots": "node scripts/shots.mjs",
-    "icons": "node scripts/icons.mjs"
+    "icons": "node scripts/icons.mjs",
+    "test": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@fontsource/architects-daughter": "^5.3.0",
@@ -34,5 +35,12 @@
     "playwright": "^1.62.1",
     "typescript": "~6.0.2",
     "vite": "^8.2.2"
+  },
+  "description": "A files-first hand-drawn whiteboard. No backend, no account, no cloud.",
+  "license": "MIT",
+  "author": "Toheeb Ogunade",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qeinstein/fluxxdraw.git"
   }
 }
