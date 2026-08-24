@@ -20,6 +20,8 @@ const TOOL_KEYS: Record<string, Tool> = {
   v: "selection",
   "2": "rectangle",
   r: "rectangle",
+  s: "rectangle",
+  n: "sticky",
   "3": "diamond",
   d: "diamond",
   "4": "ellipse",

@@ -176,6 +176,7 @@ export type Tool =
   | "selection"
   | "hand"
   | "rectangle"
+  | "sticky"
   | "diamond"
   | "ellipse"
   | "arrow"

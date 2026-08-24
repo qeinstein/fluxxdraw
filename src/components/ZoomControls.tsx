@@ -2,7 +2,7 @@ import { store, useScene } from "../store";
 import { Tooltip } from "./Tooltip";
 import { IconFit, IconMinus, IconPlus } from "./icons";
 import { MAX_ZOOM, MIN_ZOOM } from "../constants";
-import { getCommonBounds } from "../geometry";
+import { getCommonBounds, getElementBounds } from "../geometry";
 import { sc } from "../shortcuts";
 
 /** Fits the given elements (or everything) into the viewport. */
@@ -34,6 +34,35 @@ export const zoomToFit = (target: "all" | "selection" = "all") => {
     scrollX: rect.width / (2 * zoom) - (bounds.x1 + bounds.x2) / 2,
     scrollY: rect.height / (2 * zoom) - (bounds.y1 + bounds.y2) / 2,
   });
+};
+
+/**
+ * Centres one element, selects it, and closes in a little without ever zooming
+ * further than 100% — landing at 400% on a small shape is disorienting.
+ */
+export const zoomToElement = (id: string) => {
+  const element = store.getElement(id);
+  const container = document.querySelector(".canvas-container");
+  if (!element || element.isDeleted || !container) return false;
+
+  const rect = container.getBoundingClientRect();
+  const bounds = getElementBounds(element);
+  const padding = 160;
+  const width = Math.max(bounds.x2 - bounds.x1, 1);
+  const height = Math.max(bounds.y2 - bounds.y1, 1);
+  const zoom = Math.min(
+    1,
+    Math.max(MIN_ZOOM, Math.min((rect.width - padding) / width, (rect.height - padding) / height)),
+  );
+
+  store.setAppState({
+    zoom,
+    scrollX: rect.width / (2 * zoom) - (bounds.x1 + bounds.x2) / 2,
+    scrollY: rect.height / (2 * zoom) - (bounds.y1 + bounds.y2) / 2,
+    selectedIds: [id],
+    tool: "selection",
+  });
+  return true;
 };
 
 /** Zooms about the viewport centre so the view doesn't jump. */

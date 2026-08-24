@@ -129,6 +129,11 @@ export const Menu = ({
             checked={appState.snapToObjects}
             onChange={(next) => store.setAppState({ snapToObjects: next })}
           />
+          <MenuToggle
+            label="Keep tool selected"
+            checked={appState.toolLocked}
+            onChange={(next) => store.setAppState({ toolLocked: next })}
+          />
 
           <div className="menu-separator" />
           <div className="menu-label">Canvas background</div>

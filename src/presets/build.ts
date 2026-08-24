@@ -51,7 +51,9 @@ const base = (x: number, y: number, width: number, height: number, stroke: strin
   // a value the toolbar can actually show as selected, not a bespoke 1.25
   strokeWidth: STROKE_WIDTHS.thin,
   strokeStyle: "solid" as const,
-  roughness: 1,
+  // Architect: architecture diagrams read better with crisp lines than wobbly
+  // ones, and the sloppiness control is right there for anyone who disagrees
+  roughness: 0,
   edges: "round" as const,
   opacity: 100,
 });

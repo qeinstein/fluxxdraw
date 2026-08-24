@@ -421,3 +421,10 @@ export const IconSliders = () => (
     <circle cx="12.5" cy="14" r="2" />
   </Icon>
 );
+
+export const IconSticky = () => (
+  <Icon>
+    <path d="M3.4 4.2a1.4 1.4 0 011.4-1.4h10.4a1.4 1.4 0 011.4 1.4v7.4l-5 5.6H4.8a1.4 1.4 0 01-1.4-1.4z" />
+    <path d="M16.6 11.6h-4a1.4 1.4 0 00-1.4 1.4v4.2" />
+  </Icon>
+);

@@ -17,6 +17,7 @@ import {
 import { freedrawPath, getDrawables } from "./shapes";
 import { getImage } from "./imageCache";
 import { FRAME_HEADER_HEIGHT } from "../elements/hitTest";
+import { linkBadgeBox } from "../links";
 
 export interface RenderConfig {
   scrollX: number;
@@ -218,6 +219,49 @@ const drawFrameChrome = (ctx: CanvasRenderingContext2D, el: ExcaliElement) => {
   ctx.restore();
 };
 
+
+/**
+ * The chain badge on a linked element, at its top-right corner.
+ *
+ * Drawn at a constant size on screen rather than in scene units, so it stays
+ * clickable when zoomed out and doesn't balloon when zoomed in. Skipped when
+ * exporting: it's an affordance, not part of the drawing.
+ */
+const drawLinkBadge = (
+  ctx: CanvasRenderingContext2D,
+  el: ExcaliElement,
+  config: RenderConfig,
+) => {
+  const { x, y, size } = linkBadgeBox(el, config.zoom);
+  const dark = config.theme === "dark";
+  const r = size * 0.28;
+
+  ctx.save();
+  ctx.globalAlpha = 1;
+  roundRectPath(ctx, x, y, size, size, r);
+  ctx.fillStyle = dark ? "#2c2a52" : "#ecebfb";
+  ctx.fill();
+  ctx.strokeStyle = dark ? "#8b87f5" : "#5b57d1";
+  ctx.lineWidth = size * 0.07;
+  ctx.stroke();
+
+  // two interlocking links, scaled off the badge
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  const arm = size * 0.17;
+  ctx.lineCap = "round";
+  ctx.lineWidth = size * 0.1;
+  ctx.beginPath();
+  ctx.moveTo(cx - arm * 1.5, cy + arm * 0.5);
+  ctx.lineTo(cx - arm * 0.2, cy - arm * 0.8);
+  ctx.moveTo(cx + arm * 0.2, cy + arm * 0.8);
+  ctx.lineTo(cx + arm * 1.5, cy - arm * 0.5);
+  ctx.moveTo(cx - arm * 0.7, cy + arm * 0.1);
+  ctx.lineTo(cx + arm * 0.7, cy - arm * 0.1);
+  ctx.stroke();
+  ctx.restore();
+};
+
 /** Draws one element, including rotation and opacity, in scene coordinates. */
 export const renderElement = (
   ctx: CanvasRenderingContext2D,
@@ -239,6 +283,11 @@ export const renderElement = (
   // frames clip whatever their children overflow
   if (el.type === "frame") {
     drawFrameChrome(ctx, el);
+  }
+
+  // a linked element needs somewhere to click that isn't "select me"
+  if (el.link && !config.exporting) {
+    drawLinkBadge(ctx, el, config);
   }
 
   switch (el.type) {

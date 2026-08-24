@@ -3,7 +3,7 @@ import { Canvas } from "./components/Canvas";
 import { Toolbar } from "./components/Toolbar";
 import { StylePanel, hasStyleControls } from "./components/StylePanel";
 import { Menu } from "./components/Menu";
-import { ZoomControls } from "./components/ZoomControls";
+import { ZoomControls, zoomToElement } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { HelpDialog } from "./components/HelpDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
@@ -34,6 +34,7 @@ import { loadPreferences, savePreferences, type Preferences } from "./io/prefere
 import { consumeLaunchFiles, registerServiceWorker } from "./io/launchHandler";
 import { loadFonts } from "./fonts";
 import { track } from "./analytics";
+import { linkedElementFromUrl } from "./links";
 import { reconcileFrameMembership, refreshTextLayout } from "./actions";
 import { newImageElement, syncFrameCounter } from "./elements/factory";
 import { preloadFiles } from "./render/imageCache";
@@ -112,6 +113,7 @@ export default function App() {
       theme: prefs.theme,
       gridSize: prefs.gridSize,
       snapToObjects: prefs.snapToObjects,
+      toolLocked: prefs.toolLocked,
     });
     getStoredExportDirectory().then((dir) => {
       if (dir && dir.name !== prefs.exportDirectoryName) {
@@ -124,14 +126,15 @@ export default function App() {
 
   // mirror view settings back into preferences when they change in the UI
   useEffect(() => {
-    const { viewBackgroundColor, theme, gridSize, snapToObjects } = scene.appState;
+    const { viewBackgroundColor, theme, gridSize, snapToObjects, toolLocked } = scene.appState;
     if (
       viewBackgroundColor !== prefs.viewBackgroundColor ||
       theme !== prefs.theme ||
       gridSize !== prefs.gridSize ||
-      snapToObjects !== prefs.snapToObjects
+      snapToObjects !== prefs.snapToObjects ||
+      toolLocked !== prefs.toolLocked
     ) {
-      updatePrefs({ viewBackgroundColor, theme, gridSize, snapToObjects });
+      updatePrefs({ viewBackgroundColor, theme, gridSize, snapToObjects, toolLocked });
     }
   }, [scene.appState, prefs, updatePrefs]);
 
@@ -194,6 +197,34 @@ export default function App() {
     } catch {
       localStorage.removeItem(AUTOSAVE_KEY);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /*
+   * A link someone was sent lands here: once the scene is on screen, jump to
+   * the element it names. Runs after restore, so the element exists by then.
+   */
+  useEffect(() => {
+    const jump = (target: string | null) => {
+      if (!target) return;
+      if (!zoomToElement(target)) {
+        showToast("That link points at something that isn't in this drawing.");
+      }
+    };
+
+    // on load, once the restored scene is on screen
+    const timer = window.setTimeout(() => jump(linkedElementFromUrl()), 120);
+    /*
+     * And on later changes: pasting a link into the address bar of an open tab
+     * only moves the fragment, which doesn't reload anything, so without this
+     * the link would appear to do nothing.
+     */
+    const onHashChange = () => jump(linkedElementFromUrl());
+    window.addEventListener("hashchange", onHashChange);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("hashchange", onHashChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -488,6 +519,7 @@ export default function App() {
         onDoubleClickText={(id) => store.setAppState({ editingTextId: id })}
         onRequestImage={() => imageInputRef.current?.click()}
         onContextMenu={setContextMenu}
+        onLinkProblem={showToast}
       />
 
       {editingTextId && (
@@ -499,11 +531,15 @@ export default function App() {
           key={editingTextId}
           elementId={editingTextId}
           onDone={() => {
-            // a locked text tool stays selected, like every other locked tool
+            /*
+             * A locked tool survives finishing a label, whichever tool it is.
+             * Checking specifically for "text" meant the sticky tool fell back
+             * to Select after every note, so each one had to be re-picked.
+             */
             const { tool, toolLocked } = store.appState;
             store.setAppState({
               editingTextId: null,
-              tool: toolLocked && tool === "text" ? "text" : "selection",
+              tool: toolLocked ? tool : "selection",
             });
             reconcileFrameMembership();
           }}
@@ -648,6 +684,7 @@ export default function App() {
           onExport={() => setExportOpen(true)}
           onPresent={() => setPresenting(true)}
           onServices={() => setServicesOpen(true)}
+          onToast={showToast}
         />
       )}
 

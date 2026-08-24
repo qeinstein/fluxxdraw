@@ -6,6 +6,9 @@ import {
   LASER_FADE_MS,
   MAX_ZOOM,
   MIN_ZOOM,
+  PALETTE,
+  STICKY_COLOR_INDEX,
+  STICKY_SIZE,
 } from "../constants";
 import {
   getCommonBounds,
@@ -47,8 +50,17 @@ import {
   refreshTextLayout,
   resolveSelectionTarget,
 } from "../actions";
-import type { EmbedElement, ExcaliElement, FreedrawElement, LinearElement, Tool } from "../types";
+import type {
+  EmbedElement,
+  ExcaliElement,
+  FreedrawElement,
+  LinearElement,
+  TextElement,
+  Tool,
+} from "../types";
 import { promptForInput } from "../prompt";
+import { followLink } from "../follow-link";
+import { hitLinkBadge } from "../links";
 import type { ContextMenuRequest } from "./ContextMenu";
 
 type Mode =
@@ -124,10 +136,16 @@ interface PinchGesture {
 interface CanvasProps {
   onDoubleClickText: (elementId: string) => void;
   onContextMenu: (request: ContextMenuRequest) => void;
+  onLinkProblem: (message: string) => void;
   onRequestImage: () => void;
 }
 
-export const Canvas = ({ onDoubleClickText, onRequestImage, onContextMenu }: CanvasProps) => {
+export const Canvas = ({
+  onDoubleClickText,
+  onRequestImage,
+  onContextMenu,
+  onLinkProblem,
+}: CanvasProps) => {
   // subscribing keeps the component in sync with store-driven UI state
   useScene();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -553,6 +571,32 @@ export const Canvas = ({ onDoubleClickText, onRequestImage, onContextMenu }: Can
       return;
     }
 
+    if (state.tool === "sticky") {
+      /*
+       * One click drops a note and puts the caret in it — the point of a sticky
+       * is to type, not to size a box first. It's an ordinary filled rectangle
+       * with a centred label, so everything else about it already works.
+       */
+      event.preventDefault();
+      if (state.editingTextId) return;
+      store.beginHistory();
+      const sticky = newGenericElement("rectangle", state, x - STICKY_SIZE / 2, y - STICKY_SIZE / 2);
+      sticky.width = STICKY_SIZE;
+      sticky.height = STICKY_SIZE;
+      sticky.backgroundColor = PALETTE[state.theme].background[STICKY_COLOR_INDEX];
+      sticky.fillStyle = "solid";
+      sticky.edges = "round";
+      store.addElements(sticky);
+      store.setAppState({ selectedIds: [sticky.id] });
+      const label = ensureBoundText(sticky.id);
+      store.updateElement<TextElement>(label, () => ({
+        textAlign: "center",
+        verticalAlign: "middle",
+      }));
+      onDoubleClickText(label);
+      return;
+    }
+
     if (state.tool === "text") {
       /*
        * A click while an editor is open means "I'm done typing", not "start
@@ -608,6 +652,19 @@ export const Canvas = ({ onDoubleClickText, onRequestImage, onContextMenu }: Can
     }
 
     // --- selection tool ---
+
+    /*
+     * The link badge is tested first. It sits just above the top-right corner,
+     * next door to the resize handle, and a handle that swallowed the click
+     * would leave the badge decorative.
+     */
+    const badge = hitLinkBadge(x, y, state.zoom);
+    if (badge) {
+      const problem = followLink(badge.link!);
+      if (problem) onLinkProblem(problem);
+      return;
+    }
+
     const selected = store.getSelected();
 
     if (selected.length > 0 && !selected.every((el) => el.locked)) {

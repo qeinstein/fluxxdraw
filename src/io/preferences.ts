@@ -10,6 +10,13 @@ export interface Preferences {
   theme: "light" | "dark";
   gridSize: number | null;
   snapToObjects: boolean;
+  /**
+   * Whether a tool stays selected after use. On by default — re-picking the
+   * tool for every shape is a keystroke on a desktop and a hunt for a small
+   * button on a phone — but plenty of people want one shape at a time, so the
+   * choice is remembered rather than reset every session.
+   */
+  toolLocked: boolean;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -19,6 +26,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "light",
   gridSize: null,
   snapToObjects: true,
+  toolLocked: true,
 };
 
 export const loadPreferences = (): Preferences => {

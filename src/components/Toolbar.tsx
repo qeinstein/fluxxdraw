@@ -18,6 +18,7 @@ import {
   IconMore,
   IconRectangle,
   IconSelection,
+  IconSticky,
   IconText,
 } from "./icons";
 import { useIsMobile } from "../hooks/useMediaQuery";
@@ -35,6 +36,7 @@ const PRIMARY_TOOLS: ToolSpec[] = [
   { tool: "hand", label: "Pan", shortcut: "H", icon: <IconHand /> },
   { tool: "selection", label: "Select", shortcut: "1", icon: <IconSelection /> },
   { tool: "rectangle", label: "Rectangle", shortcut: "2", icon: <IconRectangle /> },
+  { tool: "sticky", label: "Sticky note", shortcut: "N", icon: <IconSticky /> },
   { tool: "diamond", label: "Diamond", shortcut: "3", icon: <IconDiamond /> },
   { tool: "ellipse", label: "Ellipse", shortcut: "4", icon: <IconEllipse /> },
   { tool: "arrow", label: "Arrow", shortcut: "5", icon: <IconArrow /> },
@@ -58,6 +60,7 @@ const SECONDARY_TOOLS: ToolSpec[] = [
  */
 const MOBILE_PRIMARY: Tool[] = [
   "selection",
+  "sticky",
   "rectangle",
   "ellipse",
   "arrow",

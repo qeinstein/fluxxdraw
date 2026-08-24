@@ -54,6 +54,7 @@ import { sc } from "../shortcuts";
 
 const SHAPE_TOOLS: Tool[] = [
   "rectangle",
+  "sticky",
   "diamond",
   "ellipse",
   "arrow",
@@ -85,7 +86,7 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
     sloppiness: shapeLike,
     edges:
       selected.length === 0
-        ? ["rectangle", "arrow", "line"].includes(tool)
+        ? ["rectangle", "sticky", "arrow", "line"].includes(tool)
         : has("rectangle", "arrow", "line", "instance"),
     arrowheads: selected.length === 0 ? tool === "arrow" : has("arrow"),
     font: selected.length === 0 ? tool === "text" : has("text"),

@@ -40,6 +40,15 @@ export const mapColorAcrossThemes = (
   return PALETTE[to][role][index];
 };
 
+/**
+ * A sticky note is a filled square with a centred label — a rectangle and a
+ * bound text, not a new element type, so it selects, resizes, takes arrows,
+ * exports and serialises through everything that already exists.
+ */
+export const STICKY_SIZE = 168;
+/** index into a theme's background ramp: the yellow one */
+export const STICKY_COLOR_INDEX = 4;
+
 export const STROKE_WIDTHS = { thin: 1, bold: 2, extraBold: 4 } as const;
 export const FONT_SIZES = { S: 16, M: 20, L: 28, XL: 36 } as const;
 

@@ -10,7 +10,8 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
     title: "Tools",
     items: [
       ["Selection", "1 / V"],
-      ["Rectangle", "2 / R"],
+      ["Rectangle", "2 / R / S"],
+      ["Sticky note", "N"],
       ["Diamond", "3 / D"],
       ["Ellipse", "4 / O"],
       ["Arrow", "5 / A"],
@@ -42,6 +43,8 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
       ["Nudge further", `${KEY.shift} + arrows`],
       ["Tidy up layout", sc("tidyUp")],
       ["Actions for what's under the cursor", "Right-click / long-press"],
+      ["Link one object to another", "Right-click → Copy link, then Add link"],
+      ["Follow a link", "Click the badge above the object"],
     ],
   },
   {

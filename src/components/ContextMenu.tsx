@@ -12,6 +12,8 @@ import {
 import { setZoom, zoomToFit } from "./ZoomControls";
 import { tidyUp } from "../layout";
 import { sc } from "../shortcuts";
+import { elementLink, normaliseLink, setElementLink } from "../links";
+import { promptForInput } from "../prompt";
 
 export interface ContextMenuRequest {
   /** viewport coordinates of the click or long-press */
@@ -29,6 +31,7 @@ interface ContextMenuProps {
   onExport: () => void;
   onPresent: () => void;
   onServices: () => void;
+  onToast: (message: string) => void;
 }
 
 type Item =
@@ -57,6 +60,7 @@ export const ContextMenu = ({
   onExport,
   onPresent,
   onServices,
+  onToast,
 }: ContextMenuProps) => {
   const scene = useScene();
   const ref = useRef<HTMLDivElement>(null);
@@ -149,6 +153,69 @@ export const ContextMenu = ({
           shortcut: sc("lock"),
           run: run(toggleLockSelection),
         },
+        { kind: "separator" },
+        /*
+         * Linking one shape to another is how a board becomes navigable: a
+         * phase box that jumps to that phase's frame, an overview that leads
+         * into the detail. Copy from one, paste into another.
+         */
+        ...(selected.length === 1
+          ? [
+              {
+                kind: "item" as const,
+                label: "Copy link to this",
+                run: run(async () => {
+                  const link = elementLink(selected[0].id);
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    onToast("Link copied — paste it into another object's link");
+                  } catch {
+                    onToast(link);
+                  }
+                }),
+              },
+            ]
+          : []),
+        {
+          kind: "item",
+          label: selected.some((el) => el.link) ? "Edit link…" : "Add link…",
+          run: run(() => {
+            const current = selected.find((el) => el.link)?.link ?? "";
+            promptForInput({
+              title: "Link this object",
+              label: "Link",
+              initialValue: current,
+              placeholder: "https://… or a copied object link",
+              confirmLabel: "Save link",
+              hint: "Paste a link copied from another object to jump straight to it.",
+              validate: (value) =>
+                !value.trim() || normaliseLink(value) ? null : "That doesn't look like a link.",
+            }).then((value) => {
+              if (value === null) return;
+              const link = value.trim() ? normaliseLink(value) : null;
+              setElementLink(
+                selected.map((el) => el.id),
+                link,
+              );
+              onToast(link ? "Link added — click the badge to follow it" : "Link removed");
+            });
+          }),
+        },
+        ...(selected.some((el) => el.link)
+          ? [
+              {
+                kind: "item" as const,
+                label: "Remove link",
+                run: run(() => {
+                  setElementLink(
+                    selected.map((el) => el.id),
+                    null,
+                  );
+                  onToast("Link removed");
+                }),
+              },
+            ]
+          : []),
         { kind: "separator" },
         { kind: "item", label: "Export…", shortcut: sc("export"), run: run(onExport) },
         { kind: "separator" },
