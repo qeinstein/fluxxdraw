@@ -23,9 +23,11 @@ import {
 } from "./io/fileSystem";
 import { loadPreferences, savePreferences, type Preferences } from "./io/preferences";
 import { consumeLaunchFiles, registerServiceWorker } from "./io/launchHandler";
+import { loadFonts } from "./fonts";
+import { reconcileFrameMembership, refreshTextLayout } from "./actions";
 import { newImageElement, syncFrameCounter } from "./elements/factory";
 import { preloadFiles } from "./render/imageCache";
-import { reconcileFrameMembership } from "./actions";
+
 import { APP_NAME, FILE_EXTENSION } from "./constants";
 import { inferTheme } from "./theme";
 import type { BinaryFile, SceneDocument } from "./types";
@@ -104,6 +106,23 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = scene.appState.theme;
   }, [scene.appState.theme]);
+
+  // Text is measured against real font metrics, so anything laid out before
+  // the webfonts arrive needs re-measuring once they do.
+  useEffect(() => {
+    let cancelled = false;
+    loadFonts().then(() => {
+      if (cancelled) return;
+      const textIds = store.elements
+        .filter((el) => el.type === "text")
+        .map((el) => el.id);
+      if (textIds.length) refreshTextLayout(textIds);
+      store.emit();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // --- autosave (crash recovery only; the real copy is the user's file) ----
 

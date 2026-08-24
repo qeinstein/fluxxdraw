@@ -43,12 +43,6 @@ export const mapColorAcrossThemes = (
 export const STROKE_WIDTHS = { thin: 1, bold: 2, extraBold: 4 } as const;
 export const FONT_SIZES = { S: 16, M: 20, L: 28, XL: 36 } as const;
 
-export const FONT_STACKS: Record<string, string> = {
-  hand: '"Comic Sans MS", "Segoe Print", "Bradley Hand", cursive',
-  normal: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-  code: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-};
-
 export const LINE_HEIGHT = 1.25;
 
 /** Padding between a container's edge and its bound label. */

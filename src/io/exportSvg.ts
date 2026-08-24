@@ -3,7 +3,8 @@ import type { BinaryFile, ExcaliElement, TextElement } from "../types";
 import { getCommonBounds, getElementBounds, getElementCenter } from "../geometry";
 import { freedrawPath, getDrawables } from "../render/shapes";
 import { baselineOffset, getTextLines, measureText } from "../elements/text";
-import { CONTAINER_PADDING, FONT_STACKS } from "../constants";
+import { CONTAINER_PADDING } from "../constants";
+import { FONT_BY_ID, fontAsDataUrl, fontStack } from "../fonts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 export const SVG_METADATA_ID = "scene-source";
@@ -19,6 +20,8 @@ export interface ExportSvgOptions {
   sceneJson?: string;
   /** scales the viewport size attributes; the vector content is resolution-free */
   scale: number;
+  /** inline the fonts used, so the file renders identically elsewhere */
+  embedFonts?: boolean;
 }
 
 const appendTextElement = (
@@ -60,7 +63,7 @@ const appendTextElement = (
   const text = document.createElementNS(SVG_NS, "text");
   text.setAttribute("x", String(anchorX));
   text.setAttribute("y", String(originY + baseline));
-  text.setAttribute("font-family", FONT_STACKS[el.fontFamily]);
+  text.setAttribute("font-family", fontStack(el.fontFamily));
   text.setAttribute("font-size", `${el.fontSize}px`);
   text.setAttribute("fill", el.strokeColor);
   text.setAttribute("text-anchor", anchor);
@@ -204,8 +207,40 @@ export const exportToSvgElement = (opts: ExportSvgOptions): SVGSVGElement => {
   return svg;
 };
 
-export const exportToSvgString = (opts: ExportSvgOptions): string => {
+/**
+ * Inlines the fonts a drawing actually uses as base64 @font-face rules.
+ *
+ * Without this an exported SVG renders in whatever the viewer happens to have
+ * installed, which for a hand-drawn diagram means it looks wrong everywhere
+ * but the machine that made it.
+ */
+const embedFonts = async (svg: SVGSVGElement, elements: ExcaliElement[]) => {
+  const used = new Set(
+    elements.filter((el) => el.type === "text").map((el) => el.fontFamily),
+  );
+  if (used.size === 0) return;
+
+  const faces = await Promise.all(
+    [...used].map(async (id) => {
+      const font = FONT_BY_ID.get(id);
+      if (!font) return null;
+      const dataUrl = await fontAsDataUrl(font);
+      if (!dataUrl) return null;
+      return `@font-face { font-family: "${font.family}"; src: url(${dataUrl}) format("woff2"); font-weight: 400; font-style: normal; }`;
+    }),
+  );
+
+  const css = faces.filter(Boolean).join("\n");
+  if (!css) return;
+
+  const style = document.createElementNS(SVG_NS, "style");
+  style.textContent = css;
+  svg.insertBefore(style, svg.firstChild);
+};
+
+export const exportToSvgString = async (opts: ExportSvgOptions): Promise<string> => {
   const svg = exportToSvgElement(opts);
+  if (opts.embedFonts !== false) await embedFonts(svg, opts.elements);
   return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(svg)}`;
 };
 

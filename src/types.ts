@@ -4,7 +4,13 @@ export type FillStyle = "hachure" | "cross-hatch" | "solid" | "zigzag";
 export type StrokeStyle = "solid" | "dashed" | "dotted";
 export type Edges = "sharp" | "round";
 export type Arrowhead = "none" | "arrow" | "triangle" | "triangle-outline" | "bar" | "dot";
-export type FontFamily = "hand" | "normal" | "code";
+export type FontFamily =
+  | "hand"
+  | "casual"
+  | "marker"
+  | "neat"
+  | "normal"
+  | "code";
 export type TextAlign = "left" | "center" | "right";
 export type VerticalAlign = "top" | "middle" | "bottom";
 

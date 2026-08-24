@@ -1,4 +1,5 @@
-import { CONTAINER_PADDING, FONT_STACKS } from "../constants";
+import { CONTAINER_PADDING } from "../constants";
+import { fontStack } from "../fonts";
 import type { ExcaliElement, TextElement } from "../types";
 
 let measureCtx: CanvasRenderingContext2D | null = null;
@@ -11,7 +12,7 @@ const getMeasureContext = () => {
 };
 
 export const fontString = (el: Pick<TextElement, "fontSize" | "fontFamily">) =>
-  `${el.fontSize}px ${FONT_STACKS[el.fontFamily]}`;
+  `${el.fontSize}px ${fontStack(el.fontFamily)}`;
 
 export const measureLine = (
   line: string,

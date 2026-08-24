@@ -1311,3 +1311,11 @@ kbd {
 .timeline-mark.active {
   background: var(--accent);
 }
+
+.choice--font button {
+  flex: 1;
+  min-width: 30px;
+  height: 30px;
+  font-size: 15px;
+  line-height: 1;
+}

@@ -47,7 +47,8 @@ import {
   IconWidthExtraBold,
   IconWidthThin,
 } from "./icons";
-import type { Arrowhead, ExcaliElement, FontFamily, Tool } from "../types";
+import { FONTS, fontStack } from "../fonts";
+import type { Arrowhead, ExcaliElement, Tool } from "../types";
 
 const SHAPE_TOOLS: Tool[] = [
   "rectangle",
@@ -93,12 +94,6 @@ const ARROWHEADS: { value: Arrowhead; label: string }[] = [
   { value: "triangle-outline", label: "Triangle outline" },
   { value: "bar", label: "Bar" },
   { value: "dot", label: "Dot" },
-];
-
-const FONTS: { value: FontFamily; label: string }[] = [
-  { value: "hand", label: "Hand" },
-  { value: "normal", label: "Normal" },
-  { value: "code", label: "Code" },
 ];
 
 export const StylePanel = () => {
@@ -265,14 +260,21 @@ export const StylePanel = () => {
       {controls.font && (
         <>
           <Section label="Font">
-            <Choice
-              variant="text"
-              options={FONTS.map(
-                (f) => [f.value, f.label, f.label] as [string, string, string],
-              )}
-              value={valueOf("fontFamily", style.fontFamily)}
-              onChange={(v) => set({ fontFamily: v })}
-            />
+            <div className="row choice choice--font">
+              {FONTS.map((font) => (
+                <Tooltip key={font.id} label={font.label}>
+                  <button
+                    className={valueOf("fontFamily", style.fontFamily) === font.id ? "active" : ""}
+                    aria-label={font.label}
+                    aria-pressed={valueOf("fontFamily", style.fontFamily) === font.id}
+                    style={{ fontFamily: fontStack(font.id) }}
+                    onClick={() => set({ fontFamily: font.id })}
+                  >
+                    Ag
+                  </button>
+                </Tooltip>
+              ))}
+            </div>
           </Section>
           <Section label="Font size">
             <Choice

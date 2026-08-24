@@ -124,7 +124,7 @@ export const buildExportBlob = async (settings: ExportSettings): Promise<Blob> =
   const { scale, targetLongEdge } = resolveScaling(settings);
 
   if (settings.format === "svg") {
-    const svg = exportToSvgString({
+    const svg = await exportToSvgString({
       elements,
       files,
       padding: settings.padding,

@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { store } from "../store";
 import { refreshBindings, refreshTextLayout } from "../actions";
 import { fontString, measureText, wrapText } from "../elements/text";
-import { CONTAINER_PADDING, FONT_STACKS } from "../constants";
+import { CONTAINER_PADDING } from "../constants";
+import { fontStack } from "../fonts";
 import { getElementBounds } from "../geometry";
 import type { TextElement } from "../types";
 
@@ -165,7 +166,7 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
           fontSize: element.fontSize * zoom,
           fontFamily: element.fontFamily,
         }),
-        fontFamily: FONT_STACKS[element.fontFamily],
+        fontFamily: fontStack(element.fontFamily),
         lineHeight: element.lineHeight,
         color: element.strokeColor,
         textAlign: element.textAlign,
