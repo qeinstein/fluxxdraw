@@ -1319,3 +1319,115 @@ kbd {
   font-size: 15px;
   line-height: 1;
 }
+
+/* --- presentation mode ---------------------------------------------------- */
+
+.presentation {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+}
+
+.presentation-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* invisible click targets: back on the left third, forward on the rest */
+.presentation-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.presentation-zone:hover {
+  background: transparent;
+}
+
+.presentation-zone.prev {
+  left: 0;
+  width: 30%;
+  cursor: w-resize;
+}
+
+.presentation-zone.next {
+  right: 0;
+  width: 70%;
+  cursor: e-resize;
+}
+
+.presentation-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  opacity: 0.25;
+  transition: opacity 160ms var(--ease);
+}
+
+.presentation-bar:hover {
+  opacity: 1;
+}
+
+.presentation-bar button {
+  min-width: 28px;
+  height: 28px;
+  color: var(--fg-muted);
+  font-size: 12.5px;
+}
+
+.presentation-bar button:hover:not(:disabled) {
+  color: var(--fg);
+}
+
+.presentation-count,
+.presentation-name {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+  padding: 0 4px;
+}
+
+.presentation-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.presentation-empty-card {
+  max-width: 420px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.presentation-empty-card h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.presentation-empty-card button {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+}

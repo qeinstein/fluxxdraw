@@ -51,6 +51,7 @@ export interface KeyboardHandlers {
   onExport: () => void;
   onHelp: () => void;
   onHistory: () => void;
+  onPresent: () => void;
   onEscape: () => void;
 }
 
@@ -101,6 +102,12 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
           case "h":
             event.preventDefault();
             handlers.onHistory();
+            return;
+          case "p":
+            if (event.shiftKey) {
+              event.preventDefault();
+              handlers.onPresent();
+            }
             return;
           case "o":
             event.preventDefault();
