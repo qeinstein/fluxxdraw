@@ -55,6 +55,7 @@ export interface KeyboardHandlers {
   onHistory: () => void;
   onPresent: () => void;
   onToggleText: () => void;
+  onServices: () => void;
   onEscape: () => void;
 }
 
@@ -86,6 +87,7 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
       history: handlers.onHistory,
       present: handlers.onPresent,
       tidyUp: () => tidyUp(),
+      services: handlers.onServices,
       zoomIn: () => setZoom(store.appState.zoom * 1.2),
       zoomInAlt: () => setZoom(store.appState.zoom * 1.2),
       zoomOut: () => setZoom(store.appState.zoom / 1.2),

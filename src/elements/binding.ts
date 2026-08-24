@@ -3,7 +3,20 @@ import { getElementBounds, getElementCenter } from "../geometry";
 import type { ExcaliElement, LinearElement } from "../types";
 import { hitTestElement } from "./hitTest";
 
-const BINDABLE = new Set(["rectangle", "diamond", "ellipse", "image", "text", "frame"]);
+/*
+ * Instances are bindable too: a placed component — a cloud service node, say —
+ * is a box on the canvas like any other, and an architecture diagram is mostly
+ * arrows between them.
+ */
+const BINDABLE = new Set([
+  "rectangle",
+  "diamond",
+  "ellipse",
+  "image",
+  "text",
+  "frame",
+  "instance",
+]);
 
 export const isBindable = (el: ExcaliElement) => BINDABLE.has(el.type) && !el.isDeleted;
 

@@ -64,6 +64,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
       ["Version history", sc("history")],
       ["Present frames", sc("present")],
       ["Diagram as text", sc("diagramText")],
+      ["Cloud services", sc("services")],
       ["Paste image / open file", `${formatCombo("mod+v")} or drag onto canvas`],
     ],
   },

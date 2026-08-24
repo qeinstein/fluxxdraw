@@ -26,6 +26,7 @@ interface ContextMenuProps {
   onClose: () => void;
   onExport: () => void;
   onPresent: () => void;
+  onServices: () => void;
 }
 
 type Item =
@@ -48,7 +49,13 @@ const GAP = 6;
  * something already reachable by keyboard or panel — this is a shortcut to
  * them, not a second implementation.
  */
-export const ContextMenu = ({ request, onClose, onExport, onPresent }: ContextMenuProps) => {
+export const ContextMenu = ({
+  request,
+  onClose,
+  onExport,
+  onPresent,
+  onServices,
+}: ContextMenuProps) => {
   const scene = useScene();
   const ref = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: request.x, y: request.y });
@@ -152,6 +159,8 @@ export const ContextMenu = ({ request, onClose, onExport, onPresent }: ContextMe
         },
       ]
     : [
+        { kind: "item", label: "Add cloud service…", shortcut: sc("services"), run: run(onServices) },
+        { kind: "separator" },
         { kind: "item", label: "Select all", shortcut: sc("selectAll"), run: run(selectAll) },
         { kind: "item", label: "Tidy up layout", shortcut: sc("tidyUp"), run: run(() => tidyUp()) },
         { kind: "separator" },

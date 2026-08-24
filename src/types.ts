@@ -150,7 +150,12 @@ export type ExcaliElement =
 export type ElementType = ExcaliElement["type"];
 
 /** Any element that can hold a bound text label and accept arrow bindings. */
-export type BindableElement = GenericElement | FrameElement | ImageElement | TextElement;
+export type BindableElement =
+  | GenericElement
+  | FrameElement
+  | ImageElement
+  | TextElement
+  | InstanceElement;
 
 export interface BinaryFile {
   id: string;

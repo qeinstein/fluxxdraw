@@ -63,6 +63,7 @@ export const SHORTCUTS = {
   history: "shift+h",
   present: "shift+p",
   tidyUp: "shift+t",
+  services: "shift+c",
   zoomIn: "mod+equal",
   zoomInAlt: "mod+shift+equal",
   zoomOut: "mod+minus",

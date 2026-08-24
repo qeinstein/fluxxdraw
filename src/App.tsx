@@ -11,6 +11,7 @@ import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
 import { ContextMenu, type ContextMenuRequest } from "./components/ContextMenu";
+import { ServiceLibrary } from "./components/ServiceLibrary";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
@@ -49,6 +50,7 @@ export default function App() {
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences());
   const [exportOpen, setExportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [presenting, setPresenting] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
@@ -441,8 +443,10 @@ export default function App() {
         setHistoryOpen(false);
         setStyleSheetOpen(false);
         setContextMenu(null);
+        setServicesOpen(false);
       },
       onPresent: () => setPresenting(true),
+      onServices: () => setServicesOpen(true),
       onToggleText: () => (textPanelOpen ? openPanel(null) : openPanel("text")),
     }),
     [handleOpen, handleSave, handleSaveAs, openPanel, textPanelOpen],
@@ -516,6 +520,7 @@ export default function App() {
             onHelp={() => setHelpOpen(true)}
             onHistory={() => openPanel("history")}
             onPresent={() => setPresenting(true)}
+            onServices={() => setServicesOpen(true)}
             onToggleText={() => (textPanelOpen ? openPanel(null) : openPanel("text"))}
             currentFileName={fileName}
             dirty={dirty}
@@ -608,6 +613,8 @@ export default function App() {
         />
       )}
 
+      {servicesOpen && <ServiceLibrary onClose={() => setServicesOpen(false)} />}
+
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
 
       {promptRequest && (
@@ -632,6 +639,7 @@ export default function App() {
           onClose={() => setContextMenu(null)}
           onExport={() => setExportOpen(true)}
           onPresent={() => setPresenting(true)}
+          onServices={() => setServicesOpen(true)}
         />
       )}
 

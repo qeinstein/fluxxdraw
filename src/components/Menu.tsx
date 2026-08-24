@@ -18,6 +18,7 @@ interface MenuProps {
   onHelp: () => void;
   onHistory: () => void;
   onPresent: () => void;
+  onServices: () => void;
   onToggleText: () => void;
   currentFileName: string | null;
   dirty: boolean;
@@ -34,6 +35,7 @@ export const Menu = ({
   onHelp,
   onHistory,
   onPresent,
+  onServices,
   onToggleText,
   currentFileName,
   dirty,
@@ -106,6 +108,7 @@ export const Menu = ({
 
           <MenuItem label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
           <MenuItem label="Present frames" shortcut={sc("present")} onClick={run(onPresent)} />
+          <MenuItem label="Cloud services…" shortcut={sc("services")} onClick={run(onServices)} />
           <MenuItem label="Tidy up layout" shortcut={sc("tidyUp")} onClick={run(() => tidyUp())} />
           <MenuItem label="Diagram as text" shortcut={sc("diagramText")} onClick={run(onToggleText)} />
 
