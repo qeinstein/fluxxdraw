@@ -20,6 +20,7 @@ import {
   IconSelection,
   IconText,
 } from "./icons";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import type { Tool } from "../types";
 
 interface ToolSpec {
@@ -51,15 +52,30 @@ const SECONDARY_TOOLS: ToolSpec[] = [
   { tool: "laser", label: "Laser pointer", shortcut: "K", icon: <IconLaser /> },
 ];
 
+/**
+ * Phone screens can't hold the full bar without turning it into a scroll
+ * hunt, so only the drawing essentials stay out; the rest fall into overflow.
+ */
+const MOBILE_PRIMARY: Tool[] = [
+  "selection",
+  "rectangle",
+  "ellipse",
+  "arrow",
+  "freedraw",
+  "text",
+  "eraser",
+];
+
 export const Toolbar = () => {
   const scene = useScene();
+  const isMobile = useIsMobile();
   const { tool, toolLocked } = scene.appState;
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!overflowOpen) return;
-    const onDown = (event: MouseEvent) => {
+    const onDown = (event: PointerEvent) => {
       if (overflowRef.current && !overflowRef.current.contains(event.target as Node)) {
         setOverflowOpen(false);
       }
@@ -67,10 +83,10 @@ export const Toolbar = () => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOverflowOpen(false);
     };
-    document.addEventListener("mousedown", onDown);
+    document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [overflowOpen]);
@@ -94,27 +110,37 @@ export const Toolbar = () => {
     </Tooltip>
   );
 
-  const secondaryActive = SECONDARY_TOOLS.some((spec) => spec.tool === tool);
+  const primary = isMobile
+    ? PRIMARY_TOOLS.filter((spec) => MOBILE_PRIMARY.includes(spec.tool))
+    : PRIMARY_TOOLS;
+  const secondary = isMobile
+    ? [...PRIMARY_TOOLS.filter((spec) => !MOBILE_PRIMARY.includes(spec.tool)), ...SECONDARY_TOOLS]
+    : SECONDARY_TOOLS;
+  const secondaryActive = secondary.some((spec) => spec.tool === tool);
 
   return (
     <div className="toolbar island" role="toolbar" aria-label="Tools">
-      <Tooltip
-        label={toolLocked ? "Tool stays selected" : "Tool resets after drawing"}
-        shortcut="Q"
-      >
-        <button
-          className={`tool-button ${toolLocked ? "is-locked" : ""}`}
-          aria-pressed={toolLocked}
-          aria-label="Keep the selected tool active"
-          onClick={() => store.setAppState({ toolLocked: !toolLocked })}
-        >
-          {toolLocked ? <IconLockClosed /> : <IconLockOpen />}
-        </button>
-      </Tooltip>
+      {!isMobile && (
+        <>
+          <Tooltip
+            label={toolLocked ? "Tool stays selected" : "Tool resets after drawing"}
+            shortcut="Q"
+          >
+            <button
+              className={`tool-button ${toolLocked ? "is-locked" : ""}`}
+              aria-pressed={toolLocked}
+              aria-label="Keep the selected tool active"
+              onClick={() => store.setAppState({ toolLocked: !toolLocked })}
+            >
+              {toolLocked ? <IconLockClosed /> : <IconLockOpen />}
+            </button>
+          </Tooltip>
 
-      <span className="toolbar-divider" />
+          <span className="toolbar-divider" />
+        </>
+      )}
 
-      {PRIMARY_TOOLS.map((spec) => (
+      {primary.map((spec) => (
         <ToolButton key={spec.tool} spec={spec} />
       ))}
 
@@ -134,7 +160,7 @@ export const Toolbar = () => {
 
         {overflowOpen && (
           <div className="overflow-popover" role="menu">
-            {SECONDARY_TOOLS.map((spec) => (
+            {secondary.map((spec) => (
               <button
                 key={spec.tool}
                 className={`overflow-item ${tool === spec.tool ? "active" : ""}`}
@@ -146,6 +172,21 @@ export const Toolbar = () => {
                 {spec.shortcut && <kbd>{spec.shortcut}</kbd>}
               </button>
             ))}
+
+            {isMobile && (
+              <>
+                <span className="overflow-separator" />
+                <button
+                  className={`overflow-item ${toolLocked ? "active" : ""}`}
+                  role="menuitemcheckbox"
+                  aria-checked={toolLocked}
+                  onClick={() => store.setAppState({ toolLocked: !toolLocked })}
+                >
+                  {toolLocked ? <IconLockClosed /> : <IconLockOpen />}
+                  <span>{toolLocked ? "Tool stays selected" : "Tool resets after drawing"}</span>
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

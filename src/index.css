@@ -1692,3 +1692,295 @@ kbd {
   font-variant-numeric: tabular-nums;
   opacity: 0.7;
 }
+
+/* --- narrow windows and tablets ------------------------------------------- */
+
+/*
+ * The centred toolbar collides with the left panel column below ~940px, so
+ * from there down the tools move to a dock at the bottom edge — also where
+ * a thumb can reach them.
+ */
+@media (max-width: 940px) {
+  :root {
+    --edge: max(10px, env(safe-area-inset-left));
+    --dock: calc(max(10px, env(safe-area-inset-bottom)) + 52px);
+  }
+
+  .top-centre {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    transform: none;
+    display: flex;
+    justify-content: center;
+    padding: 0 var(--edge);
+    max-width: 100vw;
+  }
+
+  /*
+   * Wrapping rather than scrolling: a scroll container would clip the
+   * overflow popover, and a hidden tool is worse than a second row.
+   */
+  .toolbar {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .overflow-popover {
+    top: auto;
+    bottom: calc(100% + 9px);
+    transform-origin: bottom right;
+  }
+
+  /* zoom and history sit above the dock */
+  .bottom-left {
+    left: var(--edge);
+    right: var(--edge);
+    bottom: var(--dock);
+    flex-wrap: wrap;
+  }
+
+  /* panels docked to an edge take the full width, clear of the dock */
+  .diagram-text {
+    top: auto;
+    left: var(--edge);
+    right: var(--edge);
+    bottom: calc(var(--dock) + 46px);
+    width: auto;
+    height: 45vh;
+  }
+
+  .timeline {
+    left: var(--edge);
+    right: var(--edge);
+    bottom: calc(var(--dock) + 46px);
+    width: auto;
+    transform: none;
+  }
+
+  @keyframes timeline-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .timeline-head,
+  .timeline-track {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* --- mobile ---------------------------------------------------------------- */
+
+/*
+ * Below 720px the left column of panels doesn't fit either, so the style
+ * controls move into a sheet behind the sliders button in the top bar and
+ * the rarely-used tools fall into the toolbar overflow.
+ */
+@media (max-width: 720px) {
+  .top-left {
+    top: max(10px, env(safe-area-inset-top));
+    left: var(--edge);
+    width: auto;
+    max-width: calc(100vw - 150px);
+  }
+
+  .top-right {
+    top: max(10px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+  }
+
+  /* touch targets, and no room for the tiny shortcut hints */
+  .tool-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .tool-shortcut {
+    display: none;
+  }
+
+  .toolbar {
+    gap: 2px;
+  }
+
+  .toolbar-divider {
+    margin: 0 2px;
+  }
+
+  .file-meta {
+    max-width: 40vw;
+  }
+
+  .file-meta strong,
+  .file-name-input {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-name-input {
+    width: 38vw;
+  }
+
+  .export-button {
+    height: 40px;
+    padding: 0 12px;
+  }
+
+  .sheet-toggle {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    color: var(--fg-muted);
+  }
+
+  /* a dot when the current selection or tool actually has options */
+  .sheet-toggle.has-options::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .menu-popover {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+  }
+
+  .dialog,
+  .dialog.wide,
+  .dialog.compact {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 40px);
+  }
+
+  .dialog-body {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .dialog footer {
+    flex-wrap: wrap;
+  }
+}
+
+/* --- mobile style sheet ---------------------------------------------------- */
+
+.mobile-sheet {
+  position: absolute;
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  bottom: var(--dock, 68px);
+  max-height: 52vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 60;
+  pointer-events: auto;
+  animation: sheet-in 180ms var(--ease);
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mobile-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 10px 6px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+
+.mobile-sheet-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px;
+}
+
+/* inside the sheet the panels are already framed, so drop their own chrome */
+.mobile-sheet .island {
+  background: transparent;
+  box-shadow: none;
+}
+
+.mobile-sheet .style-panel,
+.mobile-sheet .component-panel {
+  max-height: none;
+  overflow: visible;
+}
+
+/* roomier hit areas for the controls inside the sheet */
+.mobile-sheet .choice button {
+  height: 34px;
+  min-width: 34px;
+}
+
+.mobile-sheet .swatch {
+  width: 26px;
+  height: 26px;
+}
+
+.overflow-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
+}
+
+/*
+ * Touch has no hover, so anything that only reveals itself on hover has to
+ * stay visible — and the hit areas need to be finger-sized.
+ */
+@media (hover: none) {
+  .presentation-bar {
+    opacity: 1;
+    max-width: calc(100vw - 20px);
+    flex-wrap: wrap;
+    justify-content: center;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .presentation-bar button {
+    min-width: 36px;
+    height: 36px;
+  }
+
+  .presentation-name {
+    max-width: 40vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-meta:hover {
+    background: transparent;
+  }
+}

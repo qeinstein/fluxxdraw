@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas } from "./components/Canvas";
 import { Toolbar } from "./components/Toolbar";
-import { StylePanel } from "./components/StylePanel";
+import { StylePanel, hasStyleControls } from "./components/StylePanel";
 import { Menu } from "./components/Menu";
 import { ZoomControls } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
@@ -15,9 +15,10 @@ import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
 import { TextEditor } from "./components/TextEditor";
 import { Tooltip } from "./components/Tooltip";
-import { IconRedo, IconUndo } from "./components/icons";
+import { IconClose, IconRedo, IconSliders, IconUndo } from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
+import { MOBILE_QUERY, useIsMobile } from "./hooks/useMediaQuery";
 import { readFile } from "./io/openScene";
 import { sceneToJson, serializeScene } from "./io/serialize";
 import {
@@ -55,6 +56,8 @@ export default function App() {
     instanceId: string;
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [styleSheetOpen, setStyleSheetOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -70,6 +73,16 @@ export default function App() {
   const dirty = scene.getVersion() !== lastSavedVersion.current;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
+
+  /** Phones only have room for one docked panel at a time. */
+  const openPanel = useCallback(
+    (panel: "history" | "text" | null) => {
+      const solo = window.matchMedia(MOBILE_QUERY).matches;
+      setHistoryOpen(panel === "history" ? true : solo ? false : (v) => v);
+      setTextPanelOpen(panel === "text" ? true : solo ? false : (v) => v);
+    },
+    [],
+  );
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -418,22 +431,40 @@ export default function App() {
       onSaveAs: handleSaveAs,
       onExport: () => setExportOpen(true),
       onHelp: () => setHelpOpen(true),
-      onHistory: () => setHistoryOpen(true),
+      onHistory: () => openPanel("history"),
       onEscape: () => {
         setExportOpen(false);
         setHelpOpen(false);
         setHistoryOpen(false);
+        setStyleSheetOpen(false);
       },
       onPresent: () => setPresenting(true),
-      onToggleText: () => setTextPanelOpen((v) => !v),
+      onToggleText: () => (textPanelOpen ? openPanel(null) : openPanel("text")),
     }),
-    [handleOpen, handleSave, handleSaveAs],
+    [handleOpen, handleSave, handleSaveAs, openPanel, textPanelOpen],
   );
   useKeyboardShortcuts(keyboardHandlers);
 
   // --- render --------------------------------------------------------------
 
   const editingTextId = scene.appState.editingTextId;
+
+  const componentControls = (
+    <ComponentControls
+      session={componentSession?.session ?? null}
+      editingInstanceId={componentSession?.instanceId ?? null}
+      onSessionChange={(session, instanceId) =>
+        setComponentSession(session && instanceId ? { session, instanceId } : null)
+      }
+    />
+  );
+
+  /**
+   * On mobile the style controls live in a sheet. An active component edit
+   * session has to keep it open, otherwise there is no way back out of it.
+   */
+  const styleAvailable = hasStyleControls(scene.getSelected(), scene.appState.tool);
+  const sheetOpen = isMobile && (styleSheetOpen || componentSession !== null);
 
   return (
     <div className={`app theme-${scene.appState.theme}`}>
@@ -452,13 +483,14 @@ export default function App() {
         />
       )}
 
-      <div className="ui-layer">
+      <div className={`ui-layer${isMobile ? " is-mobile" : ""}`}>
         <div className="top-left">
           <Menu
             onOpen={handleOpen}
             onSave={handleSave}
             onSaveAs={handleSaveAs}
             onExport={() => setExportOpen(true)}
+            onQuickSave={quickExportJson}
             onReset={() => {
               if (!window.confirm(`Clear the ${APP_NAME} canvas? This can't be undone.`)) return;
               store.resetScene();
@@ -467,21 +499,19 @@ export default function App() {
               localStorage.removeItem(AUTOSAVE_KEY);
             }}
             onHelp={() => setHelpOpen(true)}
-            onHistory={() => setHistoryOpen(true)}
+            onHistory={() => openPanel("history")}
             onPresent={() => setPresenting(true)}
-            onToggleText={() => setTextPanelOpen((v) => !v)}
+            onToggleText={() => (textPanelOpen ? openPanel(null) : openPanel("text"))}
             currentFileName={fileName}
             dirty={dirty}
             onRename={renameDocument}
           />
-          <StylePanel />
-          <ComponentControls
-            session={componentSession?.session ?? null}
-            editingInstanceId={componentSession?.instanceId ?? null}
-            onSessionChange={(session, instanceId) =>
-              setComponentSession(session && instanceId ? { session, instanceId } : null)
-            }
-          />
+          {!isMobile && (
+            <>
+              <StylePanel />
+              {componentControls}
+            </>
+          )}
         </div>
 
         <div className="top-centre">
@@ -489,14 +519,27 @@ export default function App() {
         </div>
 
         <div className="top-right">
-          <Tooltip
-            label={`Save a .${FILE_EXTENSION} copy to your export folder`}
-            placement="bottom"
-          >
-            <button className="island ghost-button" onClick={quickExportJson}>
-              Quick save
+          {isMobile ? (
+            <button
+              className={`island tool-button sheet-toggle ${sheetOpen ? "active" : ""} ${
+                styleAvailable ? "has-options" : ""
+              }`}
+              aria-label={sheetOpen ? "Hide style options" : "Show style options"}
+              aria-expanded={sheetOpen}
+              onClick={() => setStyleSheetOpen((v) => !v)}
+            >
+              <IconSliders />
             </button>
-          </Tooltip>
+          ) : (
+            <Tooltip
+              label={`Save a .${FILE_EXTENSION} copy to your export folder`}
+              placement="bottom"
+            >
+              <button className="island ghost-button" onClick={quickExportJson}>
+                Quick save
+              </button>
+            </Tooltip>
+          )}
           <Tooltip label="Export as an image or file" shortcut="⇧⌘E" placement="bottom">
             <button className="island export-button" onClick={() => setExportOpen(true)}>
               Export
@@ -519,6 +562,25 @@ export default function App() {
             </Tooltip>
           </div>
         </div>
+
+        {isMobile && sheetOpen && (
+          <div className="mobile-sheet" role="dialog" aria-label="Style options">
+            <div className="mobile-sheet-head">
+              <span>Style</span>
+              <button
+                className="icon-button"
+                aria-label="Close style options"
+                onClick={() => setStyleSheetOpen(false)}
+              >
+                <IconClose />
+              </button>
+            </div>
+            <div className="mobile-sheet-body">
+              <StylePanel />
+              {componentControls}
+            </div>
+          </div>
+        )}
       </div>
 
       {exportOpen && (

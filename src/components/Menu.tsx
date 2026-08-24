@@ -5,12 +5,14 @@ import { setTheme } from "../theme";
 import { tidyUp } from "../layout";
 import { Tooltip } from "./Tooltip";
 import { IconMenu } from "./icons";
+import { useIsMobile } from "../hooks/useMediaQuery";
 
 interface MenuProps {
   onOpen: () => void;
   onSave: () => void;
   onSaveAs: () => void;
   onExport: () => void;
+  onQuickSave: () => void;
   onReset: () => void;
   onHelp: () => void;
   onHistory: () => void;
@@ -26,6 +28,7 @@ export const Menu = ({
   onSave,
   onSaveAs,
   onExport,
+  onQuickSave,
   onReset,
   onHelp,
   onHistory,
@@ -36,21 +39,22 @@ export const Menu = ({
   onRename,
 }: MenuProps) => {
   const scene = useScene();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const onDown = (event: MouseEvent) => {
+    const onDown = (event: PointerEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
-    document.addEventListener("mousedown", onDown);
+    document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -87,6 +91,8 @@ export const Menu = ({
           <MenuItem label="Save" shortcut="⌘S" onClick={run(onSave)} />
           <MenuItem label="Save as…" shortcut="⇧⌘S" onClick={run(onSaveAs)} />
           <MenuItem label="Export…" shortcut="⇧⌘E" onClick={run(onExport)} />
+          {/* the top-right Quick save button has no room on a phone */}
+          {isMobile && <MenuItem label="Quick save to export folder" onClick={run(onQuickSave)} />}
 
           <MenuItem label="Version history…" shortcut="⌘H" onClick={run(onHistory)} />
           <MenuItem label="Present frames" shortcut="⇧⌘P" onClick={run(onPresent)} />

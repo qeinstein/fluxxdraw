@@ -87,6 +87,10 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
   };
 };
 
+/** Whether the panel would render anything — the mobile sheet toggle needs to know. */
+export const hasStyleControls = (selected: ExcaliElement[], tool: Tool) =>
+  relevantControls(selected, tool) !== null;
+
 const ARROWHEADS: { value: Arrowhead; label: string }[] = [
   { value: "none", label: "None" },
   { value: "arrow", label: "Arrow" },

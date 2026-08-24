@@ -413,3 +413,11 @@ export const IconMore = () => (
     <circle cx="15.4" cy="10" r="1.3" fill="currentColor" stroke="none" />
   </Icon>
 );
+
+export const IconSliders = () => (
+  <Icon>
+    <path d="M3.5 6h13M3.5 14h13" />
+    <circle cx="7.5" cy="6" r="2" />
+    <circle cx="12.5" cy="14" r="2" />
+  </Icon>
+);
