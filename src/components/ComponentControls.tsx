@@ -32,7 +32,15 @@ export const ComponentControls = ({
 }: ComponentControlsProps) => {
   const scene = useScene();
   const selected = scene.getSelected();
-  const definitions = Object.values(scene.components);
+  /*
+   * Only what's actually on the canvas is listed. Service presets register a
+   * definition on first use and it stays in the document for undo's sake, so
+   * without this the library slowly fills with services you deleted — and they
+   * are all one tap away in the service library anyway.
+   */
+  const definitions = Object.values(scene.components).filter(
+    (definition) => countInstances(definition.id) > 0,
+  );
   const [libraryOpen, setLibraryOpen] = useState(false);
 
   const soleInstance =
@@ -172,10 +180,7 @@ export const ComponentControls = ({
                     }}
                   >
                     {definition.name}
-                    {/* an unplaced definition just reads as "0", which says nothing */}
-                    {countInstances(definition.id) > 0 && (
-                      <span className="hint">{countInstances(definition.id)}</span>
-                    )}
+                    <span className="hint">{countInstances(definition.id)}</span>
                   </button>
                 </Tooltip>
               ))}

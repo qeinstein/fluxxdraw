@@ -48,6 +48,7 @@ import {
   IconWidthThin,
 } from "./icons";
 import { FONTS, fontStack } from "../fonts";
+import { instanceStyleValue } from "../components-model";
 import type { Arrowhead, ExcaliElement, Tool } from "../types";
 import { sc } from "../shortcuts";
 
@@ -121,8 +122,12 @@ export const StylePanel = () => {
    */
   const valueOf = (key: string, fallback: unknown): unknown => {
     if (selected.length === 0) return fallback;
-    // properties like fontSize only exist on some element types
-    const read = (el: ExcaliElement) => (el as unknown as Record<string, unknown>)[key];
+    // properties like fontSize only exist on some element types, and an
+    // instance keeps its style in overrides rather than on itself
+    const read = (el: ExcaliElement) =>
+      el.type === "instance"
+        ? instanceStyleValue(el, key)
+        : (el as unknown as Record<string, unknown>)[key];
     const first = read(selected[0]);
     return selected.every((el) => read(el) === first) ? first : undefined;
   };

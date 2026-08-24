@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { store } from "./store";
 import { getBoundArrowPoints } from "./elements/binding";
 import { duplicateElement } from "./elements/factory";
+import { INSTANCE_OVERRIDE_KEYS } from "./components-model";
 import { getCommonBounds, getElementBounds, getRotatedBounds } from "./geometry";
 import { getLabelBox, getTextLines, measureText } from "./elements/text";
 import { CONTAINER_PADDING } from "./constants";
@@ -309,7 +310,12 @@ export const applyStyleToSelection = (patch: Record<string, unknown>) => {
   }
   // opacity already applies to an instance as a whole; the rest has to be
   // handed to its children at render time
-  const { opacity, ...overridable } = patch;
+  const { opacity, ...rest } = patch;
+  const overridable = Object.fromEntries(
+    Object.entries(rest).filter(([key]) =>
+      (INSTANCE_OVERRIDE_KEYS as readonly string[]).includes(key),
+    ),
+  );
 
   store.mutate(() => {
     for (const id of ids) {

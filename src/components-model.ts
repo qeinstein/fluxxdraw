@@ -29,6 +29,50 @@ const toLocalCoordinates = (elements: ExcaliElement[]) => {
   };
 };
 
+/**
+ * Style keys an instance keeps as overrides. Opacity is absent on purpose: it
+ * applies to the instance as a whole when drawing, so it stays a plain field.
+ *
+ * The panel reads through this and `applyStyleToSelection` writes through it,
+ * which is what keeps the highlighted option and the applied value in step.
+ */
+export const INSTANCE_OVERRIDE_KEYS = [
+  "strokeColor",
+  "backgroundColor",
+  "fillStyle",
+  "strokeWidth",
+  "strokeStyle",
+  "roughness",
+  "edges",
+] as const;
+
+/**
+ * The value an instance is effectively drawing with.
+ *
+ * An override wins. Without one the master decides, so the answer is whatever
+ * its elements agree on — and `undefined` when they disagree, the same "mixed"
+ * signal a multi-selection gives, rather than a confident wrong highlight.
+ */
+export const instanceStyleValue = (el: InstanceElement, key: string): unknown => {
+  if (key === "opacity") return el.opacity;
+  const override = el.styleOverrides?.[key as keyof typeof el.styleOverrides];
+  if (override !== undefined) return override;
+
+  const definition = store.components[el.componentId];
+  if (!definition) return undefined;
+  /*
+   * Text is left out of the vote: stroke width, sloppiness and edges say
+   * nothing about a drawn glyph, so letting labels join in would report the
+   * master as "mixed" and highlight nothing on a node that plainly has a look.
+   */
+  const drawn = definition.elements.filter((child) => child.type !== "text");
+  const voters = drawn.length ? drawn : definition.elements;
+  if (voters.length === 0) return undefined;
+  const read = (child: ExcaliElement) => (child as unknown as Record<string, unknown>)[key];
+  const first = read(voters[0]);
+  return voters.every((child) => read(child) === first) ? first : undefined;
+};
+
 export const newInstance = (
   componentId: string,
   x: number,
