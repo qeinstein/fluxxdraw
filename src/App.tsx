@@ -577,41 +577,43 @@ export default function App() {
         </div>
 
         <div className="top-right">
-          {isMobile ? (
-            <button
-              className={`island tool-button sheet-toggle ${sheetOpen ? "active" : ""} ${
-                styleAvailable ? "has-options" : ""
-              }`}
-              aria-label={sheetOpen ? "Hide style options" : "Show style options"}
-              aria-expanded={sheetOpen}
-              onClick={() => setStyleSheetOpen((v) => !v)}
-            >
-              <IconSliders />
-            </button>
-          ) : (
-            <Tooltip
-              label={`Save a .${FILE_EXTENSION} copy to your export folder`}
-              placement="bottom"
-            >
-              <button className="island ghost-button" onClick={quickExportJson}>
-                Quick save
+          <div className="island top-right-actions">
+            {isMobile ? (
+              <button
+                className={`tool-button sheet-toggle ${sheetOpen ? "active" : ""} ${
+                  styleAvailable ? "has-options" : ""
+                }`}
+                aria-label={sheetOpen ? "Hide style options" : "Show style options"}
+                aria-expanded={sheetOpen}
+                onClick={() => setStyleSheetOpen((v) => !v)}
+              >
+                <IconSliders />
+              </button>
+            ) : (
+              <Tooltip
+                label={`Save a .${FILE_EXTENSION} copy to your export folder`}
+                placement="bottom"
+              >
+                <button className="ghost-button" onClick={quickExportJson}>
+                  Quick save
+                </button>
+              </Tooltip>
+            )}
+            <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
+              <button className="export-button" onClick={() => setExportOpen(true)}>
+                Export
               </button>
             </Tooltip>
-          )}
-          <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
-            <button className="island export-button" onClick={() => setExportOpen(true)}>
-              Export
-            </button>
-          </Tooltip>
-          <Tooltip label="Library" placement="bottom">
-            <button
-              className={`island icon-button ${libraryOpen ? "active" : ""}`}
-              aria-label="Library"
-              onClick={() => setLibraryOpen(!libraryOpen)}
-            >
-              <IconLibrary />
-            </button>
-          </Tooltip>
+            <Tooltip label="Library" placement="bottom">
+              <button
+                className={`icon-button ${libraryOpen ? "active" : ""}`}
+                aria-label="Library"
+                onClick={() => setLibraryOpen(!libraryOpen)}
+              >
+                <IconLibrary />
+              </button>
+            </Tooltip>
+          </div>
         </div>
 
         <div className="bottom-left">
