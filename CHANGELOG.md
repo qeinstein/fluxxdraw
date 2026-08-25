@@ -7,6 +7,10 @@ new version stops opening in an old one.
 
 ## Unreleased
 
+## v1.1.1
+
+- Automated GitHub Releases via Actions
+
 ## v1.1.0
 
 ### Collaboration
