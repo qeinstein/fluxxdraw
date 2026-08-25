@@ -127,14 +127,8 @@ export default function App() {
   }, []);
 
   const openExportDialog = useCallback(() => {
-    updatePrefs({
-      exportSettings: {
-        ...prefs.exportSettings,
-        theme: store.appState.theme,
-      },
-    });
     setExportOpen(true);
-  }, [prefs.exportSettings, updatePrefs]);
+  }, []);
 
   // apply saved view preferences and reconnect the export folder on first load
   useEffect(() => {

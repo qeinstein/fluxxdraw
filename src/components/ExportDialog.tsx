@@ -219,17 +219,6 @@ export const ExportDialog = ({
 
           {settings.format !== "json" && (
             <Field label="Options">
-              <div className="segmented" style={{ marginBottom: 12 }}>
-                {(["light", "dark"] as const).map((theme) => (
-                  <button
-                    key={theme}
-                    className={settings.theme === theme ? "active" : ""}
-                    onClick={() => patch({ theme })}
-                  >
-                    {theme === "light" ? "Light" : "Dark"}
-                  </button>
-                ))}
-              </div>
               <label className="checkbox">
                 <input
                   type="checkbox"
@@ -339,7 +328,7 @@ const ExportPreview = ({ settings }: { settings: ExportSettings }) => {
         }
 
         const files = collectUsedFiles(elements, store.files);
-        const theme = settings.theme;
+        const theme = store.appState.theme;
         const isDark = theme === "dark";
         const backgroundColor = settings.background ? (isDark ? "#121212" : "#ffffff") : "transparent";
 
@@ -379,10 +368,55 @@ const ExportPreview = ({ settings }: { settings: ExportSettings }) => {
     return () => { active = false; };
   }, [settings, store.appState.theme]);
 
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+      setZoom((z) => Math.max(0.1, Math.min(10, z - e.deltaY * 0.01)));
+    } else {
+      setPan((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    isDragging.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (isDragging.current) {
+      setPan((p) => ({ x: p.x + e.movementX, y: p.y + e.movementY }));
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    isDragging.current = false;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
+    <div 
+      style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", position: "relative", overflow: "hidden", cursor: "grab" }}
+      onWheel={handleWheel}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
       {error && <div style={{ color: "var(--danger)", padding: 20 }}>{error}</div>}
-      <div ref={containerRef} style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", padding: 16 }} />
+      <div 
+        ref={containerRef} 
+        style={{ 
+          display: "flex", 
+          justifyContent: "center", 
+          alignItems: "center", 
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transition: isDragging.current ? "none" : "transform 0.1s ease-out"
+        }} 
+      />
       {loading && <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: 11, color: "var(--fg-subtle)" }}>Updating...</div>}
     </div>
   );
