@@ -1,0 +1,38 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract release notes
+        id: extract_notes
+        run: |
+          # This extracts the section from CHANGELOG.md corresponding to the pushed tag
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Extracting notes for $TAG_NAME"
+          # Get the content between the current tag and the next tag (or end of file)
+          sed -n "/^## $TAG_NAME/,/^## /{/^## /b;p;}" CHANGELOG.md > release_notes.md
+          
+          # If the file is empty, just provide a fallback
+          if [ ! -s release_notes.md ]; then
+            echo "Release $TAG_NAME" > release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: false
