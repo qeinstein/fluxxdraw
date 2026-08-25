@@ -111,6 +111,7 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
         ? ["rectangle", "sticky", "arrow", "line"].includes(tool)
         : has("rectangle", "sticky", "arrow", "line", "instance"),
     arrowheads: selected.length === 0 ? tool === "arrow" : has("arrow"),
+    routing: selected.length === 0 ? ["arrow", "line"].includes(tool) : has("arrow", "line"),
     font: selected.length === 0 ? tool === "text" : has("text"),
     layout: selected.length > 0,
   };
@@ -275,17 +276,20 @@ export const StylePanel = () => {
             value={valueOf("endArrowhead", style.endArrowhead)}
             onChange={(v) => set({ endArrowhead: v })}
           />
-          <Section label="Routing">
-            <Choice
-              options={[
-                ["straight", "Straight", <IconRouteStraight key="1" />],
-                ["curved", "Curved", <IconRouteCurved key="2" />],
-                ["elbow", "Elbow", <IconRouteElbow key="3" />],
-              ]}
-              value={valueOf("pathType", style.pathType)}
-              onChange={(v) => set({ pathType: v })}
-            />
-          </Section>
+        </Section>
+      )}
+
+      {controls.routing && (
+        <Section label="Routing">
+          <Choice
+            options={[
+              ["straight", "Straight", <IconRouteStraight key="1" />],
+              ["curved", "Curved", <IconRouteCurved key="2" />],
+              ["elbow", "Elbow", <IconRouteElbow key="3" />],
+            ]}
+            value={valueOf("pathType", style.pathType)}
+            onChange={(v) => set({ pathType: v })}
+          />
         </Section>
       )}
 

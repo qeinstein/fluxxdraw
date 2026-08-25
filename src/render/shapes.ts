@@ -208,7 +208,7 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
       const pts = getRenderPoints(el as LinearElement);
       if (pts.length < 2) return [];
       const out: Drawable[] = [];
-      const shouldCurve = (el.edges === "round" || (el as LinearElement).pathType === "curved") && (el as LinearElement).pathType !== "elbow" && pts.length > 2;
+      const shouldCurve = (el.edges === "round" || (el as LinearElement).pathType === "curved") && (el as LinearElement).pathType !== "elbow";
       const isClosed =
         el.type === "line" &&
         pts.length > 2 &&
