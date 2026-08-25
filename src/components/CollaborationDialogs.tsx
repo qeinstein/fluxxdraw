@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { collab, generateCollaborationLink, type PeerPresence } from "../io/collaboration";
+import { IconClose } from "./icons";
 
 export function JoinDialog({ 
   room, 
@@ -30,11 +31,21 @@ export function JoinDialog({
   };
 
   return (
-    <div className="dialog-overlay" onClick={onCancel}>
-      <div className="dialog join-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2>Join Collaboration</h2>
-        <div className="dialog-content">
-          <label>Your name</label>
+    <div className="dialog-backdrop" onClick={onCancel}>
+      <div className="dialog compact" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
+        <header>
+          <h2>Join Session</h2>
+          <button className="icon-button" aria-label="Close" onClick={onCancel}>
+            <IconClose />
+          </button>
+        </header>
+        <div className="dialog-body" style={{ padding: '16px 20px' }}>
+          <p style={{ color: 'var(--fg-muted)', fontSize: '13px', margin: '0 0 16px' }}>
+            Someone invited you to collaborate on this drawing.
+          </p>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 550, color: 'var(--fg-muted)', marginBottom: '6px' }}>
+            Your name
+          </label>
           <input 
             autoFocus
             type="text" 
@@ -42,12 +53,18 @@ export function JoinDialog({
             onChange={(e) => setName(e.target.value)} 
             placeholder="Anonymous Fox"
             onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+            style={{ 
+              width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--line)', background: 'var(--surface-sunken)',
+              color: 'var(--fg)', fontSize: '13px', outline: 'none',
+              boxSizing: 'border-box',
+            }}
           />
         </div>
-        <div className="dialog-actions">
+        <footer>
           <button onClick={onCancel}>Cancel</button>
           <button className="primary" onClick={handleJoin}>Join Session</button>
-        </div>
+        </footer>
       </div>
     </div>
   );
@@ -91,59 +108,52 @@ export function ShareDialog({
   };
 
   return (
-    <div className="dialog-overlay" onClick={onClose} style={{ backdropFilter: 'blur(2px)' }}>
-      <div 
-        className="dialog share-dialog" 
-        onClick={(e) => e.stopPropagation()}
-        style={{ 
-          maxWidth: '400px', 
-          textAlign: 'center',
-          borderRadius: '16px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-          padding: '32px'
-        }}
-      >
-        <h2 style={{ marginTop: 0, marginBottom: '8px' }}>Collaboration</h2>
-        <p style={{ color: '#666', marginBottom: '24px', fontSize: '14px' }}>
-          Share this link to let others join your session and edit in real-time.
-        </p>
-        
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
-          <input 
-            readOnly 
-            value={link} 
-            onClick={(e) => e.currentTarget.select()} 
-            style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f9f9f9', outline: 'none' }}
-          />
-          <button 
-            className="primary" 
-            onClick={handleCopy}
-            style={{ padding: '0 20px', borderRadius: '8px', whiteSpace: 'nowrap' }}
-          >
-            {copied ? "Copied!" : "Copy"}
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className="dialog compact" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+        <header>
+          <h2>Collaboration</h2>
+          <button className="icon-button" aria-label="Close" onClick={onClose}>
+            <IconClose />
           </button>
+        </header>
+        <div className="dialog-body" style={{ padding: '16px 20px' }}>
+          <p style={{ color: 'var(--fg-muted)', fontSize: '13px', margin: '0 0 16px' }}>
+            Share this link to let others join and edit in real-time.
+          </p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input 
+              readOnly 
+              value={link} 
+              onClick={(e) => e.currentTarget.select()} 
+              style={{ 
+                flex: 1, padding: '8px 12px', borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--line)', background: 'var(--surface-sunken)',
+                color: 'var(--fg)', fontSize: '12px', outline: 'none',
+                minWidth: 0,
+              }}
+            />
+            <button 
+              onClick={handleCopy}
+              style={{ 
+                padding: '7px 14px', fontSize: '12.5px', fontWeight: 550,
+                borderRadius: 'var(--radius-md)', background: 'var(--accent)',
+                color: 'var(--accent-contrast)', border: 'none', cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
         </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <footer style={{ justifyContent: 'space-between' }}>
           <button 
             onClick={handleEnd} 
-            style={{ 
-              background: 'none', border: 'none', color: '#e03131', 
-              fontWeight: 'bold', cursor: 'pointer', padding: '8px 0' 
-            }}
+            style={{ color: 'var(--danger)', background: 'var(--danger-soft)' }}
           >
             End Session
           </button>
-          <button 
-            onClick={onClose}
-            style={{ 
-              background: '#f1f3f5', border: 'none', padding: '8px 24px', 
-              borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' 
-            }}
-          >
-            Close
-          </button>
-        </div>
+          <button onClick={onClose}>Close</button>
+        </footer>
       </div>
     </div>
   );
@@ -195,8 +205,8 @@ export function CollaborationAvatars() {
           {peer.name.charAt(0).toUpperCase()}
         </div>
       ))}
-      {peers.size > 3 && <div className="avatar-more" style={{ fontSize: '12px', fontWeight: 'bold' }}>+{peers.size - 3}</div>}
-      <div className="connection-status" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#40c057', marginLeft: '4px' }} title="Connected"></div>
+      {peers.size > 3 && <div className="avatar-more" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--fg-muted)' }}>+{peers.size - 3}</div>}
+      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#40c057', marginLeft: '4px' }} title="Connected" />
     </div>
   );
 }

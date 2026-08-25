@@ -42,10 +42,26 @@ class CollaborationManager {
     this.room = roomId;
     this.shareUrl = `${window.location.origin}${window.location.pathname}#room=${roomId}&key=${key}`;
     
+    // Switch IndexedDB persistence to a room-specific key so each session
+    // has its own persistent state and doesn't conflict with local solo data
+    if (this.persistence) {
+      this.persistence.destroy();
+    }
+    this.persistence = new IndexeddbPersistence(`fluxxdraw-room-${roomId}`, ydoc);
+
     // Connect to WebRTC — only use the official Yjs signaling server
     this.provider = new WebrtcProvider(roomId, ydoc, {
       password: key,
       signaling: ["wss://signaling.yjs.dev"]
+    });
+
+    // When WebRTC syncs for the first time, force a re-read of the Yjs state
+    // into the store so the joiner sees the host's canvas immediately.
+    // We do this with a tiny transact that triggers the store's ydoc "update" listener.
+    this.provider.on("synced", () => {
+      ydoc.transact(() => {
+        // no-op transaction — the transact itself triggers the "update" event
+      }, "sync-refresh");
     });
 
     // Set initial presence
