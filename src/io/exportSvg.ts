@@ -109,9 +109,6 @@ export const exportToSvgElement = (opts: ExportSvgOptions): SVGSVGElement => {
 
   const root = document.createElementNS(SVG_NS, "g");
   root.setAttribute("transform", `translate(${-bounds.x1 + padding} ${-bounds.y1 + padding})`);
-  if (opts.theme === "dark") {
-    root.setAttribute("filter", "invert(93%) hue-rotate(180deg)");
-  }
   svg.appendChild(root);
 
   const rc = rough.svg(svg);
