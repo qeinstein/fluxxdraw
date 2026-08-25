@@ -38,11 +38,17 @@ export const useLocalLibrary = () => {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const saveLocalItem = useCallback((item: LocalLibraryItem) => {
+  const saveLocalItems = useCallback((items: LocalLibraryItem[]) => {
     setLocalItems(prev => {
-      if (prev.find(p => p.id === item.id)) return prev;
-      const next = [{ ...item, lastUsed: Date.now(), useCount: 0 }, ...prev];
-      persist(next);
+      let next = [...prev];
+      let changed = false;
+      for (const item of items) {
+        if (!next.find(p => p.id === item.id)) {
+          next = [{ ...item, lastUsed: Date.now(), useCount: 0 }, ...next];
+          changed = true;
+        }
+      }
+      if (changed) persist(next);
       return next;
     });
   }, []);
@@ -82,7 +88,7 @@ export const useLocalLibrary = () => {
     localItems,
     recentItems,
     frequentItems,
-    saveLocalItem,
+    saveLocalItems,
     removeLocalItem,
     trackUsage,
   };
