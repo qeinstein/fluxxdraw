@@ -26,6 +26,7 @@ import {
   newLinearElement,
   newTextElement,
 } from "../elements/factory";
+import { nanoid } from "nanoid";
 import {
   CURSOR_FOR_HANDLE,
   computeRotation,
@@ -1532,7 +1533,55 @@ export const Canvas = ({
   });
 
   return (
-    <div ref={containerRef} className="canvas-container">
+    <div 
+      ref={containerRef} 
+      className="canvas-container"
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes("application/vnd.fluxxdraw.library+json")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }
+      }}
+      onDrop={(e) => {
+        const data = e.dataTransfer.getData("application/vnd.fluxxdraw.library+json");
+        if (data) {
+          e.preventDefault();
+          const items = JSON.parse(data);
+          const { scrollX, scrollY, zoom } = store.appState;
+          
+          const rect = containerRef.current?.getBoundingClientRect();
+          if (!rect) return;
+          
+          const sceneX = (e.clientX - rect.left) / zoom - scrollX;
+          const sceneY = (e.clientY - rect.top) / zoom - scrollY;
+
+          const minX = Math.min(...items.map((el: any) => el.x ?? 0));
+          const minY = Math.min(...items.map((el: any) => el.y ?? 0));
+          const maxX = Math.max(...items.map((el: any) => (el.x ?? 0) + (el.width ?? 0)));
+          const maxY = Math.max(...items.map((el: any) => (el.y ?? 0) + (el.height ?? 0)));
+          const width = maxX - minX;
+          const height = maxY - minY;
+          
+          // Generate new IDs to prevent duplicates
+          const idMap = new Map<string, string>();
+          items.forEach((el: any) => idMap.set(el.id, nanoid()));
+          
+          const adjustedElements = items.map((el: any) => ({
+            ...el,
+            id: idMap.get(el.id)!,
+            groupIds: el.groupIds?.map((gId: string) => idMap.get(gId) || gId) || [],
+            boundElements: el.boundElements?.map((b: any) => ({ ...b, id: idMap.get(b.id) || b.id })) || [],
+            x: (el.x ?? 0) - minX + sceneX - width / 2,
+            y: (el.y ?? 0) - minY + sceneY - height / 2,
+          }));
+          
+          store.mutate(() => {
+            store.addElements(...adjustedElements);
+            store.appState = { ...store.appState, selectedIds: adjustedElements.map((el: any) => el.id) };
+          });
+        }
+      }}
+    >
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}

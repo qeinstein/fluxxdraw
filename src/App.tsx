@@ -11,8 +11,8 @@ import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
 import { ContextMenu, type ContextMenuRequest } from "./components/ContextMenu";
-import { ServiceLibrary } from "./components/ServiceLibrary";
-import { LibrarySidebar } from "./components/LibrarySidebar";
+import { Library } from "./components/Library";
+import { ToolHint } from "./components/ToolHint";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
@@ -45,7 +45,7 @@ import { inferTheme } from "./theme";
 import type { BinaryFile, SceneDocument } from "./types";
 import { sc } from "./shortcuts";
 
-const AUTOSAVE_KEY = "fluxxdraw-autosave";
+const AUTOSAVE_KEY = "fluxxdraw:autosave";
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
 export default function App() {
@@ -55,7 +55,7 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [servicesOpen, setServicesOpen] = useState(false);
+
   const [presenting, setPresenting] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [textPanelOpen, setTextPanelOpen] = useState(false);
@@ -481,13 +481,13 @@ export default function App() {
         setHistoryOpen(false);
         setStyleSheetOpen(false);
         setContextMenu(null);
-        setServicesOpen(false);
+        setLibraryOpen(false);
       },
       onPresent: () => {
         track("present");
         setPresenting(true);
       },
-      onServices: () => setServicesOpen(true),
+      onServices: () => setLibraryOpen(true),
       onToggleText: () => {
         track("text");
         return textPanelOpen ? openPanel(null) : openPanel("text");
@@ -544,15 +544,6 @@ export default function App() {
 
       <div className={`ui-layer${isMobile ? " is-mobile" : ""}`}>
         <div className="top-left" style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-          <Tooltip label="Library" placement="bottom">
-            <button
-              className={`island icon-button ${libraryOpen ? "active" : ""}`}
-              aria-label="Library"
-              onClick={() => setLibraryOpen(!libraryOpen)}
-            >
-              <IconLibrary />
-            </button>
-          </Tooltip>
           <Menu
             onOpen={handleOpen}
             onSave={handleSave}
@@ -567,7 +558,7 @@ export default function App() {
               localStorage.removeItem(AUTOSAVE_KEY);
             }}
             onHistory={() => openPanel("history")}
-            onServices={() => setServicesOpen(true)}
+            onServices={() => setLibraryOpen(true)}
             currentFileName={fileName}
             dirty={dirty}
             onRename={renameDocument}
@@ -582,6 +573,7 @@ export default function App() {
 
         <div className="top-centre">
           <Toolbar onImage={onRequestImage} />
+          <ToolHint tool={scene.appState.tool} />
         </div>
 
         <div className="top-right">
@@ -609,6 +601,15 @@ export default function App() {
           <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
             <button className="island export-button" onClick={() => setExportOpen(true)}>
               Export
+            </button>
+          </Tooltip>
+          <Tooltip label="Library" placement="bottom">
+            <button
+              className={`island icon-button ${libraryOpen ? "active" : ""}`}
+              aria-label="Library"
+              onClick={() => setLibraryOpen(!libraryOpen)}
+            >
+              <IconLibrary />
             </button>
           </Tooltip>
         </div>
@@ -671,8 +672,7 @@ export default function App() {
         />
       )}
 
-      {libraryOpen && <LibrarySidebar onClose={() => setLibraryOpen(false)} />}
-      {servicesOpen && <ServiceLibrary onClose={() => setServicesOpen(false)} />}
+      {libraryOpen && <Library onClose={() => setLibraryOpen(false)} />}
 
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
 
@@ -698,7 +698,7 @@ export default function App() {
           onClose={() => setContextMenu(null)}
           onExport={() => setExportOpen(true)}
           onPresent={() => setPresenting(true)}
-          onServices={() => setServicesOpen(true)}
+          onServices={() => setLibraryOpen(true)}
           onToast={showToast}
         />
       )}
