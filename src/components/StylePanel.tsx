@@ -75,6 +75,18 @@ import { FONTS, fontStack } from "../fonts";
 import { instanceStyleValue } from "../components-model";
 import type { ExcaliElement, Tool } from "../types";
 import { sc } from "../shortcuts";
+import { promptForInput } from "../prompt";
+
+const STYLE_PRESETS_KEY = "fluxxdraw:style_presets";
+type StylePreset = { name: string; style: Record<string, unknown> };
+
+const loadStylePresets = (): StylePreset[] => {
+  try {
+    return JSON.parse(localStorage.getItem(STYLE_PRESETS_KEY) ?? "[]") as StylePreset[];
+  } catch {
+    return [];
+  }
+};
 
 const SHAPE_TOOLS: Tool[] = [
   "rectangle",
@@ -131,6 +143,7 @@ export const StylePanel = () => {
   const style = scene.appState.currentStyle;
   const palette = PALETTE[scene.appState.theme];
   const controls = relevantControls(selected, scene.appState.tool);
+  const [presets, setPresets] = useState(loadStylePresets);
 
   if (!controls) return null;
 
@@ -153,6 +166,29 @@ export const StylePanel = () => {
 
   const set = (patch: Record<string, unknown>) => applyStyleToSelection(patch);
 
+  const savePreset = async () => {
+    const name = await promptForInput({
+      title: "Save style preset",
+      label: "Preset name",
+      placeholder: "Architecture node",
+      confirmLabel: "Save preset",
+      validate: (value) => value.trim() ? null : "Name this preset first.",
+    });
+    if (!name) return;
+    const next = [
+      { name: name.trim(), style: { ...scene.appState.currentStyle } },
+      ...presets.filter((preset) => preset.name !== name.trim()),
+    ].slice(0, 12);
+    localStorage.setItem(STYLE_PRESETS_KEY, JSON.stringify(next));
+    setPresets(next);
+  };
+
+  const removePreset = (name: string) => {
+    const next = presets.filter((preset) => preset.name !== name);
+    localStorage.setItem(STYLE_PRESETS_KEY, JSON.stringify(next));
+    setPresets(next);
+  };
+
   const strokeColor = String(valueOf("strokeColor", style.strokeColor) ?? palette.stroke[0]);
   const backgroundColor = String(
     valueOf("backgroundColor", style.backgroundColor) ?? "transparent",
@@ -160,6 +196,17 @@ export const StylePanel = () => {
 
   return (
     <div className="style-panel island">
+      <Section label="Style presets">
+        <div className="style-presets">
+          <button className="style-preset-add" onClick={savePreset}>+ Save current</button>
+          {presets.map((preset) => (
+            <span className="style-preset" key={preset.name}>
+              <button onClick={() => set(preset.style)}>{preset.name}</button>
+              <button aria-label={`Delete ${preset.name}`} onClick={() => removePreset(preset.name)}>×</button>
+            </span>
+          ))}
+        </div>
+      </Section>
       <Section label="Stroke">
         <Swatches
           colors={palette.stroke}
@@ -456,7 +503,7 @@ export const StylePanel = () => {
   );
 };
 
-const ESSENTIAL_SECTIONS = new Set(["Stroke", "Background", "Opacity", "Actions"]);
+const ESSENTIAL_SECTIONS = new Set(["Style presets", "Stroke", "Background", "Opacity", "Actions"]);
 
 const Section = ({ label, children }: { label: string; children: ReactNode }) => {
   const [open, setOpen] = useState(() => ESSENTIAL_SECTIONS.has(label));

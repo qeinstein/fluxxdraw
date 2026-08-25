@@ -15,14 +15,15 @@ type LibraryRow = {
 };
 
 export default async function handler(): Promise<Response> {
-  if (!process.env.DATABASE_URL) {
+  const databaseUrl = process.env.DATABASE_URL ?? process.env.VITE_DATABASE_URL;
+  if (!databaseUrl) {
     return Response.json(
       { error: "Library storage is not configured" },
       { status: 503, headers: { "cache-control": "no-store" } },
     );
   }
 
-  const sql = createClient(process.env.DATABASE_URL);
+  const sql = createClient(databaseUrl);
   try {
     const result = await sql.query<LibraryRow>(
       `select id, name, description, authors, source, preview, created, updated, version

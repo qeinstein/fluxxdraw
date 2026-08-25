@@ -319,7 +319,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
             {!loading &&
               !error &&
               filteredLibraries.map((lib) => {
-                const installed = localItems.some((l) => l.id === lib.id);
+                const installed = localItems.some((item) => item.id === lib.id || item.id.startsWith(`${lib.id}:`));
                 const previewUrl = `https://raw.githubusercontent.com/excalidraw/excalidraw-libraries/main/libraries/${lib.preview}`;
                 const priority = isPriority(lib.name, lib.description);
 

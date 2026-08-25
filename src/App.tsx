@@ -15,6 +15,8 @@ import { Library } from "./components/Library";
 import { CommandPalette } from "./components/CommandPalette";
 import { Minimap } from "./components/Minimap";
 import { SelectionToolbar } from "./components/SelectionToolbar";
+import { WorkspacePanel } from "./components/WorkspacePanel";
+import { CommentPins } from "./components/CommentPins";
 import { ToolHint } from "./components/ToolHint";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
@@ -52,6 +54,7 @@ import { linkedElementFromUrl } from "./links";
 import { reconcileFrameMembership, refreshTextLayout } from "./actions";
 import { newImageElement, syncFrameCounter } from "./elements/factory";
 import { preloadFiles } from "./render/imageCache";
+import { recordRecentDocument, recordRecoverySnapshot } from "./workspaceData";
 
 import { APP_NAME, FILE_EXTENSION } from "./constants";
 import { inferTheme } from "./theme";
@@ -72,6 +75,7 @@ export default function App() {
 
   const [presenting, setPresenting] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [textPanelOpen, setTextPanelOpen] = useState(false);
@@ -193,12 +197,13 @@ export default function App() {
     const timer = window.setTimeout(() => {
       try {
         localStorage.setItem(AUTOSAVE_KEY, sceneToJson(currentDocument()));
+        recordRecoverySnapshot(fileName ?? "Untitled.fluxx", currentDocument());
       } catch {
         // scenes with big images can exceed the quota; the user's files are authoritative
       }
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [scene.getVersion(), currentDocument]);
+  }, [scene.getVersion(), currentDocument, fileName]);
 
   // restore the last session so a refresh doesn't lose work
   useEffect(() => {
@@ -276,6 +281,7 @@ export default function App() {
         await preloadFiles(result.doc.files);
         fileHandleRef.current = handle;
         setFileName(handle?.name ?? file.name);
+        recordRecentDocument(handle?.name ?? file.name, result.doc);
         lastSavedVersion.current = store.getVersion();
         store.emit();
         showToast(`Opened ${file.name}`);
@@ -383,6 +389,8 @@ export default function App() {
       }
       fileHandleRef.current = saved.handle;
       setFileName(saved.handle.name);
+      recordRecentDocument(saved.handle.name, currentDocument());
+      recordRecoverySnapshot(saved.handle.name, currentDocument(), true);
       lastSavedVersion.current = store.getVersion();
       store.timeline.labelLatest(`Saved ${saved.handle.name}`);
       showToast(`Saved ${saved.handle.name}`);
@@ -407,6 +415,8 @@ export default function App() {
         return;
       }
       lastSavedVersion.current = store.getVersion();
+      recordRecentDocument(result.filename, currentDocument());
+      recordRecoverySnapshot(result.filename, currentDocument(), true);
       store.timeline.labelLatest(`Saved ${result.filename}`);
       showToast(`Saved ${result.filename}`);
     } catch (error) {
@@ -576,6 +586,7 @@ export default function App() {
             onReset={() => setResetConfirmOpen(true)}
             onHistory={() => openPanel("history")}
             onServices={() => setLibraryOpen(true)}
+            onWorkspace={() => setWorkspaceOpen(true)}
             currentFileName={fileName}
             dirty={dirty}
             onRename={renameDocument}
@@ -595,6 +606,7 @@ export default function App() {
         </div>
 
         {!isMobile && <SelectionToolbar />}
+        {!isMobile && <CommentPins />}
 
         <div className="top-right">
           <div className="island top-right-actions">
@@ -766,6 +778,22 @@ export default function App() {
           localStorage.setItem("fluxx_library_docked", next.toString());
         }}
       />}
+
+      {workspaceOpen && (
+        <WorkspacePanel
+          onClose={() => setWorkspaceOpen(false)}
+          onBrowse={handleOpen}
+          onOpen={(document, name) => {
+            store.loadScene(document.elements, document.files ?? {}, document.appState, document.history, document.components);
+            syncFrameCounter(document.elements);
+            preloadFiles(document.files ?? {});
+            setFileName(name);
+            lastSavedVersion.current = store.getVersion();
+            setWorkspaceOpen(false);
+            showToast(`Restored ${name}`);
+          }}
+        />
+      )}
 
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
 

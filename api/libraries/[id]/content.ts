@@ -3,18 +3,20 @@ import { createClient } from "@neondatabase/serverless";
 export const config = { runtime: "edge" };
 
 export default async function handler(
-  _request: Request,
-  context: { params: Promise<{ id: string }> },
+  request: Request,
 ): Promise<Response> {
-  if (!process.env.DATABASE_URL) {
+  const databaseUrl = process.env.DATABASE_URL ?? process.env.VITE_DATABASE_URL;
+  if (!databaseUrl) {
     return Response.json(
       { error: "Library storage is not configured" },
       { status: 503, headers: { "cache-control": "no-store" } },
     );
   }
 
-  const { id } = await context.params;
-  const sql = createClient(process.env.DATABASE_URL);
+  const segments = new URL(request.url).pathname.split("/").filter(Boolean);
+  const id = decodeURIComponent(segments.at(-2) ?? "");
+  if (!id) return Response.json({ error: "Library id is required" }, { status: 400 });
+  const sql = createClient(databaseUrl);
   try {
     const result = await sql.query<{ content: unknown }>(
       "select content from libraries where id = $1 limit 1",
