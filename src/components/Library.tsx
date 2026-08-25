@@ -1,10 +1,48 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useLibraryList, fetchLibraryContent } from "../hooks/useLibrary";
 import { useLocalLibrary } from "../hooks/useLocalLibrary";
 import { IconClose } from "./icons";
 import { ServiceLibraryPanel } from "./ServiceLibrary";
 import { IconLockOpen, IconLockClosed } from "./icons";
 import { isArchitectureLibrary, libraryPriorityScore, rankLibraries } from "../libraryRanking";
+import { exportToSvgString } from "../io/exportSvg";
+import { store } from "../store";
+
+const LibraryItemPreview = ({ elements }: { elements: any[] }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let active = true;
+    const render = async () => {
+      try {
+        const svgString = await exportToSvgString({
+          elements,
+          files: store.files,
+          scale: 1,
+          padding: 10,
+          background: false,
+          theme: store.appState.theme,
+          backgroundColor: store.appState.theme === "dark" ? "#121212" : "#ffffff",
+          embedScene: false,
+        });
+        if (active && containerRef.current) {
+          containerRef.current.innerHTML = svgString;
+          const svg = containerRef.current.querySelector("svg");
+          if (svg) {
+            svg.style.width = "100%";
+            svg.style.height = "100%";
+            svg.style.objectFit = "contain";
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    render();
+    return () => { active = false; };
+  }, [elements]);
+
+  return <div ref={containerRef} className="library-item-content preview-bg" style={{ padding: "8px", boxSizing: "border-box" }} />;
+};
 
 const getLibraryItems = (payload: unknown): any[][] => {
   let value: unknown = payload;
@@ -30,7 +68,7 @@ const getLibraryItems = (payload: unknown): any[][] => {
 };
 
 export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void, docked?: boolean, onDockToggle?: () => void }) => {
-  const { localItems, recentItems, saveLocalItem, removeLocalItem, trackUsage } =
+  const { localItems, recentItems, saveLocalItems, removeLocalItem, trackUsage } =
     useLocalLibrary();
   
   const [tab, setTab] = useState<"my-library" | "built-in" | "browse">(
@@ -71,14 +109,13 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
       setInstallSuccess(null);
       const libraryItems = getLibraryItems(await fetchLibraryContent(id));
       if (libraryItems.length === 0) throw new Error("This library contains no compatible components.");
-      libraryItems.forEach((elements, index) => {
-        saveLocalItem({
-          id: libraryItems.length === 1 ? id : `${id}:${index}`,
-          name: libraryItems.length === 1 ? name : `${name} ${index + 1}`,
-          preview: previewUrl,
-          elements,
-        });
-      });
+      const newItems = libraryItems.map((elements, index) => ({
+        id: libraryItems.length === 1 ? id : `${id}:${index}`,
+        name: libraryItems.length === 1 ? name : `${name} ${index + 1}`,
+        preview: libraryItems.length === 1 ? previewUrl : undefined,
+        elements,
+      }));
+      saveLocalItems(newItems);
       setInstallSuccess(`${name} was added to your library.`);
       setTab("my-library");
     } catch (err) {
@@ -217,9 +254,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
                               }}
                             />
                           ) : (
-                            <div className="library-item-content text-only">
-                              {lib.name}
-                            </div>
+                            <LibraryItemPreview elements={lib.elements} />
                           )}
                           <span className="library-item-label">
                             {lib.name}
@@ -251,9 +286,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
                             }}
                           />
                         ) : (
-                          <div className="library-item-content text-only">
-                            {lib.name}
-                          </div>
+                          <LibraryItemPreview elements={lib.elements} />
                         )}
                         <span className="library-item-label">
                           {lib.name}
