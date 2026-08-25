@@ -7,6 +7,15 @@ new version stops opening in an old one.
 
 ## Unreleased
 
+## v1.1.0
+
+### Collaboration
+
+- Added serverless peer-to-peer real-time collaboration using Yjs and WebRTC
+- Generate shareable links to invite others to edit the same drawing
+- View remote participants' avatars and their live cursor movements
+- Persistent local drafts using IndexedDB
+
 ### Workspace
 
 - Added a searchable layer navigator that selects and focuses objects directly
