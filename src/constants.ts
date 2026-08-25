@@ -16,9 +16,9 @@ export const PALETTE = {
     canvas: ["#ffffff", "#f8f9fa", "#f4f7fb", "#fffcf0", "#fdf7f5"],
   },
   dark: {
-    stroke: ["#e9e9ee", "#ff8787", "#69db7c", "#74c0fc", "#ffd43b"],
+    stroke: ["#ffffff", "#ff8787", "#69db7c", "#74c0fc", "#ffd43b"],
     background: ["transparent", "#5c2b2b", "#22502f", "#1e3f5e", "#544117"],
-    canvas: ["#12121a", "#17171f", "#141a20", "#1b1810", "#1a1315"],
+    canvas: ["#121212", "#17171f", "#141a20", "#1b1810", "#1a1315"],
   },
 } as const;
 

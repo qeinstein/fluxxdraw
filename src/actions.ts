@@ -89,6 +89,30 @@ export const moveElementsBy = (ids: string[], dx: number, dy: number) => {
     )
     .map((el) => el.id);
   if (labelIds.length) store.updateElements(labelIds, (el) => ({ x: el.x + dx, y: el.y + dy }));
+
+  // Break arrow bindings if the arrow is moving but its bound target isn't
+  const arrowIds = ids.filter((id) => {
+    const el = store.getElement(id);
+    return el && (el.type === "arrow" || el.type === "line");
+  });
+  if (arrowIds.length > 0) {
+    store.updateElements<LinearElement>(arrowIds, (arrow) => {
+      let changed = false;
+      let startBinding = arrow.startBinding;
+      let endBinding = arrow.endBinding;
+      
+      if (startBinding && !idSet.has(startBinding.elementId)) {
+        startBinding = null;
+        changed = true;
+      }
+      if (endBinding && !idSet.has(endBinding.elementId)) {
+        endBinding = null;
+        changed = true;
+      }
+      return changed ? { startBinding, endBinding } : undefined;
+    });
+  }
+
   refreshBindings(ids);
 };
 
