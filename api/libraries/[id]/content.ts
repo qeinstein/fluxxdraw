@@ -18,10 +18,9 @@ export default async function handler(
   if (!id) return Response.json({ error: "Library id is required" }, { status: 400 });
   const sql = neon(databaseUrl);
   try {
-    const result = await sql<{ content: unknown }[]>(
-      "select content from libraries where id = $1 limit 1",
-      [id],
-    );
+    const result = await sql<{ content: unknown }[]>`
+      select content from libraries where id = ${id} limit 1
+    `;
     if (result.length === 0) {
       return Response.json({ error: "Library not found" }, { status: 404 });
     }
