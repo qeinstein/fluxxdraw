@@ -91,6 +91,9 @@ export const exportToCanvas = async (
   }
 
   ctx.save();
+  if (opts.theme === "dark") {
+    ctx.filter = "invert(93%) hue-rotate(180deg)";
+  }
   ctx.scale(scale, scale);
   ctx.translate(-bounds.x1 + padding, -bounds.y1 + padding);
   renderElements(ctx, elements, {
