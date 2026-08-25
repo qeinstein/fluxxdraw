@@ -156,23 +156,20 @@ export const Menu = ({
             </MenuSection>
 
             <MenuSection>
-              <MenuToggle
-                icon={isDark ? <IconMoon /> : <IconSun />}
-                label="Dark mode"
-                checked={isDark}
-                onChange={(next) => setTheme(next ? "dark" : "light")}
+              <MenuItem
+                icon={isDark ? <IconSun /> : <IconMoon />}
+                label={isDark ? "Light mode" : "Dark mode"}
+                onClick={() => setTheme(isDark ? "light" : "dark")}
               />
-              <MenuToggle
-                icon={<IconGrid />}
+              <MenuItem
+                icon={appState.gridSize !== null ? <IconCheck /> : <IconGrid />}
                 label="Show grid"
-                checked={appState.gridSize !== null}
-                onChange={(next) => store.setAppState({ gridSize: next ? 20 : null })}
+                onClick={() => store.setAppState({ gridSize: appState.gridSize !== null ? null : 20 })}
               />
-              <MenuToggle
-                icon={<IconMagnet />}
+              <MenuItem
+                icon={appState.snapToObjects ? <IconCheck /> : <IconMagnet />}
                 label="Snap to objects"
-                checked={appState.snapToObjects}
-                onChange={(next) => store.setAppState({ snapToObjects: next })}
+                onClick={() => store.setAppState({ snapToObjects: !appState.snapToObjects })}
               />
               <div className="menu-label" style={{ paddingLeft: "32px" }}>Canvas background</div>
               <div className="swatches menu-swatches" style={{ paddingLeft: "32px", paddingBottom: "12px" }}>
@@ -241,36 +238,7 @@ const MenuItem = ({
   </button>
 );
 
-const MenuToggle = ({
-  icon,
-  label,
-  checked,
-  onChange,
-}: {
-  icon?: ReactNode;
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) => (
-  <label className={`menu-item menu-toggle ${checked ? "active" : ""}`} role="menuitemcheckbox" aria-checked={checked}>
-    <div className="menu-item-content">
-      {icon && <span className="menu-item-icon">{icon}</span>}
-      <span>{label}</span>
-    </div>
-    {checked && <span className="menu-item-icon"><IconCheck /></span>}
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          onChange(!checked);
-        }
-      }}
-    />
-  </label>
-);
+
 
 /** The document title, editable in place — click it and type. */
 const FileName = ({

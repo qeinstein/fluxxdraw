@@ -847,30 +847,6 @@ kbd {
   background: var(--hover);
 }
 
-.menu-toggle {
-  cursor: pointer;
-  position: relative;
-}
-
-.menu-toggle:hover {
-  background: var(--hover);
-}
-
-.menu-toggle input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-
-
-
-
-.menu-toggle:has(input:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
 .menu-separator {
   height: 1px;
   background: var(--line);
