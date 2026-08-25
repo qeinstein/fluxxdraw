@@ -3,8 +3,8 @@ import { store, useScene } from "../store";
 import { APP_NAME, PALETTE } from "../constants";
 import { setTheme } from "../theme";
 import { Tooltip } from "./Tooltip";
-import { 
-  IconClose, 
+import {
+  IconClose,
   IconMenu,
   IconFolder,
   IconSave,

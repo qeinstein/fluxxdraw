@@ -124,12 +124,12 @@ body {
   pointer-events: none;
 }
 
-.ui-layer > * {
+.ui-layer>* {
   position: absolute;
   pointer-events: none;
 }
 
-.ui-layer > * > * {
+.ui-layer>*>* {
   pointer-events: auto;
 }
 
@@ -314,6 +314,7 @@ kbd {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -403,7 +404,7 @@ kbd {
   align-items: center;
 }
 
-.row.split > * {
+.row.split>* {
   flex: 1;
   min-width: 0;
 }
@@ -472,10 +473,8 @@ kbd {
 
 .swatch.is-transparent {
   background:
-    linear-gradient(45deg, var(--line-strong) 25%, transparent 25%, transparent 75%, var(--line-strong) 75%)
-      0 0 / 8px 8px,
-    linear-gradient(45deg, var(--line-strong) 25%, var(--surface) 25%, var(--surface) 75%, var(--line-strong) 75%)
-      4px 4px / 8px 8px;
+    linear-gradient(45deg, var(--line-strong) 25%, transparent 25%, transparent 75%, var(--line-strong) 75%) 0 0 / 8px 8px,
+    linear-gradient(45deg, var(--line-strong) 25%, var(--surface) 25%, var(--surface) 75%, var(--line-strong) 75%) 4px 4px / 8px 8px;
 }
 
 .swatch-divider {
@@ -577,8 +576,7 @@ kbd {
 }
 
 .checkbox input[type="checkbox"]:checked {
-  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.2l2.3 2.3 4.5-4.8' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-    center / 12px no-repeat;
+  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.2l2.3 2.3 4.5-4.8' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat;
   border-color: var(--accent);
 }
 
@@ -674,6 +672,7 @@ kbd {
     opacity: 0;
     transform: scale(0.97) translateY(-3px);
   }
+
   to {
     opacity: 1;
     transform: none;
@@ -723,7 +722,7 @@ kbd {
   border-bottom: 1px solid var(--line);
 }
 
-.menu-sidebar-head > div {
+.menu-sidebar-head>div {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -851,15 +850,15 @@ kbd {
   transition: transform var(--fast);
 }
 
-.menu-toggle input:checked ~ .switch {
+.menu-toggle input:checked~.switch {
   background: var(--accent);
 }
 
-.menu-toggle input:checked ~ .switch::after {
+.menu-toggle input:checked~.switch::after {
   transform: translateX(12px);
 }
 
-.menu-toggle input:focus-visible ~ .switch {
+.menu-toggle input:focus-visible~.switch {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
@@ -956,6 +955,7 @@ kbd {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -978,6 +978,7 @@ kbd {
     opacity: 0;
     transform: scale(0.98) translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: none;
@@ -1269,6 +1270,7 @@ kbd {
     opacity: 0;
     transform: translate(-50%, 8px);
   }
+
   to {
     opacity: 1;
     transform: translate(-50%, 0);
@@ -1297,6 +1299,7 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -1326,6 +1329,7 @@ kbd {
     opacity: 0;
     transform: translate(-50%, 10px);
   }
+
   to {
     opacity: 1;
     transform: translate(-50%, 0);
@@ -1777,6 +1781,7 @@ kbd {
     opacity: 0;
     transform: translateX(12px);
   }
+
   to {
     opacity: 1;
     transform: none;
@@ -1789,7 +1794,7 @@ kbd {
   gap: 8px;
 }
 
-.diagram-text-head > div {
+.diagram-text-head>div {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -1853,7 +1858,8 @@ kbd {
  * from there down the tools move to a dock at the bottom edge — also where
  * a thumb can reach them.
  */
-@media (max-width: 940px), (pointer: coarse) and (max-width: 1024px) {
+@media (max-width: 940px),
+(pointer: coarse) and (max-width: 1024px) {
   :root {
     --edge: max(10px, env(safe-area-inset-left));
     --dock: calc(max(10px, env(safe-area-inset-bottom)) + 52px);
@@ -1922,6 +1928,7 @@ kbd {
       opacity: 0;
       transform: translateY(10px);
     }
+
     to {
       opacity: 1;
       transform: none;
@@ -1942,7 +1949,8 @@ kbd {
  * controls move into a sheet behind the sliders button in the top bar and
  * the rarely-used tools fall into the toolbar overflow.
  */
-@media (max-width: 720px), (pointer: coarse) and (max-width: 1024px) {
+@media (max-width: 720px),
+(pointer: coarse) and (max-width: 1024px) {
   .top-left {
     top: max(10px, env(safe-area-inset-top));
     left: var(--edge);
@@ -2085,6 +2093,7 @@ kbd {
     opacity: 0;
     transform: translateY(14px);
   }
+
   to {
     opacity: 1;
     transform: none;
@@ -2224,6 +2233,7 @@ kbd {
 }
 
 @media (hover: none) {
+
   /* thumb-sized rows, since this menu is what long-press opens */
   .context-item {
     padding: 11px 12px;
@@ -2232,6 +2242,7 @@ kbd {
 }
 
 @media (hover: none) {
+
   /* no keyboard to press them with, so the hints are just noise */
   .context-item kbd {
     display: none;
@@ -2319,7 +2330,8 @@ kbd {
   font-size: 10.5px;
 }
 
-@media (max-width: 720px), (pointer: coarse) and (max-width: 1024px) {
+@media (max-width: 720px),
+(pointer: coarse) and (max-width: 1024px) {
   .service-bar {
     flex-wrap: wrap;
     padding: 10px 12px;
@@ -2335,6 +2347,7 @@ kbd {
 }
 
 @media (hover: none) {
+
   /*
    * Belt and braces with the pointer-type check in Tooltip: on a touch-only
    * device there is no hover, so a hover hint can only ever be in the way.

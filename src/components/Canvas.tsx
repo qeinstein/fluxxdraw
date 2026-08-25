@@ -560,7 +560,7 @@ export const Canvas = ({
       const el = newLinearElement(tool, state, gx, gy);
       const bindTarget =
         tool === "arrow" ? getBindableElementAt(store.visibleElements, x, y) : null;
-      if (bindTarget) el.startBinding = defaultBinding(bindTarget.id);
+      if (bindTarget) el.startBinding = defaultBinding(bindTarget.id, bindTarget, [x, y]);
       el.points = [
         [0, 0],
         [0, 0],
@@ -1246,7 +1246,7 @@ export const Canvas = ({
   const bindArrowEnd = (arrowId: string, x: number, y: number) => {
     const target = getBindableElementAt(store.visibleElements, x, y, arrowId);
     store.updateElement<LinearElement>(arrowId, () => ({
-      endBinding: target ? defaultBinding(target.id) : null,
+      endBinding: target ? defaultBinding(target.id, target, [x, y]) : null,
     }));
     refreshBindings([arrowId]);
   };
@@ -1254,7 +1254,7 @@ export const Canvas = ({
   const bindArrowStart = (arrowId: string, x: number, y: number) => {
     const target = getBindableElementAt(store.visibleElements, x, y, arrowId);
     store.updateElement<LinearElement>(arrowId, () => ({
-      startBinding: target ? defaultBinding(target.id) : null,
+      startBinding: target ? defaultBinding(target.id, target, [x, y]) : null,
     }));
     refreshBindings([arrowId]);
   };

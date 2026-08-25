@@ -3,8 +3,6 @@ import { getElementBounds, getElementCenter } from "../geometry";
 import type { ExcaliElement, LinearElement, Binding } from "../types";
 import { hitTestElement } from "./hitTest";
 import {
-  bestConnectionSide,
-  sideToFixedPoint,
   fixedPointToScene,
 } from "./arrowRouting";
 
@@ -152,13 +150,13 @@ export const getBoundArrowPoints = (
 export const defaultBinding = (
   elementId: string,
   shape?: ExcaliElement | null,
-  otherEndScene?: [number, number] | null,
+  dropScene?: [number, number] | null,
 ): Binding => {
   let fixedPoint: [number, number] | undefined;
-  if (shape && otherEndScene) {
-    const center = getElementCenter(shape);
-    const side = bestConnectionSide(center, otherEndScene);
-    fixedPoint = sideToFixedPoint(side);
+  if (shape && dropScene) {
+    const u = Math.max(0, Math.min(1, (dropScene[0] - shape.x) / (shape.width || 1)));
+    const v = Math.max(0, Math.min(1, (dropScene[1] - shape.y) / (shape.height || 1)));
+    fixedPoint = [u, v];
   }
   return {
     elementId,
