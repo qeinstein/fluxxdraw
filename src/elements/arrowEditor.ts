@@ -40,12 +40,12 @@ export const getArrowHandles = (
     });
   }
 
-  // "Add" handles at segment midpoints
-  for (let i = 0; i < points.length - 1; i++) {
-    const [ax, ay] = points[i];
-    const [bx, by] = points[i + 1];
+  // "Add" handle only if it's a simple 2-point line (only one bend allowed)
+  if (points.length === 2) {
+    const [ax, ay] = points[0];
+    const [bx, by] = points[1];
     handles.push({
-      index: i,
+      index: 0,
       x: arrow.x + (ax + bx) / 2,
       y: arrow.y + (ay + by) / 2,
       type: "add",
