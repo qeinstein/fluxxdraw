@@ -17,7 +17,8 @@ import {
   IconMoon,
   IconSun,
   IconGithub,
-  IconTrash
+  IconTrash,
+  IconCheck,
 } from "./icons";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { sc } from "../shortcuts";
@@ -249,22 +250,25 @@ const MenuToggle = ({
   icon?: ReactNode;
   label: string;
   checked: boolean;
-  onChange: (next: boolean) => void;
+  onChange: (checked: boolean) => void;
 }) => (
-  <label className="menu-item menu-toggle">
+  <label className={`menu-item menu-toggle ${checked ? "active" : ""}`} role="menuitemcheckbox" aria-checked={checked}>
     <div className="menu-item-content">
       {icon && <span className="menu-item-icon">{icon}</span>}
       <span>{label}</span>
     </div>
-    <div className="menu-toggle-switch">
-      <input
-        type="checkbox"
-        role="switch"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span className="switch" aria-hidden="true" />
-    </div>
+    {checked && <span className="menu-item-icon"><IconCheck /></span>}
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onChange(!checked);
+        }
+      }}
+    />
   </label>
 );
 

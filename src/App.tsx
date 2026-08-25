@@ -619,10 +619,9 @@ export default function App() {
         <div className="bottom-right">
           <Tooltip label="Keyboard shortcuts" shortcut="?" placement="top">
             <button
-              className="island icon-button"
+              className="floating-help-button"
               aria-label="Keyboard shortcuts"
               onClick={() => setHelpOpen(true)}
-              style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <IconHelp />
             </button>
