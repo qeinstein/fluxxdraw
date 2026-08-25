@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { store, useScene } from "../store";
 import { APP_NAME, PALETTE } from "../constants";
 import { setTheme } from "../theme";
-import { tidyUp } from "../layout";
 import { Tooltip } from "./Tooltip";
 import { 
   IconClose, 
@@ -12,10 +11,7 @@ import {
   IconImage,
   IconInstall,
   IconHistory,
-  IconPresent,
   IconServices,
-  IconTidy,
-  IconText,
   IconGrid,
   IconMagnet,
   IconMoon,
@@ -36,9 +32,7 @@ interface MenuProps {
   onReset: () => void;
   onHelp: () => void;
   onHistory: () => void;
-  onPresent: () => void;
   onServices: () => void;
-  onToggleText: () => void;
   currentFileName: string | null;
   dirty: boolean;
   onRename: (name: string) => void;
@@ -59,9 +53,7 @@ export const Menu = ({
   onReset,
   onHelp,
   onHistory,
-  onPresent,
   onServices,
-  onToggleText,
   currentFileName,
   dirty,
   onRename,
@@ -162,10 +154,7 @@ export const Menu = ({
 
             <MenuSection>
               <MenuItem icon={<IconHistory />} label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
-              <MenuItem icon={<IconPresent />} label="Present frames" shortcut={sc("present")} onClick={run(onPresent)} />
               <MenuItem icon={<IconServices />} label="Service library…" shortcut={sc("services")} onClick={run(onServices)} />
-              <MenuItem icon={<IconTidy />} label="Tidy up layout" shortcut={sc("tidyUp")} onClick={run(() => tidyUp())} />
-              <MenuItem icon={<IconText />} label="Diagram as text" shortcut={sc("diagramText")} onClick={run(onToggleText)} />
             </MenuSection>
 
             <MenuSection>

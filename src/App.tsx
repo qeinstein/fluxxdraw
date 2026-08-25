@@ -552,9 +552,7 @@ export default function App() {
             }}
             onHelp={() => setHelpOpen(true)}
             onHistory={() => openPanel("history")}
-            onPresent={() => setPresenting(true)}
             onServices={() => setServicesOpen(true)}
-            onToggleText={() => (textPanelOpen ? openPanel(null) : openPanel("text"))}
             currentFileName={fileName}
             dirty={dirty}
             onRename={renameDocument}

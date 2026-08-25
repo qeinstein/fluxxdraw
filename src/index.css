@@ -656,7 +656,7 @@ kbd {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  width: min(326px, calc(100vw - 20px));
+  width: min(260px, calc(100vw - 20px));
   max-height: calc(100dvh - 20px);
   background: var(--surface-raised);
   border-radius: var(--radius-lg);
