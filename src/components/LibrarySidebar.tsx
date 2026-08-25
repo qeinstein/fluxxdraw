@@ -4,7 +4,7 @@ import { IconClose } from "./icons";
 import { store } from "../store";
 
 export const LibrarySidebar = ({ onClose }: { onClose: () => void }) => {
-  const { libraries, loading, error } = useLibraryList();
+  const { libraries, loading, error, reload } = useLibraryList();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const handleAddLibrary = async (id: string) => {
@@ -66,7 +66,14 @@ export const LibrarySidebar = ({ onClose }: { onClose: () => void }) => {
 
       <div className="menu-sidebar-content" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
         {loading && <div style={{ textAlign: "center", color: "var(--fg-subtle)" }}>Loading libraries...</div>}
-        {error && <div style={{ color: "var(--danger)" }}>Failed to load libraries: {error.message}</div>}
+        {error && (
+          <div style={{ color: "var(--danger)", display: "flex", flexDirection: "column", gap: 12, alignItems: "center", padding: "20px 0" }}>
+            <span>Failed to load libraries: {error.message}</span>
+            <button onClick={reload} style={{ padding: "6px 12px", background: "var(--surface-overlay)", border: "1px solid var(--line)", borderRadius: 4 }}>
+              Try again
+            </button>
+          </div>
+        )}
         
         {!loading && !error && libraries.map((lib) => (
           <div key={lib.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: "var(--surface-sunken)", borderRadius: "var(--radius-md)" }}>

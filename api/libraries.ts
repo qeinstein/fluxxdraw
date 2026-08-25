@@ -1,4 +1,4 @@
-import { createClient } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 
 export const config = { runtime: "edge" };
 
@@ -23,13 +23,13 @@ export default async function handler(): Promise<Response> {
     );
   }
 
-  const sql = createClient(databaseUrl);
+  const sql = neon(databaseUrl);
   try {
-    const result = await sql.query<LibraryRow>(
-      `select id, name, description, authors, source, preview, created, updated, version
-       from libraries order by name asc`,
-    );
-    return Response.json(result.rows, { headers: { "cache-control": "public, max-age=300" } });
+    const rows = await sql<LibraryRow[]>`
+      select id, name, description, authors, source, preview, created, updated, version
+      from libraries order by name asc
+    `;
+    return Response.json(rows, { headers: { "cache-control": "public, max-age=300" } });
   } catch (error) {
     return Response.json(
       { error: (error as Error).message },

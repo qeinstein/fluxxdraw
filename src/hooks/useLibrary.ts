@@ -18,23 +18,26 @@ export const useLibraryList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const fetchLibraries = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(API_BASE);
+      if (!response.ok) throw new Error(`Library request failed (${response.status})`);
+      const rows = await response.json();
+      setLibraries(rows as Library[]);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchLibraries = async () => {
-      try {
-        const response = await fetch(API_BASE);
-        if (!response.ok) throw new Error(`Library request failed (${response.status})`);
-        const rows = await response.json();
-        setLibraries(rows as Library[]);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLibraries();
   }, []);
 
-  return { libraries, loading, error };
+  return { libraries, loading, error, reload: fetchLibraries };
 };
 
 export const fetchLibraryContent = async (id: string): Promise<unknown> => {
