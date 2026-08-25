@@ -161,6 +161,7 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
 
   switch (el.type) {
     case "rectangle":
+    case "sticky":
     case "frame": {
       if (el.edges === "round" && el.type === "rectangle" && Math.min(Math.abs(w), Math.abs(h)) > 8) {
         return [generator.path(roundedRectPath(w, h, cornerRadius(el)), opts)];

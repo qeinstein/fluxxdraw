@@ -399,4 +399,4 @@ export const getFrameContents = (frameId: string): ExcaliElement[] => {
 };
 
 export const isContainer = (el: ExcaliElement): el is GenericElement =>
-  el.type === "rectangle" || el.type === "diamond" || el.type === "ellipse";
+  el.type === "rectangle" || el.type === "diamond" || el.type === "ellipse" || el.type === "sticky";

@@ -34,14 +34,14 @@ const PRIMARY_TOOLS: ToolSpec[] = [
   { tool: "hand", label: "Pan", shortcut: "H", icon: <IconHand /> },
   { tool: "selection", label: "Select", shortcut: "1", icon: <IconSelection /> },
   { tool: "rectangle", label: "Rectangle", shortcut: "2", icon: <IconRectangle /> },
-  { tool: "sticky", label: "Sticky note", shortcut: "N", icon: <IconSticky /> },
   { tool: "diamond", label: "Diamond", shortcut: "3", icon: <IconDiamond /> },
   { tool: "ellipse", label: "Ellipse", shortcut: "4", icon: <IconEllipse /> },
   { tool: "arrow", label: "Arrow", shortcut: "5", icon: <IconArrow /> },
-  { tool: "line", label: "Line", shortcut: "6", icon: <IconLine /> },
-  { tool: "freedraw", label: "Draw", shortcut: "7", icon: <IconDraw /> },
+  { tool: "freedraw", label: "Draw", shortcut: "6", icon: <IconDraw /> },
+  { tool: "line", label: "Line", shortcut: "7", icon: <IconLine /> },
   { tool: "text", label: "Text", shortcut: "8", icon: <IconText /> },
   { tool: "eraser", label: "Eraser", shortcut: "0", icon: <IconEraser /> },
+  { tool: "sticky", label: "Sticky note", shortcut: "N", icon: <IconSticky /> },
 ];
 
 /** Occasional tools, tucked behind the overflow button. */
@@ -58,13 +58,13 @@ const SECONDARY_TOOLS: ToolSpec[] = [
  */
 const MOBILE_PRIMARY: Tool[] = [
   "selection",
-  "sticky",
   "rectangle",
   "ellipse",
   "arrow",
   "freedraw",
   "text",
   "eraser",
+  "sticky",
 ];
 
 interface ToolbarProps {

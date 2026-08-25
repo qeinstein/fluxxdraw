@@ -53,7 +53,7 @@ interface BaseElement extends ElementStyle {
 }
 
 export interface GenericElement extends BaseElement {
-  type: "rectangle" | "diamond" | "ellipse";
+  type: "rectangle" | "diamond" | "ellipse" | "sticky";
   /** id of a text element rendered as this shape's label */
   boundText: string | null;
   /** ids of arrows bound to this shape */

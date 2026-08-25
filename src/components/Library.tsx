@@ -5,6 +5,7 @@ import { IconClose } from "./icons";
 import { store } from "../store";
 import { nanoid } from "nanoid";
 import { ServiceLibraryPanel } from "./ServiceLibrary";
+import { IconLockOpen, IconLockClosed } from "./icons";
 
 /** Keywords that boost a library to the top of browse results. */
 const PRIORITY_KEYWORDS = [
@@ -15,12 +16,12 @@ const PRIORITY_KEYWORDS = [
   "software", "platform", "stack", "hashicorp", "terraform",
 ];
 
-const isPriority = (name: string, desc: string) => {
-  const hay = `${name} ${desc}`.toLowerCase();
+const isPriority = (name: string, desc: string | undefined | null) => {
+  const hay = `${name} ${desc || ""}`.toLowerCase();
   return PRIORITY_KEYWORDS.some((kw) => hay.includes(kw));
 };
 
-export const Library = ({ onClose }: { onClose: () => void }) => {
+export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void, docked?: boolean, onDockToggle?: () => void }) => {
   const { localItems, recentItems, saveLocalItem, removeLocalItem, trackUsage } =
     useLocalLibrary();
   
@@ -64,7 +65,7 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
       const content = await fetchLibraryContent(id);
       const parsed =
         typeof content === "string" ? JSON.parse(content) : content;
-      const elements = parsed.libraryItems || parsed.library;
+      const elements = parsed.libraryItems || parsed.library || (Array.isArray(parsed) ? parsed : null);
       if (elements && Array.isArray(elements)) {
         const items = elements.flatMap((item: any) => {
           if (Array.isArray(item)) return item;
@@ -172,13 +173,21 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
             Browse
           </button>
         </div>
-        <button
-          className="library-close"
-          aria-label="Close library"
-          onClick={onClose}
-        >
-          <IconClose />
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {onDockToggle && (
+            <button
+              type="button"
+              className={`library-close ${docked ? "active" : ""}`}
+              onClick={onDockToggle}
+              title={docked ? "Undock sidebar" : "Dock sidebar"}
+            >
+              {docked ? <IconLockClosed /> : <IconLockOpen />}
+            </button>
+          )}
+          <button type="button" className="library-close" onClick={onClose} title="Close library">
+            <IconClose />
+          </button>
+        </div>
       </header>
 
       {/* Search — visible in Browse tab */}
