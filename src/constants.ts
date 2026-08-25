@@ -100,7 +100,7 @@ export const DEFAULT_APP_STATE: AppState = {
     fillStyle: "hachure",
     strokeWidth: 1,
     strokeStyle: "solid",
-    roughness: 1,
+    roughness: 0,
     edges: "round",
     opacity: 100,
     fontSize: 20,
