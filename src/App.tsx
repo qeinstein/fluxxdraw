@@ -213,9 +213,10 @@ export default function App() {
     if (!raw) return;
     try {
       const doc = JSON.parse(raw) as SceneDocument;
-      if (!doc.elements?.length) return;
-      store.loadScene(doc.elements, doc.files ?? {}, doc.appState, doc.history, doc.components);
-      syncFrameCounter(doc.elements);
+      store.loadScene(doc.elements ?? [], doc.files ?? {}, doc.appState, doc.history, doc.components);
+      if (doc.elements?.length) {
+        syncFrameCounter(doc.elements);
+      }
       preloadFiles(doc.files ?? {});
     } catch {
       localStorage.removeItem(AUTOSAVE_KEY);
