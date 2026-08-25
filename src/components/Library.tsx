@@ -4,20 +4,7 @@ import { useLocalLibrary } from "../hooks/useLocalLibrary";
 import { IconClose } from "./icons";
 import { ServiceLibraryPanel } from "./ServiceLibrary";
 import { IconLockOpen, IconLockClosed } from "./icons";
-
-/** Keywords that boost a library to the top of browse results. */
-const PRIORITY_KEYWORDS = [
-  "system design", "architecture", "aws", "gcp", "azure", "cloud",
-  "kubernetes", "docker", "database", "server", "network", "api",
-  "microservice", "infrastructure", "devops", "ci/cd", "uml",
-  "deployment", "component", "data flow", "sequence", "flowchart",
-  "software", "platform", "stack", "hashicorp", "terraform",
-];
-
-const isPriority = (name: string, desc: string | undefined | null) => {
-  const hay = `${name} ${desc || ""}`.toLowerCase();
-  return PRIORITY_KEYWORDS.some((kw) => hay.includes(kw));
-};
+import { isArchitectureLibrary, libraryPriorityScore, rankLibraries } from "../libraryRanking";
 
 const getLibraryItems = (payload: unknown): any[][] => {
   let value: unknown = payload;
@@ -66,12 +53,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
         })
       : libraries;
 
-    return [...filtered].sort((a, b) => {
-      const ap = isPriority(a.name, a.description) ? 0 : 1;
-      const bp = isPriority(b.name, b.description) ? 0 : 1;
-      if (ap !== bp) return ap - bp;
-      return a.name.localeCompare(b.name);
-    });
+    return rankLibraries(filtered);
   }, [libraries, query]);
 
   // ---------------------------------------------------------------------------
@@ -321,7 +303,8 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
               filteredLibraries.map((lib) => {
                 const installed = localItems.some((item) => item.id === lib.id || item.id.startsWith(`${lib.id}:`));
                 const previewUrl = `https://raw.githubusercontent.com/excalidraw/excalidraw-libraries/main/libraries/${lib.preview}`;
-                const priority = isPriority(lib.name, lib.description);
+                const priority = libraryPriorityScore(lib) > 0;
+                const architecturePick = isArchitectureLibrary(lib);
 
                 return (
                   <div
@@ -334,6 +317,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
                     />
                     <div className="library-browse-info">
                       <strong>{lib.name}</strong>
+                      {architecturePick && <span className="library-priority-badge">Architecture pick</span>}
                       {lib.description && (
                         <span className="library-browse-desc">
                           {lib.description.length > 80

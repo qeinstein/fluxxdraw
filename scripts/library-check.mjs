@@ -7,13 +7,12 @@ const databaseUrl = process.env.DATABASE_URL ?? process.env.VITE_DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL or VITE_DATABASE_URL is required");
 
 const sql = neon(databaseUrl);
-const [library] = await sql`
-  select id, name, description, preview, content
+const libraries = await sql`
+  select id, name, description, preview
   from libraries
   where content is not null
-  limit 1
 `;
-if (!library) throw new Error("No installable library found");
+if (!libraries.length) throw new Error("No installable library found");
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -25,19 +24,30 @@ const check = (name, passed, detail = "") => {
 
 await page.route("**/api/libraries", (route) => route.fulfill({
   contentType: "application/json",
-  body: JSON.stringify([{ ...library, content: undefined }]),
+  body: JSON.stringify(libraries.map(({ content: _content, ...library }) => library)),
 }));
-await page.route(`**/api/libraries/${library.id}/content`, (route) => route.fulfill({
-  contentType: "application/json",
-  body: JSON.stringify(library.content),
-}));
+await page.route("**/api/libraries/*/content", async (route) => {
+  const id = decodeURIComponent(new URL(route.request().url()).pathname.split("/").at(-2));
+  const [library] = await sql`select content from libraries where id = ${id} limit 1`;
+  return route.fulfill({
+    status: library ? 200 : 404,
+    contentType: "application/json",
+    body: JSON.stringify(library?.content ?? { error: "Not found" }),
+  });
+});
 
 await page.goto("http://127.0.0.1:5180/", { waitUntil: "networkidle" });
 await page.evaluate(() => localStorage.clear());
 await page.reload({ waitUntil: "networkidle" });
 await page.getByRole("button", { name: "Library" }).click();
 await page.getByRole("button", { name: "Browse", exact: true }).click();
-await page.getByRole("button", { name: "Add to FluxxDraw" }).click();
+const expectedFirst = await page.evaluate(async (items) => {
+  const { rankLibraries } = await import("/src/libraryRanking.ts");
+  return rankLibraries(items)[0].name;
+}, libraries);
+const visibleFirst = await page.locator(".library-browse-card .library-browse-info strong").first().textContent();
+check("architecture ranking controls first result", visibleFirst === expectedFirst, `${visibleFirst}`);
+await page.getByRole("button", { name: "Add to FluxxDraw" }).first().click();
 await page.waitForSelector(".library-status.success");
 
 const installedBeforeReload = await page.evaluate(() => {
