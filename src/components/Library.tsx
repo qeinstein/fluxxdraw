@@ -25,7 +25,8 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
 
   const { libraries, loading, error } = useLibraryList();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const { localItems, saveLocalItem, removeLocalItem } = useLocalLibrary();
+  const { localItems, recentItems, saveLocalItem, removeLocalItem, trackUsage } =
+    useLocalLibrary();
 
   /** Filtered + sorted browse list: priority items first, then alphabetical. */
   const filteredLibraries = useMemo(() => {
@@ -50,11 +51,16 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
   // Actions
   // ---------------------------------------------------------------------------
 
-  const handleInstallLibrary = async (id: string, name: string, previewUrl: string) => {
+  const handleInstallLibrary = async (
+    id: string,
+    name: string,
+    previewUrl: string,
+  ) => {
     try {
       setDownloadingId(id);
       const content = await fetchLibraryContent(id);
-      const parsed = typeof content === "string" ? JSON.parse(content) : content;
+      const parsed =
+        typeof content === "string" ? JSON.parse(content) : content;
       const elements = parsed.libraryItems || parsed.library;
       if (elements && Array.isArray(elements)) {
         const items = elements.flatMap((item: any) => {
@@ -72,12 +78,16 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
-  const handlePlaceItems = (items: any[]) => {
+  const handlePlaceItems = (items: any[], libraryId?: string) => {
     if (!items.length) return;
     const minX = Math.min(...items.map((el: any) => el.x ?? 0));
     const minY = Math.min(...items.map((el: any) => el.y ?? 0));
-    const maxX = Math.max(...items.map((el: any) => (el.x ?? 0) + (el.width ?? 0)));
-    const maxY = Math.max(...items.map((el: any) => (el.y ?? 0) + (el.height ?? 0)));
+    const maxX = Math.max(
+      ...items.map((el: any) => (el.x ?? 0) + (el.width ?? 0)),
+    );
+    const maxY = Math.max(
+      ...items.map((el: any) => (el.y ?? 0) + (el.height ?? 0)),
+    );
     const w = maxX - minX;
     const h = maxY - minY;
 
@@ -93,22 +103,43 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
     const placed = items.map((el: any) => ({
       ...el,
       id: idMap.get(el.id)!,
-      groupIds: el.groupIds?.map((g: string) => idMap.get(g) || g) || [],
-      boundElements: el.boundElements?.map((b: any) => ({ ...b, id: idMap.get(b.id) || b.id })) || [],
+      groupIds:
+        el.groupIds?.map((g: string) => idMap.get(g) || g) || [],
+      boundElements:
+        el.boundElements?.map((b: any) => ({
+          ...b,
+          id: idMap.get(b.id) || b.id,
+        })) || [],
       x: (el.x ?? 0) - minX + cx - w / 2,
       y: (el.y ?? 0) - minY + cy - h / 2,
     }));
 
     store.mutate(() => {
       store.addElements(...placed);
-      store.appState = { ...store.appState, selectedIds: placed.map((e: any) => e.id) };
+      store.appState = {
+        ...store.appState,
+        selectedIds: placed.map((e: any) => e.id),
+      };
     });
+
+    // Track usage
+    if (libraryId) trackUsage(libraryId);
   };
 
   const onDragStart = (e: React.DragEvent, items: any[]) => {
-    e.dataTransfer.setData("application/vnd.fluxxdraw.library+json", JSON.stringify(items));
+    e.dataTransfer.setData(
+      "application/vnd.fluxxdraw.library+json",
+      JSON.stringify(items),
+    );
     e.dataTransfer.effectAllowed = "copy";
   };
+
+  // ---------------------------------------------------------------------------
+  // Recently-used section (top 6 most recent)
+  // ---------------------------------------------------------------------------
+  const recentUsed = recentItems
+    .filter((i) => (i.lastUsed ?? 0) > 0)
+    .slice(0, 6);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -132,7 +163,11 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
             Browse
           </button>
         </div>
-        <button className="library-close" aria-label="Close library" onClick={onClose}>
+        <button
+          className="library-close"
+          aria-label="Close library"
+          onClick={onClose}
+        >
           <IconClose />
         </button>
       </header>
@@ -161,45 +196,99 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
                 <p style={{ fontSize: 12, color: "var(--fg-subtle)" }}>
                   Browse the community collection and add components here.
                 </p>
-                <button className="library-cta" onClick={() => setTab("browse")}>
+                <button
+                  className="library-cta"
+                  onClick={() => setTab("browse")}
+                >
                   Browse libraries
                 </button>
               </div>
             )}
 
             {localItems.length > 0 && (
-              <div className="library-grid">
-                {localItems.map((lib) => (
-                  <div
-                    key={lib.id}
-                    className="library-item"
-                    draggable
-                    onDragStart={(e) => onDragStart(e, lib.elements)}
-                    onClick={() => handlePlaceItems(lib.elements)}
-                    title={`Click to place "${lib.name}" · Drag to position`}
-                  >
-                    {lib.preview ? (
-                      <div
-                        className="library-item-content preview-bg"
-                        style={{ backgroundImage: `url(${lib.preview})` }}
-                      />
-                    ) : (
-                      <div className="library-item-content text-only">{lib.name}</div>
-                    )}
-                    <span className="library-item-label">{lib.name}</span>
-                    <button
-                      className="library-item-delete"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeLocalItem(lib.id);
-                      }}
-                      title="Remove"
-                    >
-                      ×
-                    </button>
+              <>
+                {/* Recently used */}
+                {recentUsed.length > 0 && (
+                  <div className="library-section">
+                    <h4 className="library-section-title">Recently used</h4>
+                    <div className="library-grid">
+                      {recentUsed.map((lib) => (
+                        <div
+                          key={`recent-${lib.id}`}
+                          className="library-item"
+                          draggable
+                          onDragStart={(e) => onDragStart(e, lib.elements)}
+                          onClick={() =>
+                            handlePlaceItems(lib.elements, lib.id)
+                          }
+                          title={`Click to place "${lib.name}" · Drag to position`}
+                        >
+                          {lib.preview ? (
+                            <div
+                              className="library-item-content preview-bg"
+                              style={{
+                                backgroundImage: `url(${lib.preview})`,
+                              }}
+                            />
+                          ) : (
+                            <div className="library-item-content text-only">
+                              {lib.name}
+                            </div>
+                          )}
+                          <span className="library-item-label">
+                            {lib.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {/* All installed */}
+                <div className="library-section">
+                  <h4 className="library-section-title">All components</h4>
+                  <div className="library-grid">
+                    {localItems.map((lib) => (
+                      <div
+                        key={lib.id}
+                        className="library-item"
+                        draggable
+                        onDragStart={(e) => onDragStart(e, lib.elements)}
+                        onClick={() =>
+                          handlePlaceItems(lib.elements, lib.id)
+                        }
+                        title={`Click to place "${lib.name}" · Drag to position`}
+                      >
+                        {lib.preview ? (
+                          <div
+                            className="library-item-content preview-bg"
+                            style={{
+                              backgroundImage: `url(${lib.preview})`,
+                            }}
+                          />
+                        ) : (
+                          <div className="library-item-content text-only">
+                            {lib.name}
+                          </div>
+                        )}
+                        <span className="library-item-label">
+                          {lib.name}
+                        </span>
+                        <button
+                          className="library-item-delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeLocalItem(lib.id);
+                          }}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </>
         )}
@@ -214,7 +303,9 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
               </div>
             )}
             {error && (
-              <div className="library-status danger">Could not load libraries.</div>
+              <div className="library-status danger">
+                Could not load libraries.
+              </div>
             )}
 
             {!loading &&
@@ -225,7 +316,10 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
                 const priority = isPriority(lib.name, lib.description);
 
                 return (
-                  <div key={lib.id} className={`library-browse-card${priority ? " priority" : ""}`}>
+                  <div
+                    key={lib.id}
+                    className={`library-browse-card${priority ? " priority" : ""}`}
+                  >
                     <div
                       className="library-browse-preview"
                       style={{ backgroundImage: `url(${previewUrl})` }}
@@ -258,7 +352,9 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
               })}
 
             {!loading && !error && filteredLibraries.length === 0 && (
-              <div className="library-status">No libraries match "{query}"</div>
+              <div className="library-status">
+                No libraries match "{query}"
+              </div>
             )}
           </div>
         )}
