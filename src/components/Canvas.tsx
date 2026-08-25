@@ -103,6 +103,8 @@ interface PointerState {
   hasMoved: boolean;
   /** true while a multi-point line is being placed click-by-click */
   placingPoints: boolean;
+  lastMoveX?: number;
+  lastMoveY?: number;
 }
 
 const freshPointerState = (): PointerState => ({
@@ -119,6 +121,8 @@ const freshPointerState = (): PointerState => ({
   marquee: null,
   hasMoved: false,
   placingPoints: false,
+  lastMoveX: 0,
+  lastMoveY: 0,
 });
 
 const DRAWING_TOOLS: Tool[] = [
@@ -1096,10 +1100,6 @@ export const Canvas = ({
         guidesRef.current = [];
 
         const ids = pointer.snapshot.map((el) => el.id);
-        // reset to the snapshot position, then apply the total delta
-        for (const original of pointer.snapshot) {
-          store.updateElement(original.id, () => ({ x: original.x, y: original.y }));
-        }
 
         if (state.gridSize) {
           moveX = snapToGrid(pointer.snapshot[0].x + moveX, state.gridSize) - pointer.snapshot[0].x;
@@ -1122,7 +1122,12 @@ export const Canvas = ({
           guidesRef.current = snap.guides;
         }
 
-        moveElementsBy(ids, moveX, moveY);
+        const incrementalDx = moveX - (pointer.lastMoveX ?? 0);
+        const incrementalDy = moveY - (pointer.lastMoveY ?? 0);
+        pointer.lastMoveX = moveX;
+        pointer.lastMoveY = moveY;
+
+        moveElementsBy(ids, incrementalDx, incrementalDy);
         store.emit();
         return;
       }

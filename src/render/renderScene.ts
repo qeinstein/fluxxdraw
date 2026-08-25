@@ -216,8 +216,8 @@ const drawEmbedElement = (
   ctx.restore();
 };
 
-const drawFrameChrome = (ctx: CanvasRenderingContext2D, el: ExcaliElement) => {
-  if (el.type !== "frame") return;
+const drawFrameChrome = (ctx: CanvasRenderingContext2D, el: ExcaliElement, config: RenderConfig) => {
+  if (el.type !== "frame" || config.exporting) return;
   ctx.save();
   ctx.fillStyle = "#868e96";
   ctx.font = "12px system-ui, sans-serif";
@@ -288,7 +288,7 @@ export const renderElement = (
 
   // frames clip whatever their children overflow
   if (el.type === "frame") {
-    drawFrameChrome(ctx, el);
+    drawFrameChrome(ctx, el, config);
   }
 
   // a linked element needs somewhere to click that isn't "select me"
