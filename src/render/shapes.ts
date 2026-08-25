@@ -178,7 +178,7 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
       const body = generator.polygon(pts, opts);
       
       // Draw the folded corner crease at top right
-      const foldCrease = generator.polyline([
+      const foldCrease = generator.linearPath([
         [w - (fold * signX), 0],
         [w - (fold * signX), fold * signY],
         [w, fold * signY]
@@ -187,7 +187,7 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
       return [body, foldCrease];
     }
     case "frame": {
-      if (el.edges === "round" && el.type === "rectangle" && Math.min(Math.abs(w), Math.abs(h)) > 8) {
+      if (el.edges === "round" && Math.min(Math.abs(w), Math.abs(h)) > 8) {
         return [generator.path(roundedRectPath(w, h, cornerRadius(el)), opts)];
       }
       return [generator.rectangle(0, 0, w, h, opts)];

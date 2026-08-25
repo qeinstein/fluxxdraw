@@ -13,6 +13,11 @@ import type {
   InstanceElement,
   LinearElement,
   TextElement,
+  ElementStyle,
+  FontFamily,
+  TextAlign,
+  Arrowhead,
+  PathType,
 } from "./types";
 
 /** Re-runs binding math for every arrow attached to the given shapes. */
@@ -277,9 +282,94 @@ export const distributeSelection = (axis: "horizontal" | "vertical") => {
 
 // --- clipboard-ish ---------------------------------------------------------
 
-export const duplicateSelection = (dx = 10, dy = 10) => {
+type ClipboardStyle = Partial<ElementStyle> & {
+  fontSize?: number;
+  fontFamily?: FontFamily;
+  textAlign?: TextAlign;
+  startArrowhead?: Arrowhead;
+  endArrowhead?: Arrowhead;
+  pathType?: PathType;
+};
+
+let clipboardStyle: ClipboardStyle | null = null;
+
+export const copyStyle = () => {
   const selected = store.getSelected();
   if (selected.length === 0) return;
+  const source = selected[0];
+  clipboardStyle = {
+    strokeColor: source.strokeColor,
+    backgroundColor: source.backgroundColor,
+    fillStyle: source.fillStyle,
+    strokeWidth: source.strokeWidth,
+    strokeStyle: source.strokeStyle,
+    roughness: source.roughness,
+    edges: source.edges,
+    opacity: source.opacity,
+  };
+  if ("fontSize" in source) clipboardStyle.fontSize = source.fontSize;
+  if ("fontFamily" in source) clipboardStyle.fontFamily = source.fontFamily;
+  if ("textAlign" in source) clipboardStyle.textAlign = source.textAlign;
+  if ("startArrowhead" in source) clipboardStyle.startArrowhead = source.startArrowhead;
+  if ("endArrowhead" in source) clipboardStyle.endArrowhead = source.endArrowhead;
+  if ("pathType" in source) clipboardStyle.pathType = source.pathType;
+};
+
+export const pasteStyle = () => {
+  if (!clipboardStyle) return;
+  const selected = store.getSelected();
+  if (selected.length === 0) return;
+  
+  store.mutate(() => {
+    store.updateElements(selected.map(s => s.id), (el) => {
+      const updates: any = {};
+      const genericKeys = ["strokeColor", "backgroundColor", "fillStyle", "strokeWidth", "strokeStyle", "roughness", "edges", "opacity"];
+      for (const key of genericKeys) {
+        if (clipboardStyle![key as keyof ElementStyle] !== undefined) {
+           updates[key] = clipboardStyle![key as keyof ElementStyle];
+        }
+      }
+      
+      if (el.type === "text") {
+        if (clipboardStyle!.fontSize) updates.fontSize = clipboardStyle!.fontSize;
+        if (clipboardStyle!.fontFamily) updates.fontFamily = clipboardStyle!.fontFamily;
+        if (clipboardStyle!.textAlign) updates.textAlign = clipboardStyle!.textAlign;
+      }
+      
+      if (el.type === "arrow" || el.type === "line") {
+        if (clipboardStyle!.startArrowhead) updates.startArrowhead = clipboardStyle!.startArrowhead;
+        if (clipboardStyle!.endArrowhead) updates.endArrowhead = clipboardStyle!.endArrowhead;
+        if (clipboardStyle!.pathType) updates.pathType = clipboardStyle!.pathType;
+      }
+      return updates;
+    });
+  });
+};
+
+let lastDuplicateOriginals: { id: string; x: number; y: number }[] | null = null;
+let lastDuplicateCopies: { id: string; x: number; y: number }[] | null = null;
+
+export const duplicateSelection = (defaultDx = 10, defaultDy = 10) => {
+  const selected = store.getSelected();
+  if (selected.length === 0) return;
+  
+  let dx = defaultDx;
+  let dy = defaultDy;
+  
+  if (lastDuplicateCopies && selected.length === lastDuplicateCopies.length) {
+    const isSameSelection = selected.every(el => lastDuplicateCopies!.find(c => c.id === el.id));
+    if (isSameSelection) {
+      const currentCopy = selected.find(el => el.id === lastDuplicateCopies![0].id)!;
+      const original = lastDuplicateOriginals!.find(o => o.id === lastDuplicateOriginals![0].id)!;
+      dx = currentCopy.x - original.x;
+      dy = currentCopy.y - original.y;
+      if (dx === 0 && dy === 0) {
+        dx = defaultDx;
+        dy = defaultDy;
+      }
+    }
+  }
+
   store.mutate(() => {
     const idMap = new Map<string, string>();
     const copies = selected.map((el) => {
@@ -302,6 +392,10 @@ export const duplicateSelection = (dx = 10, dy = 10) => {
         copy.endBinding = rebind(copy.endBinding);
       }
     }
+    
+    lastDuplicateOriginals = selected.map(el => ({ id: el.id, x: el.x, y: el.y }));
+    lastDuplicateCopies = copies.map(el => ({ id: el.id, x: el.x, y: el.y }));
+    
     store.addElements(...copies);
     store.appState = { ...store.appState, selectedIds: copies.map((c) => c.id) };
   });

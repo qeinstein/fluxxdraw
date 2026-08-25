@@ -8,6 +8,8 @@ import {
   selectAll,
   toggleLockSelection,
   ungroupSelection,
+  copyStyle,
+  pasteStyle,
 } from "../actions";
 import { setZoom, zoomToFit } from "./ZoomControls";
 import { tidyUp } from "../layout";
@@ -112,6 +114,8 @@ export const ContextMenu = ({
 
   const items: Item[] = hasSelection
     ? [
+        { kind: "item", label: "Copy Style", shortcut: sc("copyStyle"), run: run(() => copyStyle()) },
+        { kind: "item", label: "Paste Style", shortcut: sc("pasteStyle"), run: run(() => pasteStyle()) },
         { kind: "item", label: "Duplicate", shortcut: sc("duplicate"), run: run(() => duplicateSelection()) },
         ...(request.onEditLabel
           ? [

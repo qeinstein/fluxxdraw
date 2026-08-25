@@ -145,8 +145,8 @@ export const Menu = ({
               <MenuItem icon={<IconFolder />} label="Open…" shortcut={sc("open")} onClick={run(onOpen)} />
               <MenuItem icon={<IconSave />} label="Save" shortcut={sc("save")} onClick={run(onSave)} />
               <MenuItem icon={<IconSave />} label="Save as…" shortcut={sc("saveAs")} onClick={run(onSaveAs)} />
-              <MenuItem icon={<IconImage />} label="Export…" shortcut={sc("export")} onClick={run(onExport)} />
-              {isMobile && <MenuItem icon={<IconSave />} label="Quick save to export folder" onClick={run(onQuickSave)} />}
+              <MenuItem icon={<IconImage />} label="Export image…" shortcut={sc("export")} onClick={run(onExport)} />
+              {isMobile && <MenuItem icon={<IconSave />} label="Save to export folder" onClick={run(onQuickSave)} />}
               {installPrompt && <MenuItem icon={<IconInstall />} label="Install FluxxDraw" onClick={install} />}
             </MenuSection>
 

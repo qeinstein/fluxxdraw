@@ -58,9 +58,9 @@ export const LINE_HEIGHT = 1.25;
 export const CONTAINER_PADDING = 8;
 
 /** Pointer distance (in scene units) that still counts as a hit on a stroke. */
-export const HIT_THRESHOLD = 10;
+export const HIT_THRESHOLD = 12;
 
-export const HANDLE_SIZE = 8;
+export const HANDLE_SIZE = 12;
 export const ROTATE_HANDLE_OFFSET = 20;
 
 /** How close an arrow endpoint must be to a shape to bind to it. */

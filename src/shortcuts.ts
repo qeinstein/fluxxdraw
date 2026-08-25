@@ -48,6 +48,8 @@ export const SHORTCUTS = {
   redoAlt: "mod+y",
   selectAll: "mod+a",
   duplicate: "mod+d",
+  copyStyle: "mod+alt+c",
+  pasteStyle: "mod+alt+v",
   group: "mod+g",
   ungroup: "mod+shift+g",
   lock: "mod+shift+l",
