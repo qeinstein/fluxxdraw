@@ -220,13 +220,13 @@ export const ExportDialog = ({
           {settings.format !== "json" && (
             <Field label="Options">
               <div className="segmented" style={{ marginBottom: 12 }}>
-                {(["auto", "light", "dark"] as const).map((theme) => (
+                {(["light", "dark"] as const).map((theme) => (
                   <button
                     key={theme}
                     className={settings.theme === theme ? "active" : ""}
                     onClick={() => patch({ theme })}
                   >
-                    {theme === "auto" ? "Auto Theme" : theme === "light" ? "Light" : "Dark"}
+                    {theme === "light" ? "Light" : "Dark"}
                   </button>
                 ))}
               </div>
@@ -339,7 +339,7 @@ const ExportPreview = ({ settings }: { settings: ExportSettings }) => {
         }
 
         const files = collectUsedFiles(elements, store.files);
-        const theme = settings.theme === "auto" ? store.appState.theme : settings.theme;
+        const theme = settings.theme;
         const isDark = theme === "dark";
         const backgroundColor = settings.background ? (isDark ? "#121212" : "#ffffff") : "transparent";
 

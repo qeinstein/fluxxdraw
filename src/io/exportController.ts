@@ -24,7 +24,7 @@ export interface ExportSettings {
   resolutionPreset: ResolutionPreset;
   padding: number;
   background: boolean;
-  theme: "auto" | "light" | "dark";
+  theme: "light" | "dark";
   embedScene: boolean;
   quality: number;
   filename: string;
@@ -60,7 +60,7 @@ export const DEFAULT_EXPORT_SETTINGS: ExportSettings = {
   resolutionPreset: "4k",
   padding: 24,
   background: true,
-  theme: "auto",
+  theme: "light",
   embedScene: true,
   quality: 0.92,
   filename: "drawing",
@@ -126,7 +126,7 @@ export const buildExportBlob = async (settings: ExportSettings): Promise<Blob> =
 
   const { scale, targetLongEdge } = resolveScaling(settings);
 
-  const theme = settings.theme === "auto" ? store.appState.theme : settings.theme;
+  const theme = settings.theme;
   const isDark = theme === "dark";
   const backgroundColor = settings.background
     ? isDark

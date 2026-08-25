@@ -126,6 +126,16 @@ export default function App() {
     });
   }, []);
 
+  const openExportDialog = useCallback(() => {
+    updatePrefs({
+      exportSettings: {
+        ...prefs.exportSettings,
+        theme: store.appState.theme,
+      },
+    });
+    setExportOpen(true);
+  }, [prefs.exportSettings, updatePrefs]);
+
   // apply saved view preferences and reconnect the export folder on first load
   useEffect(() => {
     store.setAppState({
@@ -504,7 +514,7 @@ export default function App() {
       onOpen: handleOpen,
       onSave: handleSave,
       onSaveAs: handleSaveAs,
-      onExport: () => setExportOpen(true),
+      onExport: openExportDialog,
       onHelp: () => setCommandOpen(true),
       onHistory: () => openPanel("history"),
       onImage: onRequestImage,
@@ -583,7 +593,7 @@ export default function App() {
             onOpen={handleOpen}
             onSave={handleSave}
             onSaveAs={handleSaveAs}
-            onExport={() => setExportOpen(true)}
+            onExport={openExportDialog}
             onQuickSave={quickExportJson}
             onReset={() => setResetConfirmOpen(true)}
             onHistory={() => openPanel("history")}
@@ -634,7 +644,7 @@ export default function App() {
               </Tooltip>
             )}
             <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
-              <button className="export-button" onClick={() => setExportOpen(true)}>
+              <button className="export-button" onClick={openExportDialog}>
                 Export
               </button>
             </Tooltip>
@@ -705,7 +715,7 @@ export default function App() {
       <CommandPalette
         isOpen={commandOpen}
         onClose={() => setCommandOpen(false)}
-        onOpenExport={() => setExportOpen(true)}
+        onOpenExport={openExportDialog}
         onOpenLibrary={() => setLibraryOpen(true)}
         onTogglePresentation={() => setPresenting(true)}
       />
@@ -802,7 +812,7 @@ export default function App() {
         <ContextMenu
           request={contextMenu}
           onClose={() => setContextMenu(null)}
-          onExport={() => setExportOpen(true)}
+          onExport={openExportDialog}
           onPresent={() => setPresenting(true)}
           onServices={() => setLibraryOpen(true)}
           onToast={showToast}
