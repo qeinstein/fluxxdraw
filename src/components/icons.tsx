@@ -697,3 +697,13 @@ export const IconCommand = () => (
     <path d="M12.5 7A1.5 1.5 0 1114 8.5h1.25V7zM12.5 7a1.5 1.5 0 102.75-.75V7zm0 6a1.5 1.5 0 101.5-1.5h-1.25V13zm0 0a1.5 1.5 0 10-2.75.75V13z" />
   </Icon>
 );
+
+export const IconUsers = () => (
+  <Icon>
+    <path d="M14 17.5v-1.5a3 3 0 00-3-3H9a3 3 0 00-3 3v1.5" />
+    <circle cx="10" cy="8.5" r="3" />
+    <path d="M16 17.5v-1.5a3 3 0 00-2.2-2.9M4 17.5v-1.5A3 3 0 016.2 13.1" />
+    <circle cx="14.5" cy="8" r="2" />
+    <circle cx="5.5" cy="8" r="2" />
+  </Icon>
+);

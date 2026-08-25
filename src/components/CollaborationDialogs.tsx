@@ -59,37 +59,90 @@ export function ShareDialog({
   onClose: () => void;
 }) {
   const [link, setLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // If not in a room, start one
-    if (!collab.room) {
-      const { room, key, url } = generateCollaborationLink();
+    if (collab.room && collab.shareUrl) {
+      // Already in a room — just show the stored link
+      setLink(collab.shareUrl);
+    } else {
+      // Start a new room
+      const { room, key } = generateCollaborationLink();
       const name = localStorage.getItem("fluxx_collab_name") || "Host Fox";
       const colors = ["#ff8787", "#69db7c", "#74c0fc", "#ffd43b", "#b2f2bb", "#a5d8ff"];
       const color = colors[Math.floor(Math.random() * colors.length)];
       
       collab.joinRoom(room, key, name, color);
-      setLink(url);
-    } else {
-      // Re-construct the link for the current room
-      // For v1, let's assume we store the link/key in collabManager if needed, or we just show "Already collaborating"
-      setLink(window.location.href);
+      setLink(collab.shareUrl!);
     }
   }, []);
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleEnd = () => {
+    collab.leaveRoom();
+    // Remove hash from URL to clean up
+    window.history.replaceState(null, "", window.location.pathname);
+    onClose();
+  };
+
   return (
-    <div className="dialog-overlay" onClick={onClose}>
-      <div className="dialog share-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2>Start Collaboration</h2>
-        <div className="dialog-content">
-          <p>Anyone with this link can edit.</p>
-          <input readOnly value={link} onClick={(e) => e.currentTarget.select()} />
+    <div className="dialog-overlay" onClick={onClose} style={{ backdropFilter: 'blur(2px)' }}>
+      <div 
+        className="dialog share-dialog" 
+        onClick={(e) => e.stopPropagation()}
+        style={{ 
+          maxWidth: '400px', 
+          textAlign: 'center',
+          borderRadius: '16px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+          padding: '32px'
+        }}
+      >
+        <h2 style={{ marginTop: 0, marginBottom: '8px' }}>Collaboration</h2>
+        <p style={{ color: '#666', marginBottom: '24px', fontSize: '14px' }}>
+          Share this link to let others join your session and edit in real-time.
+        </p>
+        
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
+          <input 
+            readOnly 
+            value={link} 
+            onClick={(e) => e.currentTarget.select()} 
+            style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#f9f9f9', outline: 'none' }}
+          />
+          <button 
+            className="primary" 
+            onClick={handleCopy}
+            style={{ padding: '0 20px', borderRadius: '8px', whiteSpace: 'nowrap' }}
+          >
+            {copied ? "Copied!" : "Copy"}
+          </button>
         </div>
-        <div className="dialog-actions">
-          <button onClick={() => {
-            navigator.clipboard.writeText(link);
-          }}>Copy link</button>
-          <button className="primary" onClick={onClose}>Done</button>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button 
+            onClick={handleEnd} 
+            style={{ 
+              background: 'none', border: 'none', color: '#e03131', 
+              fontWeight: 'bold', cursor: 'pointer', padding: '8px 0' 
+            }}
+          >
+            End Session
+          </button>
+          <button 
+            onClick={onClose}
+            style={{ 
+              background: '#f1f3f5', border: 'none', padding: '8px 24px', 
+              borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' 
+            }}
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
