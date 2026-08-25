@@ -24,6 +24,7 @@ export interface ExportImageOptions {
   /** embed the scene JSON so the image can be reopened for editing (PNG only) */
   embedScene: boolean;
   sceneJson?: string;
+  theme?: "light" | "dark";
 }
 
 /** Browsers refuse to allocate canvases beyond roughly this many pixels per side. */
@@ -99,6 +100,7 @@ export const exportToCanvas = async (
     scale,
     files,
     components: opts.components,
+    theme: opts.theme,
     exporting: true,
   });
   ctx.restore();
