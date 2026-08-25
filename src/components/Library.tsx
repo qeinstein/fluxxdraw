@@ -4,6 +4,7 @@ import { useLocalLibrary } from "../hooks/useLocalLibrary";
 import { IconClose } from "./icons";
 import { store } from "../store";
 import { nanoid } from "nanoid";
+import { ServiceLibraryPanel } from "./ServiceLibrary";
 
 /** Keywords that boost a library to the top of browse results. */
 const PRIORITY_KEYWORDS = [
@@ -23,8 +24,8 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
   const { localItems, recentItems, saveLocalItem, removeLocalItem, trackUsage } =
     useLocalLibrary();
   
-  const [tab, setTab] = useState<"my-library" | "browse">(
-    localItems.length === 0 ? "browse" : "my-library"
+  const [tab, setTab] = useState<"my-library" | "built-in" | "browse">(
+    localItems.length === 0 ? "built-in" : "my-library"
   );
   const [query, setQuery] = useState("");
 
@@ -158,6 +159,12 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
             onClick={() => setTab("my-library")}
           >
             Your library
+          </button>
+          <button
+            className={`library-tab ${tab === "built-in" ? "active" : ""}`}
+            onClick={() => setTab("built-in")}
+          >
+            Built-in
           </button>
           <button
             className={`library-tab ${tab === "browse" ? "active" : ""}`}
@@ -297,6 +304,8 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
         )}
 
         {/* ---- BROWSE ---- */}
+        {tab === "built-in" && <ServiceLibraryPanel onClose={onClose} />}
+
         {tab === "browse" && (
           <div className="library-browse-list">
             {loading && (
