@@ -112,4 +112,5 @@ export const DEFAULT_APP_STATE: AppState = {
   },
   editingArrowId: null,
   editingPointIndex: null,
+  viewMode: false,
 };

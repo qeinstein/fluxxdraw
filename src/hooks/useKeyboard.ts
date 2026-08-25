@@ -62,6 +62,8 @@ export interface KeyboardHandlers {
   onServices: () => void;
   onImage: () => void;
   onEscape: () => void;
+  onToggleCommandPalette?: () => void;
+  onToggleViewMode?: () => void;
 }
 
 export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
@@ -100,6 +102,8 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
       zoomOut: () => setZoom(store.appState.zoom / 1.2),
       zoomReset: () => setZoom(1),
       zoomToFit: () => zoomToFit("all"),
+      commandPalette: handlers.onToggleCommandPalette,
+      viewMode: handlers.onToggleViewMode,
       help: handlers.onHelp,
     };
 

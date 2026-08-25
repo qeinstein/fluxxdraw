@@ -84,9 +84,22 @@ export const refreshTextLayout = (textIds: string[]) => {
 };
 
 export const moveElementsBy = (ids: string[], dx: number, dy: number) => {
+  const idSet = new Set(ids);
+
+  // frame children ride along with their frame
+  const frameChildrenIds = store.elements
+    .filter((el) => el.frameId !== null && idSet.has(el.frameId) && !idSet.has(el.id))
+    .map((el) => el.id);
+
+  if (frameChildrenIds.length) {
+    for (const id of frameChildrenIds) {
+      ids.push(id);
+      idSet.add(id);
+    }
+  }
+
   store.updateElements(ids, (el) => ({ x: el.x + dx, y: el.y + dy }));
   // bound labels ride along with their container
-  const idSet = new Set(ids);
   const labelIds = store.elements
     .filter(
       (el): el is TextElement =>
@@ -280,6 +293,37 @@ export const distributeSelection = (axis: "horizontal" | "vertical") => {
   });
 };
 
+export const tidyUpSelection = () => {
+  const selected = store.getSelected();
+  if (selected.length < 3) return;
+
+  const withBounds = selected.map((el) => ({ el, b: getRotatedBounds(el) }));
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const {b} of withBounds) {
+    minX = Math.min(minX, b.x1);
+    minY = Math.min(minY, b.y1);
+    maxX = Math.max(maxX, b.x2);
+    maxY = Math.max(maxY, b.y2);
+  }
+
+  const spanX = maxX - minX;
+  const spanY = maxY - minY;
+
+  store.beginHistory();
+  if (spanX >= spanY) {
+    // Mostly horizontal row
+    alignSelection("center-y");
+    distributeSelection("horizontal");
+  } else {
+    // Mostly vertical column
+    alignSelection("center-x");
+    distributeSelection("vertical");
+  }
+  store.commit();
+  store.emit();
+};
+
 // --- clipboard-ish ---------------------------------------------------------
 
 type ClipboardStyle = Partial<ElementStyle> & {
@@ -319,7 +363,7 @@ export const pasteStyle = () => {
   if (!clipboardStyle) return;
   const selected = store.getSelected();
   if (selected.length === 0) return;
-  
+
   store.mutate(() => {
     store.updateElements(selected.map(s => s.id), (el) => {
       const updates: any = {};
@@ -352,6 +396,18 @@ let lastDuplicateCopies: { id: string; x: number; y: number }[] | null = null;
 export const duplicateSelection = (defaultDx = 10, defaultDy = 10) => {
   const selected = store.getSelected();
   if (selected.length === 0) return;
+
+  const toCopy = [...selected];
+  const idsToCopy = new Set(selected.map(el => el.id));
+  for (const el of selected) {
+    if (el.type === "frame") {
+      const children = store.elements.filter(c => c.frameId === el.id && !idsToCopy.has(c.id));
+      for (const c of children) {
+        toCopy.push(c);
+        idsToCopy.add(c.id);
+      }
+    }
+  }
   
   let dx = defaultDx;
   let dy = defaultDy;
@@ -372,13 +428,16 @@ export const duplicateSelection = (defaultDx = 10, defaultDy = 10) => {
 
   store.mutate(() => {
     const idMap = new Map<string, string>();
-    const copies = selected.map((el) => {
+    const copies = toCopy.map((el) => {
       const copy = duplicateElement(el, dx, dy);
       idMap.set(el.id, copy.id);
       return copy;
     });
     // rewire intra-selection references so copies point at copies
     for (const copy of copies) {
+      if (copy.frameId && idMap.has(copy.frameId)) {
+        copy.frameId = idMap.get(copy.frameId)!;
+      }
       if ("boundText" in copy && copy.boundText) {
         copy.boundText = idMap.get(copy.boundText) ?? null;
       }
@@ -394,10 +453,10 @@ export const duplicateSelection = (defaultDx = 10, defaultDy = 10) => {
     }
     
     lastDuplicateOriginals = selected.map(el => ({ id: el.id, x: el.x, y: el.y }));
-    lastDuplicateCopies = copies.map(el => ({ id: el.id, x: el.x, y: el.y }));
+    lastDuplicateCopies = copies.slice(0, selected.length).map(el => ({ id: el.id, x: el.x, y: el.y }));
     
     store.addElements(...copies);
-    store.appState = { ...store.appState, selectedIds: copies.map((c) => c.id) };
+    store.appState = { ...store.appState, selectedIds: copies.slice(0, selected.length).map((c) => c.id) };
   });
 };
 
@@ -405,9 +464,21 @@ export const deleteSelection = () => {
   const selected = store.getSelected();
   if (selected.length === 0) return;
   const ids = selected.map((el) => el.id);
+  const idSet = new Set(ids);
+
   // bound labels die with their container
   for (const el of selected) {
-    if ("boundText" in el && el.boundText) ids.push(el.boundText);
+    if ("boundText" in el && el.boundText && !idSet.has(el.boundText)) {
+      ids.push(el.boundText);
+      idSet.add(el.boundText);
+    }
+    if (el.type === "frame") {
+      const children = store.elements.filter(c => c.frameId === el.id && !idSet.has(c.id));
+      for (const c of children) {
+        ids.push(c.id);
+        idSet.add(c.id);
+      }
+    }
   }
   store.mutate(() => store.deleteElements(ids));
 };

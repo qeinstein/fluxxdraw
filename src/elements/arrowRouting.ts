@@ -292,9 +292,9 @@ export const rerouteArrow = (
   const points = arrow.points.map((p) => [...p] as [number, number]);
   if (points.length < 2) return null;
 
-  // For straight arrows with user-added intermediate points (>2 points),
+  // For arrows with user-added intermediate points (>2 points),
   // only update the bound endpoints and leave the middle alone.
-  if (arrow.pathType === "straight" && points.length > 2) {
+  if (points.length > 2) {
     if (startShape && arrow.startBinding && !startShape.isDeleted) {
       const [tx, ty] = toScene(points[1]);
       const [ex, ey] = intersectShapeEdge(startShape, tx, ty, arrow.startBinding.gap);

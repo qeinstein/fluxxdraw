@@ -64,13 +64,15 @@ export const SHORTCUTS = {
   diagramText: "mod+slash",
   history: "shift+h",
   present: "shift+p",
-  tidyUp: "shift+t",
+  tidyUp: "mod+shift+t",
   services: "shift+c",
   zoomIn: "mod+equal",
   zoomInAlt: "mod+shift+equal",
   zoomOut: "mod+minus",
   zoomReset: "mod+digit0",
   zoomToFit: "shift+digit1",
+  commandPalette: "mod+k",
+  viewMode: "mod+shift+r",
   help: "shift+slash",
 } as const;
 

@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { neon } from '@neondatabase/serverless';
-
-const DATABASE_URL = import.meta.env.VITE_DATABASE_URL as string | undefined;
-const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
+const API_BASE = "/api/libraries";
 
 export interface Library {
   id: string;
@@ -22,17 +19,11 @@ export const useLibraryList = () => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!sql) {
-      setError(new Error("Database not configured"));
-      setLoading(false);
-      return;
-    }
     const fetchLibraries = async () => {
       try {
-        const rows = await sql`
-          SELECT id, name, description, authors, source, preview, created, updated, version
-          FROM libraries
-        `;
+        const response = await fetch(API_BASE);
+        if (!response.ok) throw new Error(`Library request failed (${response.status})`);
+        const rows = await response.json();
         setLibraries(rows as Library[]);
       } catch (err) {
         setError(err as Error);
@@ -46,9 +37,14 @@ export const useLibraryList = () => {
   return { libraries, loading, error };
 };
 
-export const fetchLibraryContent = async (id: string) => {
-  if (!sql) throw new Error("Database not configured");
-  const rows = await sql`SELECT content FROM libraries WHERE id = ${id}`;
-  if (rows.length === 0) throw new Error("Library not found");
-  return rows[0].content;
+export const fetchLibraryContent = async (id: string): Promise<unknown> => {
+  const response = await fetch(`${API_BASE}/${encodeURIComponent(id)}/content`);
+  if (!response.ok) {
+    throw new Error(
+      response.status === 404
+        ? "This library is unavailable"
+        : `Library request failed (${response.status})`,
+    );
+  }
+  return response.json();
 };

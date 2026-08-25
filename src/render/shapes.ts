@@ -130,8 +130,9 @@ export const freedrawPath = (el: FreedrawElement): string => {
   const stroke = getStroke(inputPoints, {
     size: el.strokeWidth * 4 + 4,
     thinning: 0.6,
-    smoothing: 0.5,
-    streamline: 0.5,
+    smoothing: 0.65,
+    streamline: 0.6,
+    easing: (t) => Math.sin((t * Math.PI) / 2),
     simulatePressure: el.pressures.every((p) => p === 0.5),
     last: true,
   });

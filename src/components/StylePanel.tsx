@@ -9,6 +9,7 @@ import {
   distributeSelection,
   duplicateSelection,
   groupSelection,
+  tidyUpSelection,
   toggleLockSelection,
   ungroupSelection,
 } from "../actions";
@@ -35,6 +36,7 @@ import {
   IconLockClosed,
   IconSendBackward,
   IconSendToBack,
+  IconTidy,
   IconStrokeDashed,
   IconStrokeDotted,
   IconStrokeSolid,
@@ -416,6 +418,12 @@ export const StylePanel = () => {
                       onClick={() => distributeSelection("vertical")}
                     >
                       <IconDistributeY />
+                    </IconAction>
+                    <IconAction
+                      label="Tidy up"
+                      onClick={() => tidyUpSelection()}
+                    >
+                      <IconTidy />
                     </IconAction>
                   </>
                 )}

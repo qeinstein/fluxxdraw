@@ -41,6 +41,7 @@ import {
   defaultBinding,
   getBindableElementAt,
 } from "../elements/binding";
+import { rerouteArrow } from "../elements/arrowRouting";
 import {
   duplicateSelection,
   expandSelectionToGroups,
@@ -63,6 +64,7 @@ import { promptForInput } from "../prompt";
 import { followLink } from "../follow-link";
 import {
   getArrowHandles,
+  getHitSegmentIndex,
   hitTestArrowHandle,
   addControlPoint,
   deleteControlPoint,
@@ -158,6 +160,7 @@ export const Canvas = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerRef = useRef<PointerState>(freshPointerState());
+  const pendingLibraryItemsRef = useRef<any[] | null>(null);
   /** every pointer currently down, so two-finger gestures can be detected */
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const gestureRef = useRef<PinchGesture | null>(null);
@@ -187,6 +190,41 @@ export const Canvas = ({
       (clientX - rect.left) / zoom - scrollX,
       (clientY - rect.top) / zoom - scrollY,
     ];
+  }, []);
+
+  const placeLibraryItems = useCallback((items: any[], sceneX: number, sceneY: number) => {
+    if (items.length === 0) return;
+    const minX = Math.min(...items.map((el) => el.x ?? 0));
+    const minY = Math.min(...items.map((el) => el.y ?? 0));
+    const maxX = Math.max(...items.map((el) => (el.x ?? 0) + (el.width ?? 0)));
+    const maxY = Math.max(...items.map((el) => (el.y ?? 0) + (el.height ?? 0)));
+    const idMap = new Map<string, string>();
+    items.forEach((el) => idMap.set(el.id, nanoid()));
+    const placed = items.map((el) => ({
+      ...el,
+      id: idMap.get(el.id)!,
+      groupIds: el.groupIds?.map((id: string) => idMap.get(id) ?? id) ?? [],
+      boundElements: el.boundElements?.map((bound: { id: string }) => ({
+        ...bound,
+        id: idMap.get(bound.id) ?? bound.id,
+      })) ?? [],
+      frameId: el.frameId ? idMap.get(el.frameId) ?? null : null,
+      x: (el.x ?? 0) - minX + sceneX - (maxX - minX) / 2,
+      y: (el.y ?? 0) - minY + sceneY - (maxY - minY) / 2,
+    }));
+    store.mutate(() => {
+      store.addElements(...placed);
+      store.appState = { ...store.appState, selectedIds: placed.map((el) => el.id), tool: "selection" };
+    });
+  }, []);
+
+  useEffect(() => {
+    const queueLibraryPlacement = (event: Event) => {
+      pendingLibraryItemsRef.current = (event as CustomEvent<any[]>).detail;
+      if (canvasRef.current) canvasRef.current.style.cursor = "copy";
+    };
+    window.addEventListener("fluxxdraw:place-library", queueLibraryPlacement);
+    return () => window.removeEventListener("fluxxdraw:place-library", queueLibraryPlacement);
   }, []);
 
   // --- rendering -----------------------------------------------------------
@@ -600,6 +638,19 @@ export const Canvas = ({
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button === 2) return; // context menu handled separately
+    if (store.appState.viewMode) {
+      event.preventDefault();
+      return;
+    }
+    if (pendingLibraryItemsRef.current) {
+      event.preventDefault();
+      const items = pendingLibraryItemsRef.current;
+      pendingLibraryItemsRef.current = null;
+      const [sceneX, sceneY] = toScene(event.clientX, event.clientY);
+      placeLibraryItems(items, sceneX, sceneY);
+      canvasRef.current!.style.cursor = "default";
+      return;
+    }
     const canvas = canvasRef.current!;
     try {
       canvas.setPointerCapture(event.pointerId);
@@ -709,9 +760,9 @@ export const Canvas = ({
       sticky.width = STICKY_SIZE;
       sticky.height = STICKY_SIZE;
       sticky.backgroundColor = PALETTE[state.theme].background[STICKY_COLOR_INDEX];
-      sticky.strokeColor = "transparent"; // No outline for a realistic sticky note
+      sticky.strokeColor = "transparent";
       sticky.fillStyle = "solid";
-      sticky.edges = "sharp"; // Sharp edges like a real paper note
+      sticky.edges = "round";
       store.addElements(sticky);
       store.setAppState({ selectedIds: [sticky.id] });
       const label = ensureBoundText(sticky.id);
@@ -937,10 +988,15 @@ export const Canvas = ({
         const el = store.getElement(pointer.activeId!);
         if (!el) return;
         if (el.type === "freedraw") {
-          store.updateElement<FreedrawElement>(el.id, (cur) => ({
-            points: [...cur.points, [x - cur.x, y - cur.y]],
-            pressures: [...cur.pressures, event.pressure || 0.5],
-          }));
+          const fx = x - el.x;
+          const fy = y - el.y;
+          const lastPoint = (el as FreedrawElement).points[(el as FreedrawElement).points.length - 1];
+          if (!lastPoint || Math.hypot(fx - lastPoint[0], fy - lastPoint[1]) >= 2) {
+            store.updateElement<FreedrawElement>(el.id, (cur) => ({
+              points: [...cur.points, [fx, fy]],
+              pressures: [...cur.pressures, event.pressure || 0.5],
+            }));
+          }
         } else {
           let width = x - pointer.originX;
           let height = y - pointer.originY;
@@ -976,8 +1032,15 @@ export const Canvas = ({
           py = Math.sin(snapped) * len;
         }
         store.updateElement<LinearElement>(el.id, (cur) => {
-          const points = [...cur.points];
+          let points = [...cur.points];
           points[points.length - 1] = [px, py];
+
+          if (cur.pathType === "elbow" || cur.pathType === "curved") {
+            const byId = new Map(store.elements.map((e) => [e.id, e]));
+            const routed = rerouteArrow({ ...cur, points }, byId);
+            if (routed) points = routed;
+          }
+
           return { points };
         });
         store.emit();
@@ -988,10 +1051,10 @@ export const Canvas = ({
         const el = store.getElement(pointer.activeId!) as LinearElement | null;
         if (!el) return;
         store.updateElement<LinearElement>(el.id, (cur) => {
-          const points = cur.points.map((p) => [...p] as [number, number]);
+          let points = cur.points.map((p) => [...p] as [number, number]);
           let px = x - cur.x;
           let py = y - cur.y;
-          
+
           if (event.shiftKey) {
             // snap relative to adjacent point
             const adjacentIndex = pointer.pointIndex > 0 ? pointer.pointIndex - 1 : pointer.pointIndex + 1;
@@ -1007,8 +1070,20 @@ export const Canvas = ({
               py = ay + Math.sin(snapped) * len;
             }
           }
-          
+
           points[pointer.pointIndex] = [px, py];
+
+          if (cur.pathType === "elbow" || cur.pathType === "curved") {
+            const byId = new Map(store.elements.map((e) => [e.id, e]));
+            const routed = rerouteArrow({ ...cur, points }, byId);
+            if (routed) {
+              points = routed;
+              if (pointer.pointIndex === cur.points.length - 1) {
+                pointer.pointIndex = points.length - 1;
+              }
+            }
+          }
+
           return { points };
         });
         store.emit();
@@ -1369,6 +1444,7 @@ export const Canvas = ({
   };
 
   const handleDoubleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (store.appState.viewMode) return;
     const [x, y] = toScene(event.clientX, event.clientY);
     const hit = getElementAtPosition(store.visibleElements, x, y) ?? getContainerAt(x, y);
 
@@ -1416,6 +1492,16 @@ export const Canvas = ({
             }
             return;
           }
+        }
+
+        const hitSegment = getHitSegmentIndex(el, x, y, store.appState.zoom);
+        if (hitSegment !== null) {
+          const newPoints = addControlPoint(el, hitSegment, x, y);
+          store.updateElement<LinearElement>(el.id, () => ({ points: newPoints }));
+          store.appState = { ...store.appState, editingArrowId: el.id };
+          store.commit();
+          store.emit();
+          return;
         }
         
         // Otherwise try to edit the bound text (fallback)
@@ -1574,30 +1660,7 @@ export const Canvas = ({
           const sceneX = (e.clientX - rect.left) / zoom - scrollX;
           const sceneY = (e.clientY - rect.top) / zoom - scrollY;
 
-          const minX = Math.min(...items.map((el: any) => el.x ?? 0));
-          const minY = Math.min(...items.map((el: any) => el.y ?? 0));
-          const maxX = Math.max(...items.map((el: any) => (el.x ?? 0) + (el.width ?? 0)));
-          const maxY = Math.max(...items.map((el: any) => (el.y ?? 0) + (el.height ?? 0)));
-          const width = maxX - minX;
-          const height = maxY - minY;
-          
-          // Generate new IDs to prevent duplicates
-          const idMap = new Map<string, string>();
-          items.forEach((el: any) => idMap.set(el.id, nanoid()));
-          
-          const adjustedElements = items.map((el: any) => ({
-            ...el,
-            id: idMap.get(el.id)!,
-            groupIds: el.groupIds?.map((gId: string) => idMap.get(gId) || gId) || [],
-            boundElements: el.boundElements?.map((b: any) => ({ ...b, id: idMap.get(b.id) || b.id })) || [],
-            x: (el.x ?? 0) - minX + sceneX - width / 2,
-            y: (el.y ?? 0) - minY + sceneY - height / 2,
-          }));
-          
-          store.mutate(() => {
-            store.addElements(...adjustedElements);
-            store.appState = { ...store.appState, selectedIds: adjustedElements.map((el: any) => el.id) };
-          });
+          placeLibraryItems(items, sceneX, sceneY);
         }
       }}
     >
