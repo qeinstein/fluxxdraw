@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useScene } from "../store";
 import { FONT_SIZES, PALETTE, STROKE_WIDTHS } from "../constants";
 import {
@@ -456,12 +456,25 @@ export const StylePanel = () => {
   );
 };
 
-const Section = ({ label, children }: { label: string; children: ReactNode }) => (
-  <div className="style-section">
-    <div className="style-label">{label}</div>
-    {children}
-  </div>
-);
+const ESSENTIAL_SECTIONS = new Set(["Stroke", "Background", "Opacity", "Actions"]);
+
+const Section = ({ label, children }: { label: string; children: ReactNode }) => {
+  const [open, setOpen] = useState(() => ESSENTIAL_SECTIONS.has(label));
+  return (
+    <details className="style-section" open={open}>
+      <summary
+        className="style-label"
+        onClick={(event) => {
+          event.preventDefault();
+          setOpen((value) => !value);
+        }}
+      >
+        {label}
+      </summary>
+      <div className="style-section-content">{children}</div>
+    </details>
+  );
+};
 
 interface SwatchesProps {
   colors: readonly string[];
