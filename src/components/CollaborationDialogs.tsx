@@ -89,7 +89,10 @@ export function ShareDialog({
       const colors = ["#ff8787", "#69db7c", "#74c0fc", "#ffd43b", "#b2f2bb", "#a5d8ff"];
       const color = colors[Math.floor(Math.random() * colors.length)];
       
-      collab.joinRoom(room, key, name, color);
+      collab.joinRoom(room, key, name, color, true);
+      import("../io/collaboration").then(({ yMeta }) => {
+        yMeta.set("ended", false);
+      });
       setLink(collab.shareUrl!);
     }
   }, []);
@@ -101,9 +104,18 @@ export function ShareDialog({
   };
 
   const handleEnd = () => {
-    collab.leaveRoom();
-    // Remove hash from URL to clean up
-    window.history.replaceState(null, "", window.location.pathname);
+    if (collab.isHost) {
+      import("../io/collaboration").then(({ yMeta }) => {
+        yMeta.set("ended", true);
+      });
+    }
+    
+    // Give Yjs a moment to broadcast the 'ended' message before destroying the provider
+    setTimeout(() => {
+      collab.leaveRoom();
+      window.history.replaceState(null, "", window.location.pathname);
+    }, 1000);
+    
     onClose();
   };
 
@@ -127,8 +139,8 @@ export function ShareDialog({
               onClick={(e) => e.currentTarget.select()} 
               style={{ 
                 flex: 1, padding: '8px 12px', borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--line)', background: 'var(--surface-sunken)',
-                color: 'var(--fg)', fontSize: '12px', outline: 'none',
+                border: '1px solid var(--line)', background: '#ffffff',
+                color: '#000000', fontSize: '12px', outline: 'none',
                 minWidth: 0,
               }}
             />
@@ -136,8 +148,8 @@ export function ShareDialog({
               onClick={handleCopy}
               style={{ 
                 padding: '7px 14px', fontSize: '12.5px', fontWeight: 550,
-                borderRadius: 'var(--radius-md)', background: 'var(--accent)',
-                color: 'var(--accent-contrast)', border: 'none', cursor: 'pointer',
+                borderRadius: 'var(--radius-md)', background: '#ffffff',
+                color: '#000000', border: '1px solid var(--line)', cursor: 'pointer',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -148,11 +160,12 @@ export function ShareDialog({
         <footer style={{ justifyContent: 'space-between' }}>
           <button 
             onClick={handleEnd} 
-            style={{ color: 'var(--danger)', background: 'var(--danger-soft)' }}
+            className="ghost-button" 
+            style={{ color: 'var(--danger)', padding: 0 }}
           >
-            End Session
+            {collab.isHost ? "End Session" : "Leave Session"}
           </button>
-          <button onClick={onClose}>Close</button>
+          <button className="primary" onClick={onClose}>Done</button>
         </footer>
       </div>
     </div>
