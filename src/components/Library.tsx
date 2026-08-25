@@ -34,13 +34,12 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
 
   /** Filtered + sorted browse list: priority items first, then alphabetical. */
   const filteredLibraries = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    const filtered = term
-      ? libraries.filter(
-          (l) =>
-            l.name.toLowerCase().includes(term) ||
-            l.description?.toLowerCase().includes(term),
-        )
+    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const filtered = terms.length
+      ? libraries.filter((l) => {
+          const hay = `${l.name} ${l.description || ""}`.toLowerCase();
+          return terms.every((t) => hay.includes(t));
+        })
       : libraries;
 
     return [...filtered].sort((a, b) => {
@@ -190,6 +189,9 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
             placeholder="Search libraries…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault();
+            }}
             autoFocus
           />
         </div>
@@ -349,9 +351,11 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
                     <button
                       type="button"
                       className={`library-action-btn${installed ? " installed" : ""}`}
-                      onClick={() =>
-                        handleInstallLibrary(lib.id, lib.name, previewUrl)
-                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleInstallLibrary(lib.id, lib.name, previewUrl);
+                      }}
                       disabled={downloadingId === lib.id || installed}
                     >
                       {installed
