@@ -687,10 +687,25 @@ kbd {
   gap: 10px;
   width: 100%;
   padding: 7px 9px;
-  font-size: 12.5px;
-  font-weight: 450;
+  font-size: 13px;
+  font-weight: 500;
   border-radius: var(--radius-sm);
   text-align: left;
+  color: var(--fg);
+}
+
+.menu-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menu-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   color: var(--fg-muted);
 }
 

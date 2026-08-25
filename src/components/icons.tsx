@@ -575,3 +575,88 @@ export const IconFontSizeXL = () => (
     <text x="10" y="15.5" fontSize="16" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="bold">XL</text>
   </Icon>
 );
+// --- Menu Icons -------------------------------------------------------------
+
+export const IconSave = () => (
+  <Icon>
+    <path d="M4.5 4.5h8L16 8v7.5a1 1 0 01-1 1h-10a1 1 0 01-1-1v-11a1 1 0 011-1z" strokeWidth="1.5" />
+    <path d="M7.5 16.5v-4h5v4" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconInstall = () => (
+  <Icon>
+    <path d="M10 4v8M6.5 8.5L10 12l3.5-3.5" strokeWidth="1.5" />
+    <path d="M4.5 14v1.5a1 1 0 001 1h9a1 1 0 001-1V14" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconHistory = () => (
+  <Icon>
+    <path d="M10 4.5a5.5 5.5 0 105.5 5.5" strokeWidth="1.5" />
+    <path d="M10 7v3l2 2" strokeWidth="1.5" />
+    <path d="M15.5 4.5v3h-3" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconPresent = () => (
+  <Icon>
+    <path d="M4 6h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1z" strokeWidth="1.5" />
+    <path d="M8 14v3M12 14v3M6 17h8" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconServices = () => (
+  <Icon>
+    <rect x="4" y="4" width="12" height="3" rx="0.5" strokeWidth="1.5" />
+    <rect x="4" y="8.5" width="12" height="3" rx="0.5" strokeWidth="1.5" />
+    <rect x="4" y="13" width="12" height="3" rx="0.5" strokeWidth="1.5" />
+    <path d="M7 5.5h.01M7 10h.01M7 14.5h.01" strokeWidth="1.5" strokeLinecap="round" />
+  </Icon>
+);
+
+export const IconTidy = () => (
+  <Icon>
+    <path d="M7.5 12.5l8-8a1 1 0 011.5 1.5l-8 8-3 1 1.5-2.5z" strokeWidth="1.5" />
+    <path d="M6 7l-1-1M5 4l-1-1M13 14l1 1M16 15l1 1M4.5 10l-1.5.5M10 4.5l.5-1.5" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconGrid = () => (
+  <Icon>
+    <rect x="4" y="4" width="12" height="12" rx="1" strokeWidth="1.5" />
+    <path d="M4 8h12M4 12h12M8 4v12M12 4v12" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconMagnet = () => (
+  <Icon>
+    <path d="M6 8v3a4 4 0 008 0V8M6 8V5M14 8V5M4 8h4M12 8h4" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconMoon = () => (
+  <Icon>
+    <path d="M14 11A5 5 0 119 6 4 4 0 0014 11z" strokeWidth="1.5" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+export const IconSun = () => (
+  <Icon>
+    <circle cx="10" cy="10" r="3" strokeWidth="1.5" fill="none" />
+    <path d="M10 4V3M10 17v-1M4 10H3M17 10h-1M5.5 5.5l-.5-.5M15 15l-.5-.5M5.5 14.5l-.5.5M15 5l-.5.5" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconHelp = () => (
+  <Icon>
+    <circle cx="10" cy="10" r="7" strokeWidth="1.5" />
+    <path d="M8 8a2 2 0 113 1.5c-1 .5-1 1.5-1 1.5M10 14h.01" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconGithub = () => (
+  <Icon>
+    <path d="M10 3a7 7 0 00-2.2 13.6c.3.1.5-.1.5-.3v-1.2c-2 .4-2.4-.9-2.4-.9-.3-.8-.8-1-.8-1-.6-.4.1-.4.1-.4.7.1 1.1.7 1.1.7.6 1.1 1.7.8 2.1.6 0-.5.2-.8.5-1-1.6-.2-3.2-.8-3.2-3.4 0-.8.3-1.4.7-1.9 0-.2-.3-.9.1-1.9 0 0 .6-.2 2 .8a7 7 0 013.6 0c1.4-1 2-.8 2-.8.4 1 .1 1.7.1 1.9.4.5.7 1.1.7 1.9 0 2.6-1.6 3.2-3.2 3.4.3.3.6.8.6 1.5v2.2c0 .3.2.4.5.3A7 7 0 0010 3z" strokeWidth="1.2" fill="none" />
+  </Icon>
+);

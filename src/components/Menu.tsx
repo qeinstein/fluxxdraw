@@ -4,7 +4,26 @@ import { APP_NAME, PALETTE } from "../constants";
 import { setTheme } from "../theme";
 import { tidyUp } from "../layout";
 import { Tooltip } from "./Tooltip";
-import { IconClose, IconMenu } from "./icons";
+import { 
+  IconClose, 
+  IconMenu,
+  IconFolder,
+  IconSave,
+  IconImage,
+  IconInstall,
+  IconHistory,
+  IconPresent,
+  IconServices,
+  IconTidy,
+  IconText,
+  IconGrid,
+  IconMagnet,
+  IconMoon,
+  IconSun,
+  IconHelp,
+  IconGithub,
+  IconTrash
+} from "./icons";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { sc } from "../shortcuts";
 
@@ -132,41 +151,44 @@ export const Menu = ({
           )}
 
           <div className="menu-sidebar-content">
-            <MenuSection label="File">
-              <MenuItem label="Open…" shortcut={sc("open")} onClick={run(onOpen)} />
-              <MenuItem label="Save" shortcut={sc("save")} onClick={run(onSave)} />
-              <MenuItem label="Save as…" shortcut={sc("saveAs")} onClick={run(onSaveAs)} />
-              <MenuItem label="Export…" shortcut={sc("export")} onClick={run(onExport)} />
-              {isMobile && <MenuItem label="Quick save to export folder" onClick={run(onQuickSave)} />}
-              {installPrompt && <MenuItem label="Install FluxxDraw" onClick={install} />}
+            <MenuSection>
+              <MenuItem icon={<IconFolder />} label="Open…" shortcut={sc("open")} onClick={run(onOpen)} />
+              <MenuItem icon={<IconSave />} label="Save" shortcut={sc("save")} onClick={run(onSave)} />
+              <MenuItem icon={<IconSave />} label="Save as…" shortcut={sc("saveAs")} onClick={run(onSaveAs)} />
+              <MenuItem icon={<IconImage />} label="Export…" shortcut={sc("export")} onClick={run(onExport)} />
+              {isMobile && <MenuItem icon={<IconSave />} label="Quick save to export folder" onClick={run(onQuickSave)} />}
+              {installPrompt && <MenuItem icon={<IconInstall />} label="Install FluxxDraw" onClick={install} />}
             </MenuSection>
 
-            <MenuSection label="Diagram">
-              <MenuItem label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
-              <MenuItem label="Present frames" shortcut={sc("present")} onClick={run(onPresent)} />
-              <MenuItem label="Service library…" shortcut={sc("services")} onClick={run(onServices)} />
-              <MenuItem label="Tidy up layout" shortcut={sc("tidyUp")} onClick={run(() => tidyUp())} />
-              <MenuItem label="Diagram as text" shortcut={sc("diagramText")} onClick={run(onToggleText)} />
+            <MenuSection>
+              <MenuItem icon={<IconHistory />} label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
+              <MenuItem icon={<IconPresent />} label="Present frames" shortcut={sc("present")} onClick={run(onPresent)} />
+              <MenuItem icon={<IconServices />} label="Service library…" shortcut={sc("services")} onClick={run(onServices)} />
+              <MenuItem icon={<IconTidy />} label="Tidy up layout" shortcut={sc("tidyUp")} onClick={run(() => tidyUp())} />
+              <MenuItem icon={<IconText />} label="Diagram as text" shortcut={sc("diagramText")} onClick={run(onToggleText)} />
             </MenuSection>
 
-            <MenuSection label="Canvas">
+            <MenuSection>
               <MenuToggle
+                icon={isDark ? <IconMoon /> : <IconSun />}
                 label="Dark mode"
                 checked={isDark}
                 onChange={(next) => setTheme(next ? "dark" : "light")}
               />
               <MenuToggle
+                icon={<IconGrid />}
                 label="Show grid"
                 checked={appState.gridSize !== null}
                 onChange={(next) => store.setAppState({ gridSize: next ? 20 : null })}
               />
               <MenuToggle
+                icon={<IconMagnet />}
                 label="Snap to objects"
                 checked={appState.snapToObjects}
                 onChange={(next) => store.setAppState({ snapToObjects: next })}
               />
-              <div className="menu-label">Canvas background</div>
-              <div className="swatches menu-swatches">
+              <div className="menu-label" style={{ paddingLeft: "32px" }}>Canvas background</div>
+              <div className="swatches menu-swatches" style={{ paddingLeft: "32px", paddingBottom: "12px" }}>
                 {PALETTE[appState.theme].canvas.map((color) => (
                   <Tooltip key={color} label={color}>
                     <button
@@ -191,20 +213,13 @@ export const Menu = ({
           </div>
 
           <footer className="menu-sidebar-footer">
-            <MenuItem label="Keyboard shortcuts" shortcut="?" onClick={run(onHelp)} />
-            <div className="menu-footer-links">
-              <a href="https://github.com/qeinstein/fluxxdraw" target="_blank" rel="noreferrer">
-                GitHub <span aria-hidden="true">↗</span>
-              </a>
-              <a
-                href="https://github.com/qeinstein/fluxxdraw/blob/main/CHANGELOG.md"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Changelog <span aria-hidden="true">↗</span>
+            <MenuItem icon={<IconHelp />} label="Keyboard shortcuts" shortcut="?" onClick={run(onHelp)} />
+            <div className="menu-footer-links" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <a href="https://github.com/qeinstein/fluxxdraw" target="_blank" rel="noreferrer" style={{ display: 'flex', gap: '6px', alignItems: 'center', textDecoration: 'none' }}>
+                <IconGithub /> GitHub
               </a>
             </div>
-            <MenuItem label="Reset canvas" onClick={run(onReset)} danger />
+            <MenuItem icon={<IconTrash />} label="Reset canvas" onClick={run(onReset)} danger />
           </footer>
         </aside>
       )}
@@ -212,48 +227,59 @@ export const Menu = ({
   );
 };
 
-const MenuSection = ({ label, children }: { label: string; children: ReactNode }) => (
+const MenuSection = ({ children }: { label?: string; children: ReactNode }) => (
   <section className="menu-section">
-    <h2>{label}</h2>
     <div className="menu-section-items">{children}</div>
   </section>
 );
 
 const MenuItem = ({
+  icon,
   label,
   shortcut,
   onClick,
   danger,
 }: {
+  icon?: ReactNode;
   label: string;
   shortcut?: string;
   onClick: () => void;
   danger?: boolean;
 }) => (
   <button className={`menu-item ${danger ? "danger" : ""}`} role="menuitem" onClick={onClick}>
-    <span>{label}</span>
+    <div className="menu-item-content">
+      {icon && <span className="menu-item-icon">{icon}</span>}
+      <span>{label}</span>
+    </div>
     {shortcut && <kbd>{shortcut}</kbd>}
   </button>
 );
 
 const MenuToggle = ({
+  icon,
   label,
   checked,
   onChange,
 }: {
+  icon?: ReactNode;
   label: string;
   checked: boolean;
   onChange: (next: boolean) => void;
 }) => (
   <label className="menu-item menu-toggle">
-    <span>{label}</span>
-    <input
-      type="checkbox"
-      role="switch"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-    />
-    <span className="switch" aria-hidden="true" />
+    <div className="menu-item-content">
+      {icon && <span className="menu-item-icon">{icon}</span>}
+      <span>{label}</span>
+    </div>
+    <div className="menu-toggle-switch">
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span className="switch" aria-hidden="true" />
+    </div>
   </label>
 );
 
