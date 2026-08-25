@@ -1,5 +1,5 @@
 import * as Y from "yjs";
-import { WebrtcProvider } from "y-webrtc";
+import { WebsocketProvider } from "y-websocket";
 import { IndexeddbPersistence } from "y-indexeddb";
 
 // The shared Yjs document
@@ -22,7 +22,7 @@ export interface PeerPresence {
 }
 
 class CollaborationManager {
-  provider: WebrtcProvider | null = null;
+  provider: WebsocketProvider | null = null;
   persistence: IndexeddbPersistence | null = null;
   room: string | null = null;
   /** The full shareable URL for the current room, kept so the dialog can recall it */
@@ -53,19 +53,18 @@ class CollaborationManager {
     }
     this.persistence = new IndexeddbPersistence(`fluxxdraw-room-${roomId}`, ydoc);
 
-    // Connect to WebRTC — only use the official Yjs signaling server
-    this.provider = new WebrtcProvider(roomId, ydoc, {
-      password: key,
-      signaling: ["wss://signaling.yjs.dev"]
-    });
+    // Connect via Websocket for reliable sync (public demo server for now)
+    // The password is sent as part of the room name since y-websocket doesn't have a password field
+    const secureRoomId = `${roomId}-${key}`;
+    this.provider = new WebsocketProvider("wss://demos.yjs.dev/ws", secureRoomId, ydoc);
 
-    // When WebRTC syncs for the first time, force a re-read of the Yjs state
-    // into the store so the joiner sees the host's canvas immediately.
-    // We do this with a tiny transact that triggers the store's ydoc "update" listener.
-    this.provider.on("synced", () => {
-      ydoc.transact(() => {
-        // no-op transaction — the transact itself triggers the "update" event
-      }, "sync-refresh");
+    // When syncs for the first time, force a re-read of the Yjs state
+    this.provider.on("sync", (isSynced: boolean) => {
+      if (isSynced) {
+        ydoc.transact(() => {
+          // no-op transaction
+        }, "sync-refresh");
+      }
     });
 
     // Set initial presence
