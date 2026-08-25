@@ -300,7 +300,7 @@ const FileName = ({
   }
 
   return (
-    <button className="file-meta" onClick={start} title={`Rename this ${APP_NAME} drawing`}>
+    <button className="file-meta" onClick={start} title="Rename">
       <span className="file-name">{name ?? "Untitled"}</span>
       <span className={`file-status ${dirty ? "is-dirty" : ""}`}>
         {dirty ? "Unsaved changes" : "Saved"}

@@ -9,7 +9,7 @@ interface TooltipProps {
   children: ReactNode;
 }
 
-const OPEN_DELAY_MS = 380;
+const OPEN_DELAY_MS = 150;
 const GAP = 10;
 
 /**
