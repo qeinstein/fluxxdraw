@@ -17,7 +17,7 @@ import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
 import { TextEditor } from "./components/TextEditor";
 import { Tooltip } from "./components/Tooltip";
-import { IconClose, IconRedo, IconSliders, IconUndo } from "./components/icons";
+import { IconClose, IconHelp, IconSliders, IconUndo, IconRedo } from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
 import { MOBILE_QUERY, useIsMobile } from "./hooks/useMediaQuery";
@@ -550,7 +550,6 @@ export default function App() {
               setFileName(null);
               localStorage.removeItem(AUTOSAVE_KEY);
             }}
-            onHelp={() => setHelpOpen(true)}
             onHistory={() => openPanel("history")}
             onServices={() => setServicesOpen(true)}
             currentFileName={fileName}
@@ -612,6 +611,19 @@ export default function App() {
               </button>
             </Tooltip>
           </div>
+        </div>
+
+        <div className="bottom-right">
+          <Tooltip label="Keyboard shortcuts" shortcut="?" placement="top">
+            <button
+              className="island icon-button"
+              aria-label="Keyboard shortcuts"
+              onClick={() => setHelpOpen(true)}
+              style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <IconHelp />
+            </button>
+          </Tooltip>
         </div>
 
         {isMobile && sheetOpen && (

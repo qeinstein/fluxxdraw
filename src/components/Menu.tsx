@@ -16,7 +16,6 @@ import {
   IconMagnet,
   IconMoon,
   IconSun,
-  IconHelp,
   IconGithub,
   IconTrash
 } from "./icons";
@@ -30,7 +29,6 @@ interface MenuProps {
   onExport: () => void;
   onQuickSave: () => void;
   onReset: () => void;
-  onHelp: () => void;
   onHistory: () => void;
   onServices: () => void;
   currentFileName: string | null;
@@ -51,7 +49,6 @@ export const Menu = ({
   onExport,
   onQuickSave,
   onReset,
-  onHelp,
   onHistory,
   onServices,
   currentFileName,
@@ -202,7 +199,6 @@ export const Menu = ({
           </div>
 
           <footer className="menu-sidebar-footer">
-            <MenuItem icon={<IconHelp />} label="Keyboard shortcuts" shortcut="?" onClick={run(onHelp)} />
             <div className="menu-footer-links" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <a href="https://github.com/qeinstein/fluxxdraw" target="_blank" rel="noreferrer" style={{ display: 'flex', gap: '6px', alignItems: 'center', textDecoration: 'none' }}>
                 <IconGithub /> GitHub

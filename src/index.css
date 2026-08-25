@@ -165,6 +165,13 @@ body {
   gap: 8px;
 }
 
+.bottom-right {
+  bottom: 14px;
+  right: 14px;
+  display: flex;
+  gap: 8px;
+}
+
 .island {
   background: var(--surface);
   border-radius: var(--radius-lg);
@@ -265,8 +272,13 @@ kbd {
   font-family: inherit;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
-  color: var(--fg-subtle);
-  letter-spacing: 0.02em;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 2px 5px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  display: inline-block;
 }
 
 /* --- tooltip -------------------------------------------------------------- */
@@ -1212,7 +1224,7 @@ kbd {
 .shortcut-row {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 14px;
   padding: 3.5px 0;
   font-size: 12px;
@@ -1221,6 +1233,13 @@ kbd {
 
 .shortcut-row span {
   color: var(--fg);
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-subtle);
 }
 
 /* --- text editing overlay -------------------------------------------------- */
@@ -1903,6 +1922,11 @@ kbd {
     right: var(--edge);
     bottom: var(--dock);
     flex-wrap: wrap;
+  }
+
+  .bottom-right {
+    right: var(--edge);
+    bottom: var(--dock);
   }
 
   /* panels docked to an edge take the full width, clear of the dock */
