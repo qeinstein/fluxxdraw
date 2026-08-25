@@ -21,6 +21,8 @@ class CollaborationManager {
   provider: WebrtcProvider | null = null;
   persistence: IndexeddbPersistence | null = null;
   room: string | null = null;
+  /** The full shareable URL for the current room, kept so the dialog can recall it */
+  shareUrl: string | null = null;
   
   initLocalDB() {
     // Always persist the local document to IndexedDB so work isn't lost
@@ -28,12 +30,22 @@ class CollaborationManager {
   }
 
   joinRoom(roomId: string, key: string, name: string, color: string) {
-    this.room = roomId;
+    // If we're already in this room, don't re-join
+    if (this.room === roomId && this.provider) return;
     
-    // Connect to WebRTC
+    // Leave any existing room first
+    if (this.provider) {
+      this.provider.destroy();
+      this.provider = null;
+    }
+
+    this.room = roomId;
+    this.shareUrl = `${window.location.origin}${window.location.pathname}#room=${roomId}&key=${key}`;
+    
+    // Connect to WebRTC — only use the official Yjs signaling server
     this.provider = new WebrtcProvider(roomId, ydoc, {
       password: key,
-      signaling: ["wss://signaling.yjs.dev", "wss://y-webrtc-signaling-eu.herokuapp.com"]
+      signaling: ["wss://signaling.yjs.dev"]
     });
 
     // Set initial presence
@@ -46,6 +58,7 @@ class CollaborationManager {
       this.provider = null;
     }
     this.room = null;
+    this.shareUrl = null;
   }
 
   updatePresence(state: Partial<PeerPresence>) {
@@ -85,3 +98,4 @@ export const generateCollaborationLink = () => {
   const key = Math.random().toString(36).substring(2, 15);
   return { room, key, url: `${window.location.origin}${window.location.pathname}#room=${room}&key=${key}` };
 };
+

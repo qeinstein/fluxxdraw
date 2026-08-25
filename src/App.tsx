@@ -34,6 +34,7 @@ import {
   IconUndo,
   IconRedo,
   IconLibrary,
+  IconUsers,
 } from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
@@ -657,8 +658,13 @@ export default function App() {
               </button>
             </Tooltip>
             <Tooltip label="Collaborate in real-time" placement="bottom">
-              <button className="primary" onClick={() => setIsShareDialogOpen(true)} style={{ marginLeft: '4px', backgroundColor: '#e03131', color: 'white' }}>
-                Collaborate
+              <button 
+                className="icon-button" 
+                aria-label="Collaborate"
+                onClick={() => setIsShareDialogOpen(true)} 
+                style={{ color: '#e03131' }}
+              >
+                <IconUsers />
               </button>
             </Tooltip>
             <Tooltip label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"} placement="bottom">
