@@ -11,7 +11,9 @@
     "smoke": "node scripts/smoke.mjs",
     "shots": "node scripts/shots.mjs",
     "icons": "node scripts/icons.mjs",
-    "test": "node scripts/smoke.mjs"
+    "test": "node scripts/smoke.mjs",
+    "test:library": "node scripts/library-check.mjs",
+    "test:workspace": "node scripts/workspace-check.mjs"
   },
   "dependencies": {
     "@fontsource/architects-daughter": "^5.3.0",

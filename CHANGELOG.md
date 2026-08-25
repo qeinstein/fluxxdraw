@@ -5,6 +5,23 @@ app rather than a library: the minor number moves when features land, the patch
 number when only fixes do, and the major number if a `.fluxx` file written by a
 new version stops opening in an old one.
 
+## Unreleased
+
+### Workspace
+
+- Added a searchable layer navigator that selects and focuses objects directly
+- Added local canvas comments with visible pins attached to diagram elements
+- Added a recent-document screen backed by local editable scene snapshots
+- Added rotating crash-recovery snapshots with direct restore and deletion
+- Added named reusable style presets in the style inspector
+
+### Interface and libraries
+
+- Added a compact contextual selection toolbar and collapsible style sections
+- Refined floating chrome, notes, library cards, feedback states and motion
+- Fixed community library installation, persistence, placement, payload parsing,
+  multi-component installed state and server-side database routing
+
 ## v1.0.0
 
 First public release. Everything below is in the `v1.0.0` tag.

@@ -32,6 +32,7 @@ interface MenuProps {
   onReset: () => void;
   onHistory: () => void;
   onServices: () => void;
+  onWorkspace: () => void;
   currentFileName: string | null;
   dirty: boolean;
   onRename: (name: string) => void;
@@ -52,6 +53,7 @@ export const Menu = ({
   onReset,
   onHistory,
   onServices,
+  onWorkspace,
   currentFileName,
   dirty,
   onRename,
@@ -152,6 +154,7 @@ export const Menu = ({
 
             <MenuSection>
               <MenuItem icon={<IconHistory />} label="Version history…" shortcut={sc("history")} onClick={run(onHistory)} />
+              <MenuItem icon={<IconFolder />} label="Workspace, comments & recovery…" onClick={run(onWorkspace)} />
               <MenuItem icon={<IconServices />} label="Service library…" shortcut={sc("services")} onClick={run(onServices)} />
             </MenuSection>
 
