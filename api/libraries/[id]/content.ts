@@ -1,4 +1,4 @@
-import { createClient } from "@neondatabase/serverless";
+import { neon } from "@neondatabase/serverless";
 
 export const config = { runtime: "edge" };
 
@@ -16,16 +16,16 @@ export default async function handler(
   const segments = new URL(request.url).pathname.split("/").filter(Boolean);
   const id = decodeURIComponent(segments.at(-2) ?? "");
   if (!id) return Response.json({ error: "Library id is required" }, { status: 400 });
-  const sql = createClient(databaseUrl);
+  const sql = neon(databaseUrl);
   try {
-    const result = await sql.query<{ content: unknown }>(
+    const result = await sql<{ content: unknown }[]>(
       "select content from libraries where id = $1 limit 1",
       [id],
     );
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return Response.json({ error: "Library not found" }, { status: 404 });
     }
-    return Response.json(result.rows[0].content, {
+    return Response.json(result[0].content, {
       headers: { "cache-control": "public, max-age=300" },
     });
   } catch (error) {

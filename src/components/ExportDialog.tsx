@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useScene } from "../store";
 import {
   buildFilename,
@@ -11,6 +11,9 @@ import {
   type ExportSettings,
   type ResolutionPreset,
 } from "../io/exportController";
+import { exportToCanvas } from "../io/exportImage";
+import { collectUsedFiles } from "../io/serialize";
+import { store } from "../store";
 import { ExportDestination } from "./ExportDestination";
 import { Tooltip } from "./Tooltip";
 import { IconClose } from "./icons";
@@ -108,7 +111,7 @@ export const ExportDialog = ({
 
   return (
     <div className="dialog-backdrop" onClick={onClose}>
-      <div className="dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog export-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 900, width: "90vw" }}>
         <header>
           <h2>Export</h2>
           <Tooltip label="Close" shortcut="Esc" placement="top">
@@ -118,7 +121,12 @@ export const ExportDialog = ({
           </Tooltip>
         </header>
 
-        <div className="dialog-body">
+        <div className="dialog-body" style={{ display: "flex", gap: 24, flexDirection: "row" }}>
+          <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center", minHeight: 300, background: "var(--surface-sunken)", borderRadius: 8, overflow: "hidden" }}>
+            <ExportPreview settings={settings} />
+          </div>
+          
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", maxHeight: "60vh" }}>
           <Field label="What to export">
             <div className="segmented">
               {(["canvas", "selection", "frame"] as ExportScope[]).map((scope) => (
@@ -211,6 +219,17 @@ export const ExportDialog = ({
 
           {settings.format !== "json" && (
             <Field label="Options">
+              <div className="segmented" style={{ marginBottom: 12 }}>
+                {(["auto", "light", "dark"] as const).map((theme) => (
+                  <button
+                    key={theme}
+                    className={settings.theme === theme ? "active" : ""}
+                    onClick={() => patch({ theme })}
+                  >
+                    {theme === "auto" ? "Auto Theme" : theme === "light" ? "Light" : "Dark"}
+                  </button>
+                ))}
+              </div>
               <label className="checkbox">
                 <input
                   type="checkbox"
@@ -277,6 +296,7 @@ export const ExportDialog = ({
               onDirectoryChange={onDirectoryChange}
             />
           </Field>
+          </div>
         </div>
 
         <footer>
@@ -300,3 +320,70 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
     <div className="field-body">{children}</div>
   </div>
 );
+
+const ExportPreview = ({ settings }: { settings: ExportSettings }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const renderPreview = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const elements = getExportElements(settings);
+        if (elements.length === 0) {
+          if (containerRef.current) containerRef.current.innerHTML = "";
+          return;
+        }
+
+        const files = collectUsedFiles(elements, store.files);
+        const theme = settings.theme === "auto" ? store.appState.theme : settings.theme;
+        const isDark = theme === "dark";
+        const backgroundColor = settings.background ? (isDark ? "#121212" : "#ffffff") : "transparent";
+
+        const canvas = await exportToCanvas({
+          elements,
+          files,
+          components: store.components,
+          scale: 1, // Will be overridden by targetLongEdge
+          targetLongEdge: 600, // Fixed small size for preview
+          padding: settings.padding,
+          background: settings.background,
+          backgroundColor,
+          theme,
+        });
+
+        if (active && containerRef.current) {
+          containerRef.current.innerHTML = "";
+          canvas.style.maxWidth = "100%";
+          canvas.style.maxHeight = "100%";
+          canvas.style.objectFit = "contain";
+          canvas.style.borderRadius = "4px";
+          // If background is transparent, show a checkerboard so white/black elements are visible
+          if (!settings.background) {
+            containerRef.current.style.backgroundImage = 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/ENF5gEDAwEAiM9LwGIUDAyMDIwMAu18EAcyM2zAAAAAASUVORK5CYII=")';
+          } else {
+            containerRef.current.style.backgroundImage = 'none';
+          }
+          containerRef.current.appendChild(canvas);
+        }
+      } catch (err) {
+        if (active) setError((err as Error).message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    renderPreview();
+    return () => { active = false; };
+  }, [settings, store.appState.theme]);
+
+  return (
+    <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
+      {error && <div style={{ color: "var(--danger)", padding: 20 }}>{error}</div>}
+      <div ref={containerRef} style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center", padding: 16 }} />
+      {loading && <div style={{ position: "absolute", bottom: 8, right: 8, fontSize: 11, color: "var(--fg-subtle)" }}>Updating...</div>}
+    </div>
+  );
+};

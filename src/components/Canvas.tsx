@@ -764,7 +764,7 @@ export const Canvas = ({
       sticky.fillStyle = "solid";
       sticky.edges = "round";
       store.addElements(sticky);
-      store.setAppState({ selectedIds: [sticky.id] });
+      store.setAppState({ selectedIds: [sticky.id], tool: "selection" });
       const label = ensureBoundText(sticky.id);
       store.updateElement<TextElement>(label, () => ({
         textAlign: "center",
@@ -784,7 +784,7 @@ export const Canvas = ({
       } else {
         const el = newTextElement(state, x, y);
         store.addElements(el);
-        store.setAppState({ selectedIds: [el.id] });
+        store.setAppState({ selectedIds: [el.id], tool: "selection" });
         onDoubleClickText(el.id);
       }
       return;
