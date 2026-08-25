@@ -408,7 +408,9 @@ export const IconCheck = () => (
 
 export const IconLibrary = () => (
   <Icon>
-    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+    <path d="M10 3L3 7h14L10 3z" />
+    <path d="M5 7v8M10 7v8M15 7v8" />
+    <path d="M2 16h16" />
   </Icon>
 );
 
