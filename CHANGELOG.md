@@ -21,6 +21,8 @@ new version stops opening in an old one.
 - Refined floating chrome, notes, library cards, feedback states and motion
 - Fixed community library installation, persistence, placement, payload parsing,
   multi-component installed state and server-side database routing
+- Prioritized software architecture, system-design and infrastructure component
+  packs at the top of community library results
 
 ## v1.0.0
 
