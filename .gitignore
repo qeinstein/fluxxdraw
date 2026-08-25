@@ -25,3 +25,7 @@ dist-ssr
 
 # smoke-test artefacts
 .smoke
+
+# env
+.env
+.env.*

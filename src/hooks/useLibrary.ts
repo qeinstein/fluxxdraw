@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { neon } from '@neondatabase/serverless';
 
-const DATABASE_URL = "postgresql://neondb_owner:npg_E6ulRbwKfhV1@ep-twilight-bar-axgybo21-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-const sql = neon(DATABASE_URL);
+const DATABASE_URL = import.meta.env.VITE_DATABASE_URL as string | undefined;
+const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
 export interface Library {
   id: string;
@@ -22,6 +22,11 @@ export const useLibraryList = () => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!sql) {
+      setError(new Error("Database not configured"));
+      setLoading(false);
+      return;
+    }
     const fetchLibraries = async () => {
       try {
         const rows = await sql`
@@ -43,6 +48,7 @@ export const useLibraryList = () => {
 };
 
 export const fetchLibraryContent = async (id: string) => {
+  if (!sql) throw new Error("Database not configured");
   const rows = await sql`SELECT content FROM libraries WHERE id = ${id}`;
   if (rows.length === 0) throw new Error("Library not found");
   return rows[0].content;
