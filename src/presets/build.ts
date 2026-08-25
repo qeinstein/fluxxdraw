@@ -242,13 +242,12 @@ export const glyphPreview = (glyph: Glyph, accent: string) => ({
  */
 export const serviceElements = (preset: ServicePreset): ExcaliElement[] => {
   const { accent, name: providerName } = PROVIDERS[preset.provider];
-  const ink = "#1e1e1e";
 
   return [
     shape("rectangle", 0, 0, NODE_WIDTH, NODE_HEIGHT, accent, "transparent"),
     ...glyphElements(preset.glyph, accent),
-    label(preset.name, GLYPH_X, 53, 16, ink),
-    label(`${providerName} · ${preset.category}`, GLYPH_X, 72, 11, "#6b6b78"),
+    label(preset.name, GLYPH_X, 53, 16, accent),
+    label(`${providerName} · ${preset.category}`, GLYPH_X, 72, 11, accent),
   ];
 };
 
