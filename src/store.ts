@@ -9,7 +9,7 @@ import type {
   ExcaliElement,
 } from "./types";
 import type { Checkpoint } from "./io/history";
-import { ydoc, yElements, yOrder } from "./io/collaboration";
+import { ydoc, yElements, yOrder, yFiles, yComponents } from "./io/collaboration";
 
 const undoManager = new Y.UndoManager([yElements, yOrder], {
   captureTimeout: 500,
@@ -20,12 +20,12 @@ const undoManager = new Y.UndoManager([yElements, yOrder], {
  * pointer-move rate without re-rendering the whole tree; components subscribe
  * to the slices they need.
  */
-class SceneStore {
+export class SceneStore {
   elements: ExcaliElement[] = [];
   files: Record<string, BinaryFile> = {};
   /** reusable component definitions, keyed by id */
   components: Record<string, ComponentDefinition> = {};
-  appState: AppState = structuredClone(DEFAULT_APP_STATE);
+  appState: AppState = { ...DEFAULT_APP_STATE };
 
   private listeners = new Set<() => void>();
   /** durable, saved-to-file version history (distinct from undo/redo) */
@@ -47,6 +47,21 @@ class SceneStore {
       if (el) nextElements.push(el);
     });
     this.elements = nextElements;
+
+    const nextFiles: Record<string, BinaryFile> = {};
+    for (const key of yFiles.keys()) {
+      const file = yFiles.get(key);
+      if (file) nextFiles[key] = file;
+    }
+    this.files = nextFiles;
+
+    const nextComponents: Record<string, ComponentDefinition> = {};
+    for (const key of yComponents.keys()) {
+      const comp = yComponents.get(key);
+      if (comp) nextComponents[key] = comp;
+    }
+    this.components = nextComponents;
+
     this.emit();
   }
 
@@ -192,6 +207,12 @@ class SceneStore {
 
   addFile(file: BinaryFile) {
     this.files = { ...this.files, [file.id]: file };
+    yFiles.set(file.id, file);
+  }
+
+  registerComponent(def: ComponentDefinition) {
+    this.components = { ...this.components, [def.id]: def };
+    yComponents.set(def.id, def);
   }
 
   /** Replaces the whole scene, e.g. after opening a file. */
@@ -217,11 +238,19 @@ class SceneStore {
       currentKeys.forEach(k => yElements.delete(k));
       yOrder.delete(0, yOrder.length);
       
+      const fileKeys = Array.from(yFiles.keys());
+      fileKeys.forEach(k => yFiles.delete(k));
+      
+      const compKeys = Array.from(yComponents.keys());
+      compKeys.forEach(k => yComponents.delete(k));
+      
       // Load new state
       elements.forEach(el => {
         yElements.set(el.id, el);
         yOrder.push([el.id]);
       });
+      Object.values(files).forEach(f => yFiles.set(f.id, f));
+      Object.values(components).forEach(c => yComponents.set(c.id, c));
     }, "local");
 
     this.files = files;

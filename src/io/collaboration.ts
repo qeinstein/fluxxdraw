@@ -9,6 +9,10 @@ export const ydoc = new Y.Doc();
 export const yElements = ydoc.getMap<any>("elements");
 // The ordered list of element IDs (z-index)
 export const yOrder = ydoc.getArray<string>("order");
+// Map for storing binary files (images)
+export const yFiles = ydoc.getMap<any>("files");
+// Map for storing component definitions
+export const yComponents = ydoc.getMap<any>("components");
 
 export interface PeerPresence {
   name: string;

@@ -299,7 +299,7 @@ export const placeService = (preset: ServicePreset, atX: number, atY: number) =>
   const [x, y] = freeSpot(atX, atY);
   store.mutate(() => {
     if (!store.components[preset.id]) {
-      store.components = { ...store.components, [preset.id]: serviceDefinition(preset) };
+      store.registerComponent(serviceDefinition(preset));
     }
     const instance = newInstance(preset.id, x, y, NODE_WIDTH, NODE_HEIGHT);
     store.addElements(instance);

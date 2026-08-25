@@ -134,7 +134,7 @@ export const createComponentFromSelection = (name?: string): ComponentDefinition
   };
 
   store.mutate(() => {
-    store.components = { ...store.components, [definition.id]: definition };
+    store.registerComponent(definition);
     store.deleteElements([...ids]);
     const instance = newInstance(definition.id, bounds.x1, bounds.y1, width, height);
     store.addElements(instance);
@@ -262,16 +262,13 @@ export const commitComponentEdit = (session: ComponentEditSession, instanceId: s
   const previous = store.components[session.componentId];
 
   store.mutate(() => {
-    store.components = {
-      ...store.components,
-      [session.componentId]: {
-        ...previous,
-        elements,
-        width,
-        height,
-        version: (previous?.version ?? 1) + 1,
-      },
-    };
+    store.registerComponent({
+      ...previous,
+      elements,
+      width,
+      height,
+      version: (previous?.version ?? 1) + 1,
+    });
     store.deleteElements(session.elementIds);
     store.updateElement(instanceId, () => ({ opacity: 100 }));
 
