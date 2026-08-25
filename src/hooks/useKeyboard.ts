@@ -9,6 +9,8 @@ import {
   selectAll,
   toggleLockSelection,
   ungroupSelection,
+  copyStyle,
+  pasteStyle,
 } from "../actions";
 import { setZoom, zoomToFit } from "../components/ZoomControls";
 import { tidyUp } from "../layout";
@@ -75,6 +77,8 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
       redoAlt: () => store.redo(),
       selectAll,
       duplicate: () => duplicateSelection(),
+      copyStyle: copyStyle,
+      pasteStyle: pasteStyle,
       group: groupSelection,
       ungroup: ungroupSelection,
       lock: toggleLockSelection,

@@ -169,6 +169,7 @@ export const Canvas = ({
    * `updateCursor` already uses for hover-driven visuals.
    */
   const hoveredLinkIdRef = useRef<string | null>(null);
+  const hoveredElementIdRef = useRef<string | null>(null);
   /** pending long-press timer, the touch equivalent of a right-click */
   const longPressRef = useRef<number | null>(null);
   const guidesRef = useRef<SnapGuide[]>([]);
@@ -195,6 +196,19 @@ export const Canvas = ({
     const selected = store.getSelected();
     const pointer = pointerRef.current;
     const lineWidth = 1 / zoom;
+
+    const hoveredId = hoveredElementIdRef.current;
+    if (hoveredId && !state.selectedIds.includes(hoveredId)) {
+      const el = store.getElement(hoveredId);
+      if (el && !el.locked) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(105, 101, 219, 0.4)";
+        ctx.lineWidth = lineWidth * 2;
+        const b = getRotatedBounds(el);
+        ctx.strokeRect(b.x1 - 2, b.y1 - 2, (b.x2 - b.x1) + 4, (b.y2 - b.y1) + 4);
+        ctx.restore();
+      }
+    }
 
     // marquee
     if (pointer.marquee) {
@@ -620,6 +634,18 @@ export const Canvas = ({
     const pointer = pointerRef.current;
     const state = store.appState;
 
+    if (state.editingTextId) {
+      const textId = state.editingTextId;
+      store.setAppState({ editingTextId: null });
+      const el = store.getElement(textId) as TextElement | null;
+      if (el && el.text.trim() === "") {
+        store.deleteElements([textId]);
+        if (el.containerId) {
+          store.updateElement(el.containerId, () => ({ boundText: null }));
+        }
+      }
+    }
+
     pointer.originX = x;
     pointer.originY = y;
     pointer.lastX = x;
@@ -678,7 +704,6 @@ export const Canvas = ({
        * with a centred label, so everything else about it already works.
        */
       event.preventDefault();
-      if (state.editingTextId) return;
       store.beginHistory();
       const sticky = newGenericElement("sticky", state, x - STICKY_SIZE / 2, y - STICKY_SIZE / 2);
       sticky.width = STICKY_SIZE;
@@ -699,14 +724,6 @@ export const Canvas = ({
     }
 
     if (state.tool === "text") {
-      /*
-       * A click while an editor is open means "I'm done typing", not "start
-       * another text". Return without preventDefault so focus leaves the
-       * textarea and its blur commits — preventDefault would swallow that
-       * blur and leave the finished text and a fresh editor both on screen.
-       */
-      if (state.editingTextId) return;
-
       // keep the browser from moving focus to the canvas as we open the editor
       event.preventDefault();
       store.beginHistory();
@@ -1454,6 +1471,7 @@ export const Canvas = ({
     const hit = getElementAtPosition(store.visibleElements, x, y, HIT_THRESHOLD / state.zoom);
     // hovering a linked element's body reveals its badge, same discoverability as Excalidraw
     hoveredLinkIdRef.current = hit?.link ? hit.id : null;
+    hoveredElementIdRef.current = hit ? hit.id : null;
     canvas.style.cursor = hit ? "move" : "default";
   };
 
