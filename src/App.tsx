@@ -57,6 +57,7 @@ export default function App() {
   const [libraryOpen, setLibraryOpen] = useState(false);
 
   const [presenting, setPresenting] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [textPanelOpen, setTextPanelOpen] = useState(false);
   const [componentSession, setComponentSession] = useState<{
@@ -550,13 +551,7 @@ export default function App() {
             onSaveAs={handleSaveAs}
             onExport={() => setExportOpen(true)}
             onQuickSave={quickExportJson}
-            onReset={() => {
-              if (!window.confirm(`Clear the ${APP_NAME} canvas? This can't be undone.`)) return;
-              store.resetScene();
-              fileHandleRef.current = null;
-              setFileName(null);
-              localStorage.removeItem(AUTOSAVE_KEY);
-            }}
+            onReset={() => setResetConfirmOpen(true)}
             onHistory={() => openPanel("history")}
             onServices={() => setLibraryOpen(true)}
             currentFileName={fileName}
@@ -663,6 +658,41 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {resetConfirmOpen && (
+        <div className="dialog-backdrop" onClick={() => setResetConfirmOpen(false)}>
+          <div className="dialog compact" onClick={(e) => e.stopPropagation()}>
+            <header>
+              <h2>Clear canvas</h2>
+              <button className="icon-button" aria-label="Close" onClick={() => setResetConfirmOpen(false)}>
+                <IconClose />
+              </button>
+            </header>
+            <div className="dialog-body">
+              <p>Are you sure you want to clear the {APP_NAME} canvas? This cannot be undone.</p>
+            </div>
+            <footer>
+              <div style={{ flex: 1 }} />
+              <button className="ghost-button" onClick={() => setResetConfirmOpen(false)}>
+                Cancel
+              </button>
+              <button
+                className="export-button danger"
+                style={{ background: "var(--danger)", color: "var(--surface)" }}
+                onClick={() => {
+                  store.resetScene();
+                  fileHandleRef.current = null;
+                  setFileName(null);
+                  localStorage.removeItem(AUTOSAVE_KEY);
+                  setResetConfirmOpen(false);
+                }}
+              >
+                Clear canvas
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
 
       {exportOpen && (
         <ExportDialog

@@ -32,7 +32,6 @@ export const useLibraryList = () => {
         const rows = await sql`
           SELECT id, name, description, authors, source, preview, created, updated, version
           FROM libraries
-          ORDER BY name ASC
         `;
         setLibraries(rows as Library[]);
       } catch (err) {
