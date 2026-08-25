@@ -131,7 +131,7 @@ export const IconLockClosed = () => (
 
 export const IconMenu = () => (
   <Icon>
-    <path d="M3.6 5.6h12.8M3.6 10h12.8M3.6 14.4h12.8" />
+    <path d="M4 10h12M4 5h12M4 15h12" />
   </Icon>
 );
 
