@@ -2,8 +2,6 @@ import { useMemo, useState } from "react";
 import { useLibraryList, fetchLibraryContent } from "../hooks/useLibrary";
 import { useLocalLibrary } from "../hooks/useLocalLibrary";
 import { IconClose } from "./icons";
-import { store } from "../store";
-import { nanoid } from "nanoid";
 import { ServiceLibraryPanel } from "./ServiceLibrary";
 import { IconLockOpen, IconLockClosed } from "./icons";
 
@@ -21,6 +19,29 @@ const isPriority = (name: string, desc: string | undefined | null) => {
   return PRIORITY_KEYWORDS.some((kw) => hay.includes(kw));
 };
 
+const getLibraryItems = (payload: unknown): any[][] => {
+  let value: unknown = payload;
+  if (typeof value === "string") value = JSON.parse(value);
+  if (value && typeof value === "object" && "content" in value) {
+    value = (value as { content: unknown }).content;
+    if (typeof value === "string") value = JSON.parse(value);
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    value = record.libraryItems ?? record.library ?? record.items ?? value;
+  }
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (Array.isArray(item)) return item;
+      if (item && typeof item === "object" && Array.isArray((item as { elements?: unknown }).elements)) {
+        return (item as { elements: any[] }).elements;
+      }
+      return item && typeof item === "object" && "type" in item ? [item] : [];
+    })
+    .filter((elements) => elements.length > 0);
+};
+
 export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void, docked?: boolean, onDockToggle?: () => void }) => {
   const { localItems, recentItems, saveLocalItem, removeLocalItem, trackUsage } =
     useLocalLibrary();
@@ -32,6 +53,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
 
   const { libraries, loading, error } = useLibraryList();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [installError, setInstallError] = useState<string | null>(null);
 
   /** Filtered + sorted browse list: priority items first, then alphabetical. */
   const filteredLibraries = useMemo(() => {
@@ -62,72 +84,29 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
   ) => {
     try {
       setDownloadingId(id);
-      const content = await fetchLibraryContent(id);
-      const parsed =
-        typeof content === "string" ? JSON.parse(content) : content;
-      const elements = parsed.libraryItems || parsed.library || (Array.isArray(parsed) ? parsed : null);
-      if (elements && Array.isArray(elements)) {
-        const items = elements.flatMap((item: any) => {
-          if (Array.isArray(item)) return item;
-          if (item.elements) return item.elements;
-          return [item];
+      setInstallError(null);
+      const libraryItems = getLibraryItems(await fetchLibraryContent(id));
+      if (libraryItems.length === 0) throw new Error("This library contains no compatible components.");
+      libraryItems.forEach((elements, index) => {
+        saveLocalItem({
+          id: libraryItems.length === 1 ? id : `${id}:${index}`,
+          name: libraryItems.length === 1 ? name : `${name} ${index + 1}`,
+          preview: previewUrl,
+          elements,
         });
-        saveLocalItem({ id, name, preview: previewUrl, elements: items });
-        setTab("my-library");
-      }
+      });
+      setTab("my-library");
     } catch (err) {
       console.error("Library install failed:", err);
+      setInstallError(err instanceof Error ? err.message : "Could not install this library.");
     } finally {
       setDownloadingId(null);
     }
   };
 
-  const handlePlaceItems = (items: any[], libraryId?: string) => {
-    if (!items.length) return;
-    const minX = Math.min(...items.map((el: any) => el.x ?? 0));
-    const minY = Math.min(...items.map((el: any) => el.y ?? 0));
-    const maxX = Math.max(
-      ...items.map((el: any) => (el.x ?? 0) + (el.width ?? 0)),
-    );
-    const maxY = Math.max(
-      ...items.map((el: any) => (el.y ?? 0) + (el.height ?? 0)),
-    );
-    const w = maxX - minX;
-    const h = maxY - minY;
-
-    const { scrollX, scrollY, zoom } = store.appState;
-    const container = document.querySelector(".canvas-container");
-    const rect = container?.getBoundingClientRect();
-    const cx = rect ? rect.width / (2 * zoom) - scrollX : 0;
-    const cy = rect ? rect.height / (2 * zoom) - scrollY : 0;
-
-    const idMap = new Map<string, string>();
-    items.forEach((el) => idMap.set(el.id, nanoid()));
-
-    const placed = items.map((el: any) => ({
-      ...el,
-      id: idMap.get(el.id)!,
-      groupIds:
-        el.groupIds?.map((g: string) => idMap.get(g) || g) || [],
-      boundElements:
-        el.boundElements?.map((b: any) => ({
-          ...b,
-          id: idMap.get(b.id) || b.id,
-        })) || [],
-      x: (el.x ?? 0) - minX + cx - w / 2,
-      y: (el.y ?? 0) - minY + cy - h / 2,
-    }));
-
-    store.mutate(() => {
-      store.addElements(...placed);
-      store.appState = {
-        ...store.appState,
-        selectedIds: placed.map((e: any) => e.id),
-      };
-    });
-
-    // Track usage
-    if (libraryId) trackUsage(libraryId);
+  const queuePlacement = (items: any[], libraryId: string) => {
+    window.dispatchEvent(new CustomEvent("fluxxdraw:place-library", { detail: items }));
+    trackUsage(libraryId);
   };
 
   const onDragStart = (e: React.DragEvent, items: any[]) => {
@@ -173,7 +152,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
             Browse
           </button>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="library-header-actions">
           {onDockToggle && (
             <button
               type="button"
@@ -239,9 +218,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
                           className="library-item"
                           draggable
                           onDragStart={(e) => onDragStart(e, lib.elements)}
-                          onClick={() =>
-                            handlePlaceItems(lib.elements, lib.id)
-                          }
+                          onClick={() => queuePlacement(lib.elements, lib.id)}
                           title={`Click to place "${lib.name}" · Drag to position`}
                         >
                           {lib.preview ? (
@@ -275,9 +252,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
                         className="library-item"
                         draggable
                         onDragStart={(e) => onDragStart(e, lib.elements)}
-                        onClick={() =>
-                          handlePlaceItems(lib.elements, lib.id)
-                        }
+                        onClick={() => queuePlacement(lib.elements, lib.id)}
                         title={`Click to place "${lib.name}" · Drag to position`}
                       >
                         {lib.preview ? (
@@ -331,6 +306,10 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
               </div>
             )}
 
+            {installError && (
+              <div className="library-status danger">{installError}</div>
+            )}
+
             {!loading &&
               !error &&
               filteredLibraries.map((lib) => {
@@ -363,7 +342,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleInstallLibrary(lib.id, lib.name, previewUrl);
+                        void handleInstallLibrary(lib.id, lib.name, previewUrl);
                       }}
                       disabled={downloadingId === lib.id || installed}
                     >

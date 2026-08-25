@@ -281,13 +281,32 @@ code {
   stroke-width: 1;
 }
 
-.bar {
-  fill: var(--series);
+.wave-area {
+  fill: url(#wave-fill);
+}
+
+.wave {
+  fill: none;
+  stroke: var(--series);
+  stroke-linecap: round;
+  stroke-linejoin: round;
   transition: opacity 120ms ease;
 }
 
-.bar-hover {
-  opacity: 0.75;
+.wave-hover {
+  opacity: 0.9;
+}
+
+.wave-dot {
+  fill: var(--surface);
+  stroke: var(--series);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke fill;
+}
+
+.wave-dot.active {
+  fill: var(--series);
 }
 
 /* one printed value, on the peak: enough to anchor the scale, not clutter */

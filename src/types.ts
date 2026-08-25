@@ -221,6 +221,8 @@ export interface AppState {
   editingArrowId: string | null;
   /** index of the control point being dragged, or null */
   editingPointIndex: number | null;
+  /** when enabled, the canvas is visible but every editing gesture is ignored */
+  viewMode: boolean;
 }
 
 export interface Scene {

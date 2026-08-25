@@ -198,12 +198,12 @@ const Tile = ({
 );
 
 const CHART_HEIGHT = 168;
-const BAR_RADIUS = 4;
-const BAR_GAP = 2;
+const WAVE_TENSION = 0.18;
 
 /**
- * Bars rather than a line: these are counts for discrete days, and a bar says
- * "this day, this many" without implying a value between midnights.
+ * A soft wave rather than bars: it makes the 14-day trend readable without
+ * implying precision between days. The line uses tension-controlled cubic
+ * segments so sparse counts still look smooth instead of angular.
  *
  * One series, so no legend — the heading names it. Only the tallest day carries
  * a printed value; the rest are on hover, which keeps the plot readable.
@@ -224,12 +224,14 @@ const DailyChart = ({
   const peakIndex = values.indexOf(Math.max(...values));
   const empty = values.every((v) => v === 0);
 
-  const width = 100; // viewBox units; the SVG scales to its box
-  const slot = width / Math.max(days.length, 1);
-  const barWidth = Math.max(slot - BAR_GAP, 1);
-
   // just enough headroom for a direct label over the tallest bar
   const top = peak * 1.18;
+  const step = days.length > 1 ? 100 / (days.length - 1) : 0;
+  const points = values.map((value, i) => [
+    i * step,
+    CHART_HEIGHT - (value / top) * CHART_HEIGHT,
+  ] as const);
+  const wavePath = buildWavePath(points, WAVE_TENSION);
   const ticks = useMemo(() => {
     const half = Math.max(1, Math.round(peak / 2));
     return [...new Set([0, half, peak])];
@@ -253,53 +255,57 @@ const DailyChart = ({
         ))}
       </div>
       <div className="chart-plot">
-      <svg
-        viewBox={`0 0 ${width} ${CHART_HEIGHT}`}
-        preserveAspectRatio="none"
-        className="chart-svg"
-        role="img"
-        aria-label={`${label} per day for the last ${days.length} days`}
-      >
-        {/* recessive gridlines, drawn behind everything */}
-        {ticks.map((tick) => {
-          const y = CHART_HEIGHT - (tick / top) * CHART_HEIGHT;
-          return (
+        <svg
+          viewBox={`0 0 100 ${CHART_HEIGHT}`}
+          preserveAspectRatio="none"
+          className="chart-svg"
+          role="img"
+          aria-label={`${label} per day for the last ${days.length} days`}
+        >
+          <defs>
+            <linearGradient id="wave-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--series)" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="var(--series)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {ticks.map((tick) => (
             <line
               key={tick}
               x1="0"
-              x2={width}
-              y1={y}
-              y2={y}
+              x2="100"
+              y1={CHART_HEIGHT - (tick / top) * CHART_HEIGHT}
+              y2={CHART_HEIGHT - (tick / top) * CHART_HEIGHT}
               className="grid"
               vectorEffect="non-scaling-stroke"
             />
-          );
-        })}
-        {days.map((day, i) => {
-          const value = values[i];
-          const height = (value / top) * CHART_HEIGHT;
-          const x = i * slot + BAR_GAP / 2;
-          const y = CHART_HEIGHT - height;
-          return (
-            <g key={day.date}>
-              <path
-                d={barPath(x, y, barWidth, height, BAR_RADIUS)}
-                className={`bar ${hover === i ? "bar-hover" : ""}`}
-              />
-              {/* a hit target taller and wider than the mark */}
-              <rect
-                x={i * slot}
-                y={0}
-                width={slot}
-                height={CHART_HEIGHT}
-                fill="transparent"
-                onMouseEnter={() => setHover(i)}
-                onMouseLeave={() => setHover((current) => (current === i ? null : current))}
-              />
-            </g>
-          );
-        })}
-      </svg>
+          ))}
+          <path
+            d={`${wavePath} L 100 ${CHART_HEIGHT} L 0 ${CHART_HEIGHT} Z`}
+            className="wave-area"
+          />
+          <path d={wavePath} className={`wave ${hover !== null ? "wave-hover" : ""}`} />
+          {points.map(([x, y], i) => (
+            <circle
+              key={days[i].date}
+              cx={x}
+              cy={y}
+              r={hover === i ? "3.5" : "2.5"}
+              className={`wave-dot ${hover === i ? "active" : ""}`}
+            />
+          ))}
+          {points.map(([x], i) => (
+            <rect
+              key={`hit-${days[i].date}`}
+              x={(i === 0 ? 0 : x - 50 / Math.max(days.length - 1, 1))}
+              y={0}
+              width={(i === 0 || i === points.length - 1 ? 50 : 100) / Math.max(days.length - 1, 1)}
+              height={CHART_HEIGHT}
+              fill="transparent"
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover((current) => (current === i ? null : current))}
+            />
+          ))}
+        </svg>
 
         {/*
           * The peak's value in HTML rather than SVG text: the viewBox is
@@ -308,7 +314,7 @@ const DailyChart = ({
           */}
         {hover !== peakIndex && values[peakIndex] > 0 && (
           <span
-            className="bar-label"
+            className="bar-label wave-label"
             style={{
               left: `${((peakIndex + 0.5) / days.length) * 100}%`,
               bottom: `${(values[peakIndex] / top) * CHART_HEIGHT + 5}px`,
@@ -339,19 +345,27 @@ const DailyChart = ({
   );
 };
 
-/** Rounded at the data end only; the baseline end stays square. */
-const barPath = (x: number, y: number, w: number, h: number, r: number) => {
-  if (h <= 0) return "";
-  const radius = Math.min(r, w / 2, h);
-  return [
-    `M ${x} ${y + h}`,
-    `L ${x} ${y + radius}`,
-    `Q ${x} ${y} ${x + radius} ${y}`,
-    `L ${x + w - radius} ${y}`,
-    `Q ${x + w} ${y} ${x + w} ${y + radius}`,
-    `L ${x + w} ${y + h}`,
-    "Z",
-  ].join(" ");
+/** Smooths a polyline into a Catmull-Rom-derived cubic path. */
+const buildWavePath = (
+  points: readonly (readonly [number, number])[],
+  tension: number,
+) => {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M ${points[0][0]} ${points[0][1]}`;
+
+  let path = `M ${points[0][0]} ${points[0][1]}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const previous = points[Math.max(0, i - 1)];
+    const start = points[i];
+    const end = points[i + 1];
+    const next = points[Math.min(points.length - 1, i + 2)];
+    path += ` C ${start[0] + (end[0] - previous[0]) * tension} ${
+      start[1] + (end[1] - previous[1]) * tension
+    }, ${end[0] - (next[0] - start[0]) * tension} ${
+      end[1] - (next[1] - start[1]) * tension
+    }, ${end[0]} ${end[1]}`;
+  }
+  return path;
 };
 
 const ServiceBars = ({ services }: { services: { id: string; count: number }[] }) => {

@@ -6,15 +6,23 @@ import { getElementBounds } from "../geometry";
 import { preloadFiles } from "../render/imageCache";
 import { LASER_FADE_MS } from "../constants";
 import { drawLaserTrail, type LaserPoint } from "../render/laser";
-import type { FrameElement } from "../types";
+import type { ExcaliElement, FrameElement } from "../types";
 
 interface PresentationProps {
   onExit: () => void;
 }
 
 /** Frames, in canvas order, are the slides. */
-export const getSlides = (): FrameElement[] =>
-  store.visibleElements.filter((el): el is FrameElement => el.type === "frame");
+export const getSlides = (frames: ExcaliElement[]): FrameElement[] =>
+  frames.filter((el): el is FrameElement => el.type === "frame");
+
+/** Selected frames become an ordered deck; otherwise canvas order is used. */
+const getOrderedSlides = (selectedIds: string[], frames: FrameElement[]) => {
+  const selectedFrames = selectedIds
+    .map((id) => frames.find((frame) => frame.id === id))
+    .filter((frame): frame is FrameElement => Boolean(frame));
+  return selectedFrames.length > 1 ? selectedFrames : frames;
+};
 
 /**
  * Full-screen presentation over the drawing's frames.
@@ -31,7 +39,7 @@ export const Presentation = ({ onExit }: PresentationProps) => {
   const [index, setIndex] = useState(0);
   const [laserOn, setLaserOn] = useState(false);
 
-  const slides = getSlides();
+  const slides = getOrderedSlides(scene.appState.selectedIds, getSlides(scene.visibleElements));
   const slide = slides[index];
   const total = slides.length;
 

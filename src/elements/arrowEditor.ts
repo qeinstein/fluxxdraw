@@ -1,4 +1,4 @@
-import { distance } from "../geometry";
+import { distance, distanceToSegment } from "../geometry";
 import type { ExcaliElement, LinearElement } from "../types";
 import { rerouteArrow } from "./arrowRouting";
 
@@ -70,6 +70,28 @@ export const hitTestArrowHandle = (
     const dist = distance(handle.x, handle.y, sceneX, sceneY);
     const hitRadius = handle.type === "add" ? (ADD_HANDLE_SIZE / 2 + 4) / zoom : threshold;
     if (dist <= hitRadius) return handle;
+  }
+  return null;
+};
+
+/**
+ * Hit tests an arrow's segments to find which one was clicked.
+ */
+export const getHitSegmentIndex = (
+  arrow: LinearElement,
+  sceneX: number,
+  sceneY: number,
+  zoom: number,
+): number | null => {
+  const threshold = (HANDLE_SIZE / 2 + 4) / zoom;
+  for (let i = 0; i < arrow.points.length - 1; i++) {
+    const [ax, ay] = arrow.points[i];
+    const [bx, by] = arrow.points[i + 1];
+    if (
+      distanceToSegment(sceneX, sceneY, arrow.x + ax, arrow.y + ay, arrow.x + bx, arrow.y + by) <= threshold
+    ) {
+      return i;
+    }
   }
   return null;
 };

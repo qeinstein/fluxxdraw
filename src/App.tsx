@@ -12,13 +12,25 @@ import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
 import { ContextMenu, type ContextMenuRequest } from "./components/ContextMenu";
 import { Library } from "./components/Library";
+import { CommandPalette } from "./components/CommandPalette";
+import { Minimap } from "./components/Minimap";
 import { ToolHint } from "./components/ToolHint";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
 import { TextEditor } from "./components/TextEditor";
 import { Tooltip } from "./components/Tooltip";
-import { IconClose, IconHelp, IconSliders, IconUndo, IconRedo, IconLibrary } from "./components/icons";
+import {
+  IconClose,
+  IconCommand,
+  IconEye,
+  IconEyeOff,
+  IconHelp,
+  IconSliders,
+  IconUndo,
+  IconRedo,
+  IconLibrary,
+} from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
 import { MOBILE_QUERY, useIsMobile } from "./hooks/useMediaQuery";
@@ -58,6 +70,7 @@ export default function App() {
   const [libraryDocked, setLibraryDocked] = useState(() => localStorage.getItem("fluxx_library_docked") === "true");
 
   const [presenting, setPresenting] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [textPanelOpen, setTextPanelOpen] = useState(false);
@@ -199,7 +212,11 @@ export default function App() {
     } catch {
       localStorage.removeItem(AUTOSAVE_KEY);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      const requestedViewMode = new URLSearchParams(window.location.search).get("viewMode");
+      if (requestedViewMode !== null) {
+        store.setAppState({ viewMode: requestedViewMode !== "0" && requestedViewMode !== "false" });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /*
@@ -483,6 +500,7 @@ export default function App() {
         setHistoryOpen(false);
         setStyleSheetOpen(false);
         setContextMenu(null);
+        setCommandOpen(false);
         if (!libraryDocked) setLibraryOpen(false);
       },
       onPresent: () => {
@@ -494,8 +512,10 @@ export default function App() {
         track("text");
         return textPanelOpen ? openPanel(null) : openPanel("text");
       },
+      onToggleCommandPalette: () => setCommandOpen((open) => !open),
+      onToggleViewMode: () => store.setAppState({ viewMode: !store.appState.viewMode }),
     }),
-    [handleOpen, handleSave, handleSaveAs, openPanel, textPanelOpen],
+    [handleOpen, handleSave, handleSaveAs, libraryDocked, onRequestImage, openPanel, textPanelOpen],
   );
   useKeyboardShortcuts(keyboardHandlers);
 
@@ -521,7 +541,7 @@ export default function App() {
   const sheetOpen = isMobile && (styleSheetOpen || componentSession !== null);
 
   return (
-    <div className={`app theme-${scene.appState.theme}`}>
+    <div className={`app theme-${scene.appState.theme}${scene.appState.viewMode ? " is-view-mode" : ""}`}>
       <Canvas
         onDoubleClickText={(id) => store.setAppState({ editingTextId: id })}
         onRequestImage={() => imageInputRef.current?.click()}
@@ -570,6 +590,7 @@ export default function App() {
         <div className="top-centre">
           <Toolbar onImage={onRequestImage} />
           <ToolHint tool={scene.appState.tool} />
+          {scene.appState.viewMode && <div className="view-mode-banner">View-only</div>}
         </div>
 
         <div className="top-right">
@@ -600,6 +621,15 @@ export default function App() {
                 Export
               </button>
             </Tooltip>
+            <Tooltip label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"} placement="bottom">
+              <button
+                className={`icon-button ${scene.appState.viewMode ? "active" : ""}`}
+                aria-label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"}
+                onClick={() => store.setAppState({ viewMode: !scene.appState.viewMode })}
+              >
+                {scene.appState.viewMode ? <IconEyeOff /> : <IconEye />}
+              </button>
+            </Tooltip>
             <Tooltip label="Library" placement="bottom">
               <button
                 className={`icon-button ${libraryOpen ? "active" : ""}`}
@@ -607,6 +637,14 @@ export default function App() {
                 onClick={() => setLibraryOpen(!libraryOpen)}
               >
                 <IconLibrary />
+              </button>
+            </Tooltip>
+          </div>
+
+          <div className="island top-right-actions">
+            <Tooltip label="Commands" shortcut="⌘K">
+              <button className="icon-button" aria-label="Open command palette" onClick={() => setCommandOpen(true)}>
+                <IconCommand />
               </button>
             </Tooltip>
           </div>
@@ -658,7 +696,18 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {!isMobile && <Minimap />}
       </div>
+
+      <CommandPalette
+        isOpen={commandOpen}
+        onClose={() => setCommandOpen(false)}
+        onOpenExport={() => setExportOpen(true)}
+        onOpenHelp={() => setHelpOpen(true)}
+        onOpenLibrary={() => setLibraryOpen(true)}
+        onTogglePresentation={() => setPresenting(true)}
+      />
 
       {resetConfirmOpen && (
         <div className="dialog-backdrop" onClick={() => setResetConfirmOpen(false)}>

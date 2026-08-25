@@ -129,7 +129,15 @@ export const ExportDialog = ({
                     (scope === "selection" && !hasSelection) ||
                     (scope === "frame" && frames.length === 0)
                   }
-                  onClick={() => patch({ scope })}
+                  onClick={() =>
+                    patch({
+                      scope,
+                      frameId:
+                        scope === "frame"
+                          ? settings.frameId ?? frames[0]?.id ?? null
+                          : settings.frameId,
+                    })
+                  }
                 >
                   {scope === "canvas" ? "Whole canvas" : scope === "selection" ? "Selection" : "Frame"}
                 </button>
