@@ -17,11 +17,11 @@ export const CommentPins = () => {
         const y = ((element ? element.y : comment.y) + scene.appState.scrollY) * scene.appState.zoom;
         return (
           <div key={comment.id} className="comment-pin-anchor" style={{ left: x, top: y }}>
-            <button className="comment-pin" aria-label={comment.text} onClick={() => setOpenId(openId === comment.id ? null : comment.id)}>
+            <button className="comment-pin" aria-label={comment.text} onPointerDown={(e) => { e.stopPropagation(); setOpenId(openId === comment.id ? null : comment.id); }}>
               {index + 1}
             </button>
             {openId === comment.id && (
-              <div className="comment-popover">
+              <div className="comment-popover" onPointerDown={(e) => e.stopPropagation()}>
                 <p>{comment.text}</p>
                 <div>
                   {comment.elementId && <button onClick={() => zoomToElement(comment.elementId!)}>Focus object</button>}
