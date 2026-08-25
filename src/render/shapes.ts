@@ -161,7 +161,31 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
 
   switch (el.type) {
     case "rectangle":
-    case "sticky":
+    case "sticky": {
+      const fold = Math.min(24, Math.abs(w) * 0.2, Math.abs(h) * 0.2);
+      const signX = w >= 0 ? 1 : -1;
+      const signY = h >= 0 ? 1 : -1;
+      
+      // We draw the body of the sticky note, missing the top-right corner
+      const pts: [number, number][] = [
+        [0, 0],
+        [w - (fold * signX), 0],
+        [w, fold * signY],
+        [w, h],
+        [0, h]
+      ];
+      
+      const body = generator.polygon(pts, opts);
+      
+      // Draw the folded corner crease at top right
+      const foldCrease = generator.polyline([
+        [w - (fold * signX), 0],
+        [w - (fold * signX), fold * signY],
+        [w, fold * signY]
+      ], { ...opts, stroke: "rgba(0,0,0,0.15)", strokeWidth: 1.5 });
+      
+      return [body, foldCrease];
+    }
     case "frame": {
       if (el.edges === "round" && el.type === "rectangle" && Math.min(Math.abs(w), Math.abs(h)) > 8) {
         return [generator.path(roundedRectPath(w, h, cornerRadius(el)), opts)];
