@@ -970,7 +970,26 @@ export const Canvas = ({
         if (!el) return;
         store.updateElement<LinearElement>(el.id, (cur) => {
           const points = cur.points.map((p) => [...p] as [number, number]);
-          points[pointer.pointIndex] = [x - cur.x, y - cur.y];
+          let px = x - cur.x;
+          let py = y - cur.y;
+          
+          if (event.shiftKey) {
+            // snap relative to adjacent point
+            const adjacentIndex = pointer.pointIndex > 0 ? pointer.pointIndex - 1 : pointer.pointIndex + 1;
+            if (adjacentIndex >= 0 && adjacentIndex < points.length) {
+              const [ax, ay] = points[adjacentIndex];
+              const dx = px - ax;
+              const dy = py - ay;
+              const angle = Math.atan2(dy, dx);
+              const step = Math.PI / 12; // 15 degrees
+              const snapped = Math.round(angle / step) * step;
+              const len = Math.hypot(dx, dy);
+              px = ax + Math.cos(snapped) * len;
+              py = ay + Math.sin(snapped) * len;
+            }
+          }
+          
+          points[pointer.pointIndex] = [px, py];
           return { points };
         });
         store.emit();

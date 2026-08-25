@@ -428,3 +428,150 @@ export const IconSticky = () => (
     <path d="M16.6 11.6h-4a1.4 1.4 0 00-1.4 1.4v4.2" />
   </Icon>
 );
+// --- Arrowheads (pointing right) --------------------------------------------
+
+export const IconArrowheadNone = () => (
+  <Icon>
+    <path d="M4 10h12" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconArrowheadArrow = () => (
+  <Icon>
+    <path d="M4 10h11.5M11.5 5.5L16 10l-4.5 4.5" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconArrowheadTriangle = () => (
+  <Icon>
+    <path d="M4 10h8" strokeWidth="1.5" />
+    <path d="M12 6l5 4-5 4z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" />
+  </Icon>
+);
+
+export const IconArrowheadTriangleOutline = () => (
+  <Icon>
+    <path d="M4 10h8" strokeWidth="1.5" />
+    <path d="M12 6l5 4-5 4z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" />
+  </Icon>
+);
+
+export const IconArrowheadBar = () => (
+  <Icon>
+    <path d="M4 10h12M15 5v10" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconArrowheadDot = () => (
+  <Icon>
+    <path d="M4 10h9.5" strokeWidth="1.5" />
+    <circle cx="15.5" cy="10" r="2" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+// --- Arrowheads (pointing left, for start arrowheads) -----------------------
+
+export const IconArrowheadNoneLeft = () => (
+  <Icon>
+    <path d="M4 10h12" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconArrowheadArrowLeft = () => (
+  <Icon>
+    <path d="M4.5 10H16M8.5 5.5L4 10l4.5 4.5" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconArrowheadTriangleLeft = () => (
+  <Icon>
+    <path d="M12 10H16" strokeWidth="1.5" />
+    <path d="M8 6l-5 4 5 4z" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" />
+  </Icon>
+);
+
+export const IconArrowheadTriangleOutlineLeft = () => (
+  <Icon>
+    <path d="M12 10H16" strokeWidth="1.5" />
+    <path d="M8 6l-5 4 5 4z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter" />
+  </Icon>
+);
+
+export const IconArrowheadBarLeft = () => (
+  <Icon>
+    <path d="M4 10h12M5 5v10" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconArrowheadDotLeft = () => (
+  <Icon>
+    <path d="M6.5 10H16" strokeWidth="1.5" />
+    <circle cx="4.5" cy="10" r="2" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+// --- Routing ----------------------------------------------------------------
+
+export const IconRouteStraight = () => (
+  <Icon>
+    <path d="M4 16L16 4" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconRouteCurved = () => (
+  <Icon>
+    <path d="M4 16 C 4 8, 16 12, 16 4" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconRouteElbow = () => (
+  <Icon>
+    <path d="M4 16 V 11.5 A 1.5 1.5 0 0 1 5.5 10 H 14.5 A 1.5 1.5 0 0 0 16 8.5 V 4" strokeWidth="1.5" />
+  </Icon>
+);
+
+// --- Sloppiness -------------------------------------------------------------
+
+export const IconSloppinessArchitect = () => (
+  <Icon>
+    <path d="M3 10h14" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconSloppinessArtist = () => (
+  <Icon>
+    <path d="M3 10 Q 6.5 7, 10 10 T 17 10" strokeWidth="1.5" />
+  </Icon>
+);
+
+export const IconSloppinessCartoonist = () => (
+  <Icon>
+    <path d="M3 10 L 6.5 6 L 10 13 L 13.5 7 L 17 10" strokeWidth="1.5" strokeLinejoin="miter" />
+  </Icon>
+);
+
+// --- Font Size --------------------------------------------------------------
+
+export const IconFontSizeS = () => (
+  <Icon>
+    <text x="10" y="14" fontSize="10" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="bold">S</text>
+  </Icon>
+);
+
+export const IconFontSizeM = () => (
+  <Icon>
+    <text x="10" y="14.5" fontSize="12" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="bold">M</text>
+  </Icon>
+);
+
+export const IconFontSizeL = () => (
+  <Icon>
+    <text x="10" y="15" fontSize="14" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="bold">L</text>
+  </Icon>
+);
+
+export const IconFontSizeXL = () => (
+  <Icon>
+    <text x="10" y="15.5" fontSize="16" textAnchor="middle" fill="currentColor" stroke="none" fontFamily="sans-serif" fontWeight="bold">XL</text>
+  </Icon>
+);

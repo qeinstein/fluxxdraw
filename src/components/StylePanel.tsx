@@ -46,10 +46,32 @@ import {
   IconWidthBold,
   IconWidthExtraBold,
   IconWidthThin,
+  IconArrowheadNone,
+  IconArrowheadArrow,
+  IconArrowheadTriangle,
+  IconArrowheadTriangleOutline,
+  IconArrowheadBar,
+  IconArrowheadDot,
+  IconArrowheadNoneLeft,
+  IconArrowheadArrowLeft,
+  IconArrowheadTriangleLeft,
+  IconArrowheadTriangleOutlineLeft,
+  IconArrowheadBarLeft,
+  IconArrowheadDotLeft,
+  IconRouteStraight,
+  IconRouteCurved,
+  IconRouteElbow,
+  IconSloppinessArchitect,
+  IconSloppinessArtist,
+  IconSloppinessCartoonist,
+  IconFontSizeS,
+  IconFontSizeM,
+  IconFontSizeL,
+  IconFontSizeXL,
 } from "./icons";
 import { FONTS, fontStack } from "../fonts";
 import { instanceStyleValue } from "../components-model";
-import type { Arrowhead, ExcaliElement, Tool } from "../types";
+import type { ExcaliElement, Tool } from "../types";
 import { sc } from "../shortcuts";
 
 const SHAPE_TOOLS: Tool[] = [
@@ -98,14 +120,7 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
 export const hasStyleControls = (selected: ExcaliElement[], tool: Tool) =>
   relevantControls(selected, tool) !== null;
 
-const ARROWHEADS: { value: Arrowhead; label: string }[] = [
-  { value: "none", label: "None" },
-  { value: "arrow", label: "Arrow" },
-  { value: "triangle", label: "Triangle" },
-  { value: "triangle-outline", label: "Triangle outline" },
-  { value: "bar", label: "Bar" },
-  { value: "dot", label: "Dot" },
-];
+
 
 export const StylePanel = () => {
   const scene = useScene();
@@ -210,11 +225,10 @@ export const StylePanel = () => {
       {controls.sloppiness && (
         <Section label="Sloppiness">
           <Choice
-            variant="text"
             options={[
-              [0, "Architect", "Architect"],
-              [1, "Artist", "Artist"],
-              [2, "Cartoonist", "Cartoon"],
+              [0, "Architect", <IconSloppinessArchitect key="0" />],
+              [1, "Artist", <IconSloppinessArtist key="1" />],
+              [2, "Cartoonist", <IconSloppinessCartoonist key="2" />],
             ]}
             value={valueOf("roughness", style.roughness)}
             onChange={(v) => set({ roughness: v })}
@@ -237,38 +251,36 @@ export const StylePanel = () => {
 
       {controls.arrowheads && (
         <Section label="Arrowheads">
-          <div className="row split">
-            <select
-              aria-label="Start arrowhead"
-              value={String(valueOf("startArrowhead", style.startArrowhead) ?? "none")}
-              onChange={(e) => set({ startArrowhead: e.target.value })}
-            >
-              {ARROWHEADS.map((a) => (
-                <option key={a.value} value={a.value}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="End arrowhead"
-              value={String(valueOf("endArrowhead", style.endArrowhead) ?? "arrow")}
-              onChange={(e) => set({ endArrowhead: e.target.value })}
-            >
-              {ARROWHEADS.map((a) => (
-                <option key={a.value} value={a.value}>
-                  {a.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
+          <Choice
+            options={[
+              ["none", "None", <IconArrowheadNoneLeft key="1" />],
+              ["arrow", "Arrow", <IconArrowheadArrowLeft key="2" />],
+              ["triangle", "Triangle", <IconArrowheadTriangleLeft key="3" />],
+              ["triangle-outline", "Triangle Outline", <IconArrowheadTriangleOutlineLeft key="4" />],
+              ["bar", "Bar", <IconArrowheadBarLeft key="5" />],
+              ["dot", "Dot", <IconArrowheadDotLeft key="6" />],
+            ]}
+            value={valueOf("startArrowhead", style.startArrowhead)}
+            onChange={(v) => set({ startArrowhead: v })}
+          />
+          <Choice
+            options={[
+              ["none", "None", <IconArrowheadNone key="1" />],
+              ["arrow", "Arrow", <IconArrowheadArrow key="2" />],
+              ["triangle", "Triangle", <IconArrowheadTriangle key="3" />],
+              ["triangle-outline", "Triangle Outline", <IconArrowheadTriangleOutline key="4" />],
+              ["bar", "Bar", <IconArrowheadBar key="5" />],
+              ["dot", "Dot", <IconArrowheadDot key="6" />],
+            ]}
+            value={valueOf("endArrowhead", style.endArrowhead)}
+            onChange={(v) => set({ endArrowhead: v })}
+          />
           <Section label="Routing">
             <Choice
-              variant="text"
               options={[
-                ["straight", "Straight", "Straight"],
-                ["curved", "Curved", "Curved"],
-                ["elbow", "Elbow", "Elbow"],
+                ["straight", "Straight", <IconRouteStraight key="1" />],
+                ["curved", "Curved", <IconRouteCurved key="2" />],
+                ["elbow", "Elbow", <IconRouteElbow key="3" />],
               ]}
               value={valueOf("pathType", style.pathType)}
               onChange={(v) => set({ pathType: v })}
@@ -298,10 +310,12 @@ export const StylePanel = () => {
           </Section>
           <Section label="Font size">
             <Choice
-              variant="text"
-              options={Object.entries(FONT_SIZES).map(
-                ([label, size]) => [size, `${label} (${size}px)`, label] as [number, string, string],
-              )}
+              options={[
+                [FONT_SIZES.S, "Small", <IconFontSizeS key="1" />],
+                [FONT_SIZES.M, "Medium", <IconFontSizeM key="2" />],
+                [FONT_SIZES.L, "Large", <IconFontSizeL key="3" />],
+                [FONT_SIZES.XL, "Extra Large", <IconFontSizeXL key="4" />],
+              ]}
               value={valueOf("fontSize", style.fontSize)}
               onChange={(v) => set({ fontSize: v })}
             />
