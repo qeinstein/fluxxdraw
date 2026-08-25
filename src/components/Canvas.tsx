@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { store, useScene } from "../store";
+import { collab, type PeerPresence } from "../io/collaboration";
 import {
   HANDLE_SIZE,
   HIT_THRESHOLD,
@@ -95,6 +96,7 @@ interface PointerState {
   /** element being created or point-edited */
   activeId: string | null;
   handle: HandleName | null;
+  lastCursorTime: number;
   /** clones captured at gesture start, used as the resize/rotate baseline */
   snapshot: ExcaliElement[];
   snapshotBounds: Bounds | null;
@@ -115,6 +117,7 @@ const freshPointerState = (): PointerState => ({
   lastY: 0,
   activeId: null,
   handle: null,
+  lastCursorTime: 0,
   snapshot: [],
   snapshotBounds: null,
   pointIndex: -1,
@@ -956,6 +959,12 @@ export const Canvas = ({
     const state = store.appState;
     const [x, y] = toScene(event.clientX, event.clientY);
 
+    // Throttle cursor broadcast slightly to avoid flooding awareness
+    if (performance.now() - (pointerRef.current as any).lastCursorTime > 50) {
+      collab.updatePresence({ cursor: { x, y } });
+      (pointerRef.current as any).lastCursorTime = performance.now();
+    }
+
     if (pointer.mode === "none" && !pointer.placingPoints) {
       updateCursor(x, y);
       return;
@@ -1681,9 +1690,68 @@ export const Canvas = ({
           openContextMenu(event.clientX, event.clientY);
         }}
       />
+      <RemoteCursors />
     </div>
   );
 };
+
+function RemoteCursors() {
+  const scene = useScene();
+  const { zoom, scrollX, scrollY } = scene.appState;
+  const [peers, setPeers] = useState<Map<number, PeerPresence>>(new Map());
+
+  useEffect(() => {
+    if (!collab.provider) return;
+    
+    const updatePeers = () => setPeers(new Map(collab.getPeers()));
+    
+    collab.provider.awareness.on("change", updatePeers);
+    updatePeers();
+    return () => {
+      if (collab.provider) collab.provider.awareness.off("change", updatePeers);
+    }
+  }, []);
+
+  return (
+    <div className="remote-cursors" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'hidden' }}>
+      {Array.from(peers.values()).map((peer, i) => {
+        if (!peer.cursor) return null;
+        
+        // Transform scene coords to screen coords
+        const screenX = (peer.cursor.x + scrollX) * zoom;
+        const screenY = (peer.cursor.y + scrollY) * zoom;
+        
+        return (
+          <div key={i} style={{ 
+            position: 'absolute', 
+            left: screenX, 
+            top: screenY, 
+            transform: 'translate(0, 0)',
+            transition: 'transform 0.1s linear, left 0.1s linear, top 0.1s linear',
+            zIndex: 100
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill={peer.color} style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.2))' }}>
+              <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.42c.45 0 .67-.54.35-.85L6.35 2.85a.5.5 0 0 0-.85.35Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+            </svg>
+            <div style={{
+              backgroundColor: peer.color,
+              color: 'white',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              marginTop: '4px',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              {peer.name}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const isTypingTarget = (target: EventTarget | null) =>
   target instanceof HTMLElement &&

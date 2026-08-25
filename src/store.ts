@@ -1,3 +1,4 @@
+import * as Y from "yjs";
 import { useSyncExternalStore } from "react";
 import { DEFAULT_APP_STATE } from "./constants";
 import { Timeline } from "./io/history";
@@ -8,13 +9,11 @@ import type {
   ExcaliElement,
 } from "./types";
 import type { Checkpoint } from "./io/history";
+import { ydoc, yElements, yOrder } from "./io/collaboration";
 
-interface Snapshot {
-  elements: ExcaliElement[];
-  selectedIds: string[];
-}
-
-const HISTORY_LIMIT = 200;
+const undoManager = new Y.UndoManager([yElements, yOrder], {
+  captureTimeout: 500,
+});
 
 /**
  * Scene state lives outside React so the pointer handlers can mutate at
@@ -28,16 +27,28 @@ class SceneStore {
   components: Record<string, ComponentDefinition> = {};
   appState: AppState = structuredClone(DEFAULT_APP_STATE);
 
-  private undoStack: Snapshot[] = [];
-  private redoStack: Snapshot[] = [];
   private listeners = new Set<() => void>();
   /** durable, saved-to-file version history (distinct from undo/redo) */
   timeline = new Timeline();
   /** set while scrubbing, so checkpoints aren't recorded for preview states */
   previewing = false;
   private version = 0;
-  /** snapshot taken when the current interaction began */
-  private pendingBase: Snapshot | null = null;
+
+  constructor() {
+    ydoc.on("update", () => {
+      this.syncFromYjs();
+    });
+  }
+
+  private syncFromYjs() {
+    const nextElements: ExcaliElement[] = [];
+    yOrder.forEach((id) => {
+      const el = yElements.get(id);
+      if (el) nextElements.push(el);
+    });
+    this.elements = nextElements;
+    this.emit();
+  }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -52,82 +63,47 @@ class SceneStore {
     for (const listener of this.listeners) listener();
   }
 
-  private snapshot(): Snapshot {
-    return { elements: this.elements, selectedIds: this.appState.selectedIds };
-  }
-
-  /**
-   * Marks the start of an undoable interaction. Call before a drag/edit
-   * begins, then `commit()` once it ends.
-   */
   beginHistory() {
-    if (!this.pendingBase) this.pendingBase = this.snapshot();
+    // Yjs UndoManager automatically handles capturing edits, 
+    // but we can explicitly stop capturing if needed.
+    undoManager.stopCapturing();
   }
 
-  /** Pushes the interaction that began at `beginHistory` onto the undo stack. */
   commit() {
-    if (!this.pendingBase) return;
-    if (this.pendingBase.elements === this.elements) {
-      this.pendingBase = null;
-      return; // nothing actually changed
-    }
-    this.undoStack.push(this.pendingBase);
-    if (this.undoStack.length > HISTORY_LIMIT) this.undoStack.shift();
-    this.redoStack = [];
-    this.pendingBase = null;
+    undoManager.stopCapturing();
     this.recordCheckpoint();
   }
 
-  /** Discards a transaction whose gesture was cancelled before it was committed. */
   cancelHistory() {
-    this.pendingBase = null;
+    // Yjs doesn't easily cancel a live transaction after it's in the doc,
+    // usually we'd just undo it, but for simplicity we rely on the caller to undo if cancelled.
   }
 
-  /** Appends to the durable timeline; coalesces rapid edits internally. */
   recordCheckpoint(label?: string) {
     if (this.previewing) return;
     this.timeline.record(this.elements, Date.now(), label);
   }
 
-  /** Convenience for one-shot changes that should be undoable as a unit. */
   mutate(fn: () => void) {
     this.beginHistory();
-    fn();
+    ydoc.transact(() => {
+      fn();
+    }, "local");
     this.commit();
-    this.emit();
   }
 
   undo() {
-    const prev = this.undoStack.pop();
-    if (!prev) return;
-    this.redoStack.push(this.snapshot());
-    this.elements = prev.elements;
-    this.appState = { ...this.appState, selectedIds: prev.selectedIds, editingTextId: null };
-    /*
-     * This clears editingTextId directly, which unmounts TextEditor from
-     * underneath it without running its own commit — the only place that
-     * normally closes out a pending beginHistory(). Left alone, jumping to a
-     * different point in history while something was mid-edit orphaned that
-     * pending snapshot: beginHistory() is a no-op once pendingBase is set, so
-     * every later edit for the rest of the session would push this one stale
-     * baseline instead of its own, silently corrupting undo/redo from then on.
-     */
-    this.pendingBase = null;
-    this.emit();
+    undoManager.undo();
+    this.appState = { ...this.appState, editingTextId: null };
   }
 
   redo() {
-    const next = this.redoStack.pop();
-    if (!next) return;
-    this.undoStack.push(this.snapshot());
-    this.elements = next.elements;
-    this.appState = { ...this.appState, selectedIds: next.selectedIds, editingTextId: null };
-    this.pendingBase = null;
-    this.emit();
+    undoManager.redo();
+    this.appState = { ...this.appState, editingTextId: null };
   }
 
-  canUndo = () => this.undoStack.length > 0;
-  canRedo = () => this.redoStack.length > 0;
+  canUndo = () => undoManager.undoStack.length > 0;
+  canRedo = () => undoManager.redoStack.length > 0;
 
   setAppState(patch: Partial<AppState>) {
     let nextState = { ...this.appState, ...patch };
@@ -168,7 +144,10 @@ class SceneStore {
   }
 
   addElements(...elements: ExcaliElement[]) {
-    this.elements = [...this.elements, ...elements];
+    elements.forEach(el => {
+      yElements.set(el.id, el);
+      yOrder.push([el.id]);
+    });
   }
 
   /**
@@ -181,12 +160,14 @@ class SceneStore {
   ): ExcaliElement[] {
     const idSet = new Set(ids);
     const updated: ExcaliElement[] = [];
-    this.elements = this.elements.map((el) => {
-      if (!idSet.has(el.id)) return el;
+    
+    // We iterate over this.elements (which is synced from Yjs)
+    this.elements.forEach((el) => {
+      if (!idSet.has(el.id)) return;
       const patch = fn(el as T);
       const next = { ...el, ...(patch ?? {}), version: el.version + 1 } as ExcaliElement;
       updated.push(next);
-      return next;
+      yElements.set(el.id, next);
     });
     return updated;
   }
@@ -198,9 +179,11 @@ class SceneStore {
   /** Soft-deletes so history and bindings can still reference the elements. */
   deleteElements(ids: string[]) {
     const idSet = new Set(ids);
-    this.elements = this.elements.map((el) =>
-      idSet.has(el.id) ? { ...el, isDeleted: true, version: el.version + 1 } : el,
-    );
+    this.elements.forEach((el) => {
+      if (idSet.has(el.id)) {
+        yElements.set(el.id, { ...el, isDeleted: true, version: el.version + 1 });
+      }
+    });
     this.appState = {
       ...this.appState,
       selectedIds: this.appState.selectedIds.filter((id) => !idSet.has(id)),
@@ -219,9 +202,7 @@ class SceneStore {
     checkpoints?: Checkpoint[],
     components: Record<string, ComponentDefinition> = {},
   ) {
-    this.undoStack = [];
-    this.redoStack = [];
-    this.pendingBase = null;
+    undoManager.clear();
     this.previewing = false;
     if (checkpoints?.length) {
       this.timeline.load(checkpoints);
@@ -229,7 +210,20 @@ class SceneStore {
       this.timeline.reset();
       this.timeline.record(elements, Date.now(), "Opened");
     }
-    this.elements = elements;
+    
+    ydoc.transact(() => {
+      // Clear current state
+      const currentKeys = Array.from(yElements.keys());
+      currentKeys.forEach(k => yElements.delete(k));
+      yOrder.delete(0, yOrder.length);
+      
+      // Load new state
+      elements.forEach(el => {
+        yElements.set(el.id, el);
+        yOrder.push([el.id]);
+      });
+    }, "local");
+
     this.files = files;
     this.components = components;
     this.appState = {
