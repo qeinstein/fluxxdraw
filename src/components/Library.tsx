@@ -20,13 +20,16 @@ const isPriority = (name: string, desc: string) => {
 };
 
 export const Library = ({ onClose }: { onClose: () => void }) => {
-  const [tab, setTab] = useState<"my-library" | "browse">("my-library");
+  const { localItems, recentItems, saveLocalItem, removeLocalItem, trackUsage } =
+    useLocalLibrary();
+  
+  const [tab, setTab] = useState<"my-library" | "browse">(
+    localItems.length === 0 ? "browse" : "my-library"
+  );
   const [query, setQuery] = useState("");
 
   const { libraries, loading, error } = useLibraryList();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const { localItems, recentItems, saveLocalItem, removeLocalItem, trackUsage } =
-    useLocalLibrary();
 
   /** Filtered + sorted browse list: priority items first, then alphabetical. */
   const filteredLibraries = useMemo(() => {
@@ -335,6 +338,7 @@ export const Library = ({ onClose }: { onClose: () => void }) => {
                       )}
                     </div>
                     <button
+                      type="button"
                       className={`library-action-btn${installed ? " installed" : ""}`}
                       onClick={() =>
                         handleInstallLibrary(lib.id, lib.name, previewUrl)
