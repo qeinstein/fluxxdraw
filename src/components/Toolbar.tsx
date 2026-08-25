@@ -67,7 +67,11 @@ const MOBILE_PRIMARY: Tool[] = [
   "eraser",
 ];
 
-export const Toolbar = () => {
+interface ToolbarProps {
+  onImage?: () => void;
+}
+
+export const Toolbar = ({ onImage }: ToolbarProps = {}) => {
   const scene = useScene();
   const isMobile = useIsMobile();
   const { tool } = scene.appState;
@@ -93,7 +97,11 @@ export const Toolbar = () => {
   }, [overflowOpen]);
 
   const pick = (next: Tool) => {
-    store.setAppState({ tool: next, selectedIds: [] });
+    if (next === "image" && onImage) {
+      onImage();
+    } else {
+      store.setAppState({ tool: next, selectedIds: [] });
+    }
     setOverflowOpen(false);
   };
 

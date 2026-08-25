@@ -460,6 +460,8 @@ export default function App() {
 
   // --- keyboard ------------------------------------------------------------
 
+  const onRequestImage = useCallback(() => imageInputRef.current?.click(), []);
+
   const keyboardHandlers = useMemo(
     () => ({
       onOpen: handleOpen,
@@ -468,6 +470,7 @@ export default function App() {
       onExport: () => setExportOpen(true),
       onHelp: () => setHelpOpen(true),
       onHistory: () => openPanel("history"),
+      onImage: onRequestImage,
       onEscape: () => {
         setExportOpen(false);
         setHelpOpen(false);
@@ -565,7 +568,7 @@ export default function App() {
         </div>
 
         <div className="top-centre">
-          <Toolbar />
+          <Toolbar onImage={onRequestImage} />
         </div>
 
         <div className="top-right">

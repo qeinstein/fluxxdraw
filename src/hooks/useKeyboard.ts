@@ -58,6 +58,7 @@ export interface KeyboardHandlers {
   onPresent: () => void;
   onToggleText: () => void;
   onServices: () => void;
+  onImage: () => void;
   onEscape: () => void;
 }
 
@@ -139,10 +140,14 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
       const tool = TOOL_KEYS[event.key.toLowerCase()];
       if (tool) {
         event.preventDefault();
-        store.setAppState({
-          tool,
-          selectedIds: tool === "selection" ? store.appState.selectedIds : [],
-        });
+        if (tool === "image") {
+          handlers.onImage();
+        } else {
+          store.setAppState({
+            tool,
+            selectedIds: tool === "selection" ? store.appState.selectedIds : [],
+          });
+        }
       }
     };
 
