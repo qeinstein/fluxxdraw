@@ -28,7 +28,10 @@
     "perfect-freehand": "^1.2.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "roughjs": "^4.6.6"
+    "roughjs": "^4.6.6",
+    "y-indexeddb": "^9.0.12",
+    "y-webrtc": "^10.3.0",
+    "yjs": "^13.6.32"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

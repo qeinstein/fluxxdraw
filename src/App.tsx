@@ -6,6 +6,8 @@ import { Menu } from "./components/Menu";
 import { ZoomControls, zoomToElement } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
+import { parseCollaborationHash } from "./io/collaboration";
+import { JoinDialog, ShareDialog, CollaborationAvatars } from "./components/CollaborationDialogs";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
@@ -85,6 +87,10 @@ export default function App() {
   const [styleSheetOpen, setStyleSheetOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuRequest | null>(null);
   const isMobile = useIsMobile();
+
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [collabRoom, setCollabRoom] = useState<{ room: string; key: string } | null>(null);
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -213,6 +219,13 @@ export default function App() {
 
   // restore the last session so a refresh doesn't lose work
   useEffect(() => {
+    const collabHash = parseCollaborationHash();
+    if (collabHash) {
+      setCollabRoom(collabHash);
+      setIsJoinDialogOpen(true);
+      return;
+    }
+
     const raw = localStorage.getItem(AUTOSAVE_KEY);
     if (!raw) return;
     try {
@@ -225,11 +238,11 @@ export default function App() {
     } catch {
       localStorage.removeItem(AUTOSAVE_KEY);
     }
-      const requestedViewMode = new URLSearchParams(window.location.search).get("viewMode");
-      if (requestedViewMode !== null) {
-        store.setAppState({ viewMode: requestedViewMode !== "0" && requestedViewMode !== "false" });
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+    const requestedViewMode = new URLSearchParams(window.location.search).get("viewMode");
+    if (requestedViewMode !== null) {
+      store.setAppState({ viewMode: requestedViewMode !== "0" && requestedViewMode !== "false" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /*
@@ -615,7 +628,8 @@ export default function App() {
         {!isMobile && <CommentPins />}
 
         <div className="top-right">
-          <div className="island top-right-actions">
+          <div className="island top-right-actions" style={{ display: 'flex', alignItems: 'center' }}>
+            <CollaborationAvatars />
             {isMobile ? (
               <button
                 className={`tool-button sheet-toggle ${sheetOpen ? "active" : ""} ${
@@ -640,6 +654,11 @@ export default function App() {
             <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
               <button className="export-button" onClick={openExportDialog}>
                 Export
+              </button>
+            </Tooltip>
+            <Tooltip label="Collaborate in real-time" placement="bottom">
+              <button className="primary" onClick={() => setIsShareDialogOpen(true)} style={{ marginLeft: '4px', backgroundColor: '#e03131', color: 'white' }}>
+                Collaborate
               </button>
             </Tooltip>
             <Tooltip label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"} placement="bottom">
@@ -749,6 +768,19 @@ export default function App() {
         </div>
       )}
 
+      {isJoinDialogOpen && collabRoom && (
+        <JoinDialog 
+          room={collabRoom.room} 
+          collabKey={collabRoom.key} 
+          onJoin={() => setIsJoinDialogOpen(false)} 
+          onCancel={() => setIsJoinDialogOpen(false)} 
+        />
+      )}
+      
+      {isShareDialogOpen && (
+        <ShareDialog onClose={() => setIsShareDialogOpen(false)} />
+      )}
+      
       {exportOpen && (
         <ExportDialog
           settings={prefs.exportSettings}
