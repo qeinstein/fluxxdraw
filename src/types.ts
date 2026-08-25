@@ -4,6 +4,7 @@ export type FillStyle = "hachure" | "cross-hatch" | "solid" | "zigzag";
 export type StrokeStyle = "solid" | "dashed" | "dotted";
 export type Edges = "sharp" | "round";
 export type Arrowhead = "none" | "arrow" | "triangle" | "triangle-outline" | "bar" | "dot";
+export type PathType = "straight" | "curved" | "elbow";
 export type FontFamily =
   | "hand"
   | "casual"
@@ -65,8 +66,8 @@ export interface LinearElement extends BaseElement {
   points: [number, number][];
   startArrowhead: Arrowhead;
   endArrowhead: Arrowhead;
-  /** route with orthogonal segments instead of straight/curved ones */
-  elbowed: boolean;
+  /** how the arrow routes between its points */
+  pathType: PathType;
   startBinding: Binding | null;
   endBinding: Binding | null;
   boundText: string | null;
@@ -79,6 +80,13 @@ export interface Binding {
   focus: number;
   /** distance kept between the arrow tip and the shape outline */
   gap: number;
+  /**
+   * Normalized position on the shape's bounding box: [0..1, 0..1].
+   * (0,0) = top-left, (1,1) = bottom-right, (0.5, 0) = top-center.
+   * When present, the arrow attaches at this proportional point on the
+   * shape's perimeter rather than using the focus-based ray cast.
+   */
+  fixedPoint?: [number, number];
 }
 
 export interface FreedrawElement extends BaseElement {
@@ -207,8 +215,12 @@ export interface AppState {
     textAlign: TextAlign;
     startArrowhead: Arrowhead;
     endArrowhead: Arrowhead;
-    elbowed: boolean;
+    pathType: PathType;
   };
+  /** id of the arrow currently in route-editing mode (Miro-style control-point editing) */
+  editingArrowId: string | null;
+  /** index of the control point being dragged, or null */
+  editingPointIndex: number | null;
 }
 
 export interface Scene {

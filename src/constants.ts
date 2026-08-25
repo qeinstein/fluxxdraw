@@ -67,6 +67,15 @@ export const ROTATE_HANDLE_OFFSET = 20;
 export const BINDING_DISTANCE = 24;
 export const BINDING_GAP = 4;
 
+/** Radius of rounded corners on elbowed/orthogonal arrows. */
+export const ELBOW_CORNER_RADIUS = 8;
+/** Minimum length of any segment in an elbow route. */
+export const ELBOW_MIN_SEGMENT = 20;
+/** Padding between an elbow route and the bound shape's edge. */
+export const ELBOW_PADDING = 16;
+/** Tension for auto-generated curved arrow control points (0–1). */
+export const CURVE_TENSION = 0.4;
+
 export const SNAP_THRESHOLD = 6;
 
 export const MIN_ZOOM = 0.1;
@@ -99,6 +108,8 @@ export const DEFAULT_APP_STATE: AppState = {
     textAlign: "left",
     startArrowhead: "none",
     endArrowhead: "arrow",
-    elbowed: false,
+    pathType: "straight",
   },
+  editingArrowId: null,
+  editingPointIndex: null,
 };

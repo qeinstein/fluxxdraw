@@ -1,7 +1,12 @@
 import { BINDING_DISTANCE, BINDING_GAP } from "../constants";
 import { getElementBounds, getElementCenter } from "../geometry";
-import type { ExcaliElement, LinearElement } from "../types";
+import type { ExcaliElement, LinearElement, Binding } from "../types";
 import { hitTestElement } from "./hitTest";
+import {
+  bestConnectionSide,
+  sideToFixedPoint,
+  fixedPointToScene,
+} from "./arrowRouting";
 
 /*
  * Instances are bindable too: a placed component — a cloud service node, say —
@@ -77,6 +82,36 @@ export const intersectShapeEdge = (
 };
 
 /**
+ * Computes the scene-space position of a bound endpoint, taking
+ * `fixedPoint` into account when available.
+ *
+ * If the binding has a `fixedPoint`, the arrow attaches at that proportional
+ * position on the shape's perimeter (pushed out by `gap`). Otherwise falls
+ * back to the centre-ray intersection used before.
+ */
+export const boundEndpointPosition = (
+  binding: Binding,
+  shape: ExcaliElement,
+  targetScene: [number, number],
+): [number, number] => {
+  if (binding.fixedPoint) {
+    // fixedPoint is [0..1, 0..1] on the bounding box. We compute the
+    // world position and push it outward by gap along the normal.
+    const pt = fixedPointToScene(shape, binding.fixedPoint);
+    const [cx, cy] = getElementCenter(shape);
+    const dx = pt[0] - cx;
+    const dy = pt[1] - cy;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-6) return pt;
+    return [
+      pt[0] + (dx / len) * binding.gap,
+      pt[1] + (dy / len) * binding.gap,
+    ];
+  }
+  return intersectShapeEdge(shape, targetScene[0], targetScene[1], binding.gap);
+};
+
+/**
  * Recomputes an arrow's bound endpoints so they stay attached to their shapes.
  * Returns the new points, or null when the arrow has no bindings.
  */
@@ -93,24 +128,42 @@ export const getBoundArrowPoints = (
   if (arrow.startBinding) {
     const shape = byId.get(arrow.startBinding.elementId);
     if (shape && !shape.isDeleted) {
-      const [tx, ty] = toScene(points[1]);
-      const [ex, ey] = intersectShapeEdge(shape, tx, ty, arrow.startBinding.gap);
+      const target = toScene(points[1]);
+      const [ex, ey] = boundEndpointPosition(arrow.startBinding, shape, target);
       points[0] = [ex - arrow.x, ey - arrow.y];
     }
   }
   if (arrow.endBinding) {
     const shape = byId.get(arrow.endBinding.elementId);
     if (shape && !shape.isDeleted) {
-      const [tx, ty] = toScene(points[points.length - 2]);
-      const [ex, ey] = intersectShapeEdge(shape, tx, ty, arrow.endBinding.gap);
+      const target = toScene(points[points.length - 2]);
+      const [ex, ey] = boundEndpointPosition(arrow.endBinding, shape, target);
       points[points.length - 1] = [ex - arrow.x, ey - arrow.y];
     }
   }
   return points;
 };
 
-export const defaultBinding = (elementId: string) => ({
-  elementId,
-  focus: 0,
-  gap: BINDING_GAP,
-});
+/**
+ * Creates a default binding, choosing the best connection side automatically
+ * based on where the other end of the arrow is. This produces Miro-style
+ * intelligent attachment points.
+ */
+export const defaultBinding = (
+  elementId: string,
+  shape?: ExcaliElement | null,
+  otherEndScene?: [number, number] | null,
+): Binding => {
+  let fixedPoint: [number, number] | undefined;
+  if (shape && otherEndScene) {
+    const center = getElementCenter(shape);
+    const side = bestConnectionSide(center, otherEndScene);
+    fixedPoint = sideToFixedPoint(side);
+  }
+  return {
+    elementId,
+    focus: 0,
+    gap: BINDING_GAP,
+    ...(fixedPoint ? { fixedPoint } : {}),
+  };
+};

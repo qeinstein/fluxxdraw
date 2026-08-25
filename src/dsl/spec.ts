@@ -23,11 +23,14 @@ export interface NodeSpec {
   fill?: string;
 }
 
+import type { PathType } from "../types";
+
 export interface EdgeSpec {
   from: string;
   to: string;
   label?: string;
   kind: EdgeKind;
+  route?: PathType;
 }
 
 export interface DiagramSpec {

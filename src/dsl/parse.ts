@@ -61,10 +61,11 @@ const extractModifiers = (input: string) => {
   let text = input.trim();
   let shape: NodeShape | undefined;
   let fill: string | undefined;
-  let unknown: string | undefined;
+  let unknownShape: string | undefined;
+  let route: import("../types").PathType | undefined;
 
-  // repeat so the two modifiers can appear in either order
-  for (let pass = 0; pass < 2; pass++) {
+  // repeat so the modifiers can appear in any order
+  for (let pass = 0; pass < 3; pass++) {
     const colour = text.match(/\{([^}]*)\}\s*$/);
     if (colour) {
       fill = colour[1].trim().toLowerCase() || undefined;
@@ -75,14 +76,23 @@ const extractModifiers = (input: string) => {
     if (shaped) {
       const word = shaped[1].trim().toLowerCase();
       if (SHAPE_WORDS[word]) shape = SHAPE_WORDS[word];
-      else unknown = word;
+      else unknownShape = word;
       text = text.slice(0, shaped.index).trim();
+      continue;
+    }
+    const routed = text.match(/\(([^)]*)\)\s*$/);
+    if (routed) {
+      const word = routed[1].trim().toLowerCase();
+      if (word === "straight" || word === "curved" || word === "elbow") {
+        route = word;
+      }
+      text = text.slice(0, routed.index).trim();
       continue;
     }
     break;
   }
 
-  return { label: text, shape, fill, unknown };
+  return { label: text, shape, fill, route, unknownShape };
 };
 
 export const parseDiagram = (source: string): ParseResult => {
@@ -111,11 +121,18 @@ export const parseDiagram = (source: string): ParseResult => {
       // the label rides on the right-hand side, after a colon
       const colon = rightRaw.indexOf(":");
       const right = (colon === -1 ? rightRaw : rightRaw.slice(0, colon)).trim();
-      const label = colon === -1 ? undefined : rightRaw.slice(colon + 1).trim() || undefined;
+      const labelRaw = colon === -1 ? "" : rightRaw.slice(colon + 1);
+      
+      const modifiers = extractModifiers(labelRaw);
+      const label = modifiers.label || undefined;
       const left = leftRaw.trim();
 
       if (!KEY_PATTERN.test(left)) {
         issues.push({ line, message: `"${left}" is not a valid name` });
+        return;
+      }
+      if (modifiers.unknownShape) {
+        issues.push({ line, message: `"${modifiers.unknownShape}" is not a known shape` });
         return;
       }
       if (!KEY_PATTERN.test(right)) {
@@ -135,6 +152,7 @@ export const parseDiagram = (source: string): ParseResult => {
         to: right,
         kind: EDGE_KINDS[operator] ?? "arrow",
         label,
+        route: modifiers.route,
       } satisfies EdgeSpec);
       return;
     }
@@ -144,7 +162,7 @@ export const parseDiagram = (source: string): ParseResult => {
     const key = (colon === -1 ? text : text.slice(0, colon)).trim();
     const rest = colon === -1 ? "" : text.slice(colon + 1);
 
-    const { label, shape, fill, unknown } = extractModifiers(rest);
+    const { label, shape, fill, unknownShape } = extractModifiers(rest);
 
     // a bare word with modifiers is still a declaration: `db [ellipse]`
     const bareModifiers = colon === -1 ? extractModifiers(text) : null;
@@ -157,10 +175,10 @@ export const parseDiagram = (source: string): ParseResult => {
       });
       return;
     }
-    if (unknown || bareModifiers?.unknown) {
+    if (unknownShape || bareModifiers?.unknownShape) {
       issues.push({
         line,
-        message: `Unknown shape "${unknown ?? bareModifiers?.unknown}" — try rectangle, ellipse or diamond`,
+        message: `Unknown shape "${unknownShape ?? bareModifiers?.unknownShape}" — try rectangle, ellipse or diamond`,
       });
     }
 

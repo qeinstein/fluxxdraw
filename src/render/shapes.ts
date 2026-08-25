@@ -55,9 +55,12 @@ const roundedRectPath = (w: number, h: number, r: number) => {
 /**
  * Points a linear element actually renders through. Elbowed arrows get
  * orthogonal waypoints inserted between each pair of user points.
+ *
+ * Important: this must stay in sync with `getHitTestPoints()` in hitTest.ts
+ * so that clicks land on the visible path.
  */
 export const getRenderPoints = (el: LinearElement): [number, number][] => {
-  if (!el.elbowed || el.points.length < 2) return el.points;
+  if (el.pathType !== "elbow" || el.points.length < 2) return el.points;
   const out: [number, number][] = [el.points[0]];
   for (let i = 0; i < el.points.length - 1; i++) {
     const [ax, ay] = el.points[i];
@@ -180,7 +183,7 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
       const pts = getRenderPoints(el as LinearElement);
       if (pts.length < 2) return [];
       const out: Drawable[] = [];
-      const shouldCurve = el.edges === "round" && !(el as LinearElement).elbowed && pts.length > 2;
+      const shouldCurve = (el.edges === "round" || (el as LinearElement).pathType === "curved") && (el as LinearElement).pathType !== "elbow" && pts.length > 2;
       const isClosed =
         el.type === "line" &&
         pts.length > 2 &&
@@ -190,6 +193,34 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
         out.push(generator.polygon(pts, opts));
       } else if (shouldCurve) {
         out.push(generator.curve(pts, { ...opts, fill: undefined }));
+      } else if ((el as LinearElement).pathType === "elbow" && pts.length > 2) {
+        // Render elbow arrow with rounded corners
+        const radius = 8; // ELBOW_CORNER_RADIUS
+        let d = `M ${pts[0][0]} ${pts[0][1]}`;
+        for (let i = 1; i < pts.length - 1; i++) {
+          const prev = pts[i - 1];
+          const curr = pts[i];
+          const next = pts[i + 1];
+          // vectors
+          const dx1 = curr[0] - prev[0];
+          const dy1 = curr[1] - prev[1];
+          const len1 = Math.hypot(dx1, dy1);
+          const dx2 = next[0] - curr[0];
+          const dy2 = next[1] - curr[1];
+          const len2 = Math.hypot(dx2, dy2);
+          
+          if (len1 < 1e-6 || len2 < 1e-6) continue;
+          
+          const r = Math.min(radius, len1 / 2, len2 / 2);
+          const p1x = curr[0] - (dx1 / len1) * r;
+          const p1y = curr[1] - (dy1 / len1) * r;
+          const p2x = curr[0] + (dx2 / len2) * r;
+          const p2y = curr[1] + (dy2 / len2) * r;
+          
+          d += ` L ${p1x} ${p1y} Q ${curr[0]} ${curr[1]} ${p2x} ${p2y}`;
+        }
+        d += ` L ${pts[pts.length - 1][0]} ${pts[pts.length - 1][1]}`;
+        out.push(generator.path(d, { ...opts, fill: undefined }));
       } else {
         out.push(generator.linearPath(pts, { ...opts, fill: undefined }));
       }

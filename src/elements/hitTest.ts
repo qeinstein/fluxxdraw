@@ -5,7 +5,7 @@ import {
   hasPoints,
   toLocalSpace,
 } from "../geometry";
-import type { ExcaliElement } from "../types";
+import type { ExcaliElement, LinearElement } from "../types";
 
 const isFilled = (el: ExcaliElement) =>
   "backgroundColor" in el && el.backgroundColor !== "transparent";
@@ -25,6 +25,28 @@ const distanceToRectOutline = (
     distanceToSegment(px, py, x2, y2, x1, y2),
     distanceToSegment(px, py, x1, y2, x1, y1),
   );
+
+/**
+ * The points a linear element actually renders through. Elbowed arrows
+ * get orthogonal waypoints; curved arrows may later get interpolated
+ * samples. This must match what `getRenderPoints()` in shapes.ts produces
+ * so clicks land on the visible path.
+ */
+const getHitTestPoints = (el: LinearElement): [number, number][] => {
+  if (el.pathType !== "elbow" || el.points.length < 2) return el.points;
+  // Reproduce the elbowed route inline so we don't create a circular import
+  // with shapes.ts. The routing logic here mirrors getRenderPoints().
+  const out: [number, number][] = [el.points[0]];
+  for (let i = 0; i < el.points.length - 1; i++) {
+    const [ax, ay] = el.points[i];
+    const [bx, by] = el.points[i + 1];
+    // route horizontally first, then vertically
+    const mid: [number, number] = [bx, ay];
+    if (Math.abs(bx - ax) > 0.5 && Math.abs(by - ay) > 0.5) out.push(mid);
+    out.push([bx, by]);
+  }
+  return out;
+};
 
 /**
  * Whether a scene point hits an element. Filled shapes are hit anywhere inside;
@@ -48,9 +70,14 @@ export const hitTestElement = (
       }
       return false;
     }
-    for (let i = 0; i < el.points.length - 1; i++) {
-      const [ax, ay] = el.points[i];
-      const [bx, by] = el.points[i + 1];
+    // For arrows and lines, test against the RENDERED path, not just the
+    // raw user points. This fixes the bug where elbowed arrows couldn't
+    // be clicked because hit testing checked the direct start→end line
+    // while the rendered path went through orthogonal midpoints.
+    const pts = getHitTestPoints(el as LinearElement);
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i];
+      const [bx, by] = pts[i + 1];
       if (
         distanceToSegment(x, y, el.x + ax, el.y + ay, el.x + bx, el.y + by) <= threshold
       ) {

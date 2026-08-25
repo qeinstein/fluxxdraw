@@ -62,17 +62,43 @@ export const parseSceneDocument = (raw: unknown): SceneDocument => {
   if (!Array.isArray(raw.elements)) throw new Error("File is missing an elements array");
 
   const appState = isPlainObject(raw.appState) ? raw.appState : {};
-  const elements = (raw.elements as ExcaliElement[]).map((el) => ({
-    ...el,
-    // these were added after v1 files could have been written
-    version: el.version ?? 1,
-    groupIds: el.groupIds ?? [],
-    frameId: el.frameId ?? null,
-    locked: el.locked ?? false,
-    isDeleted: el.isDeleted ?? false,
-    link: el.link ?? null,
-    angle: el.angle ?? 0,
-  }));
+  const rawElements = raw.elements as Record<string, unknown>[];
+  const elements = (rawElements as unknown as ExcaliElement[]).map((el) => {
+    const patched: Record<string, unknown> = {
+      ...el,
+      // these were added after v1 files could have been written
+      version: el.version ?? 1,
+      groupIds: el.groupIds ?? [],
+      frameId: el.frameId ?? null,
+      locked: el.locked ?? false,
+      isDeleted: el.isDeleted ?? false,
+      link: el.link ?? null,
+      angle: el.angle ?? 0,
+    };
+    // Migrate elbowed boolean → pathType enum
+    if (el.type === "arrow" || el.type === "line") {
+      if (!("pathType" in patched) || patched.pathType === undefined) {
+        patched.pathType = (patched as Record<string, unknown>).elbowed ? "elbow" : "straight";
+      }
+      delete (patched as Record<string, unknown>).elbowed;
+    }
+    return patched as unknown as ExcaliElement;
+  });
+
+  // Validate binding references — stale bindings pointing at missing elements
+  // get cleaned up so they don't cause ghost connections.
+  const elementIds = new Set(elements.map((el) => el.id));
+  for (const el of elements) {
+    if (el.type === "arrow" || el.type === "line") {
+      const arrow = el as import("../types").LinearElement;
+      if (arrow.startBinding && !elementIds.has(arrow.startBinding.elementId)) {
+        (arrow as unknown as Record<string, unknown>).startBinding = null;
+      }
+      if (arrow.endBinding && !elementIds.has(arrow.endBinding.elementId)) {
+        (arrow as unknown as Record<string, unknown>).endBinding = null;
+      }
+    }
+  }
 
   return {
     type: DOCUMENT_TYPE,

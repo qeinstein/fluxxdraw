@@ -60,6 +60,12 @@ import type {
 } from "../types";
 import { promptForInput } from "../prompt";
 import { followLink } from "../follow-link";
+import {
+  getArrowHandles,
+  hitTestArrowHandle,
+  addControlPoint,
+  deleteControlPoint,
+} from "../elements/arrowEditor";
 import { hitLinkBadge } from "../links";
 import type { ContextMenuRequest } from "./ContextMenu";
 
@@ -266,13 +272,39 @@ export const Canvas = ({
 
       // endpoint handles for a single linear element
       if (single && (single.type === "arrow" || single.type === "line")) {
-        ctx.fillStyle = "#ffffff";
+        const isEditing = state.editingArrowId === single.id;
+        // If not in editing mode, just draw simple endpoints
+        const pts = single.points;
         const size = HANDLE_SIZE / zoom;
-        for (const [px, py] of single.points) {
-          ctx.beginPath();
-          ctx.arc(single.x + px, single.y + py, size / 2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
+        if (!isEditing) {
+          ctx.fillStyle = "#ffffff";
+          for (const [px, py] of pts) {
+            ctx.beginPath();
+            ctx.arc(single.x + px, single.y + py, size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+        } else {
+          // Editing mode: draw blue/white/ghost handles
+          const handles = getArrowHandles(single, zoom);
+          for (const handle of handles) {
+            ctx.beginPath();
+            if (handle.type === "add") {
+              // ghost add handle
+              ctx.fillStyle = "rgba(105, 101, 219, 0.2)";
+              ctx.strokeStyle = "rgba(105, 101, 219, 0.5)";
+              const addSize = 6 / zoom;
+              ctx.arc(handle.x, handle.y, addSize / 2, 0, Math.PI * 2);
+            } else {
+              // endpoint (blue) or midpoint (white)
+              ctx.fillStyle = handle.type === "endpoint" ? "#6965db" : "#ffffff";
+              ctx.strokeStyle = handle.type === "endpoint" ? "#ffffff" : "#6965db";
+              ctx.lineWidth = 1.5 / zoom;
+              ctx.arc(handle.x, handle.y, size / 2, 0, Math.PI * 2);
+            }
+            ctx.fill();
+            ctx.stroke();
+          }
         }
       }
       ctx.restore();
@@ -756,16 +788,43 @@ export const Canvas = ({
 
       // dragging an individual point of a single linear element
       if (single && (single.type === "arrow" || single.type === "line")) {
-        const radius = (HANDLE_SIZE + 4) / state.zoom;
-        const index = single.points.findIndex(
-          ([px, py]) => Math.hypot(single.x + px - x, single.y + py - y) <= radius,
-        );
-        if (index !== -1) {
-          store.beginHistory();
-          pointer.mode = "point-dragging";
-          pointer.activeId = single.id;
-          pointer.pointIndex = index;
-          return;
+        const isEditing = state.editingArrowId === single.id;
+        if (!isEditing) {
+          // just test endpoints
+          const radius = (HANDLE_SIZE + 4) / state.zoom;
+          const index = single.points.findIndex(
+            ([px, py]) => Math.hypot(single.x + px - x, single.y + py - y) <= radius,
+          );
+          if (index !== -1) {
+            store.beginHistory();
+            pointer.mode = "point-dragging";
+            pointer.activeId = single.id;
+            pointer.pointIndex = index;
+            return;
+          }
+        } else {
+          // testing the complex handles
+          const handles = getArrowHandles(single, state.zoom);
+          const handleHit = hitTestArrowHandle(handles, x, y, state.zoom);
+          if (handleHit) {
+            store.beginHistory();
+            pointer.mode = "point-dragging";
+            pointer.activeId = single.id;
+            
+            if (handleHit.type === "add") {
+              // Add a new point right now, and start dragging the newly created point
+              store.updateElement<LinearElement>(single.id, (arrow) => ({
+                points: addControlPoint(arrow, handleHit.index, x, y),
+                // if it was an auto-routed curve/elbow, breaking it manually makes it straight
+                pathType: arrow.pathType !== "straight" ? "straight" : arrow.pathType,
+              }));
+              pointer.pointIndex = handleHit.index + 1;
+            } else {
+              pointer.pointIndex = handleHit.index;
+              store.setAppState({ editingPointIndex: handleHit.index });
+            }
+            return;
+          }
         }
       }
     }
@@ -1304,28 +1363,25 @@ export const Canvas = ({
     }
     if (isContainer(hit) || hit.type === "arrow" || hit.type === "line") {
       if (hit.type === "arrow" || hit.type === "line") {
-        // double-clicking a segment inserts a midpoint there
         const el = hit as LinearElement;
-        const localX = x - el.x;
-        const localY = y - el.y;
-        let insertAt = el.points.length - 1;
-        let best = Infinity;
-        for (let i = 0; i < el.points.length - 1; i++) {
-          const mx = (el.points[i][0] + el.points[i + 1][0]) / 2;
-          const my = (el.points[i][1] + el.points[i + 1][1]) / 2;
-          const d = Math.hypot(mx - localX, my - localY);
-          if (d < best) {
-            best = d;
-            insertAt = i + 1;
+        const isEditing = store.appState.editingArrowId === el.id;
+        if (isEditing) {
+          const handles = getArrowHandles(el, store.appState.zoom);
+          const handle = hitTestArrowHandle(handles, x, y, store.appState.zoom);
+          if (handle && handle.type === "midpoint") {
+            // Delete control point
+            const newPoints = deleteControlPoint(el, handle.index);
+            if (newPoints) {
+              store.updateElement<LinearElement>(el.id, () => ({ points: newPoints }));
+              store.commit();
+              store.emit();
+            }
+            return;
           }
         }
-        store.updateElement<LinearElement>(el.id, (cur) => {
-          const points = cur.points.map((p) => [...p] as [number, number]);
-          points.splice(insertAt, 0, [localX, localY]);
-          return { points };
-        });
-        store.commit();
-        store.emit();
+        
+        // Otherwise try to edit the bound text (fallback)
+        onDoubleClickText(ensureBoundText(hit.id));
         return;
       }
       onDoubleClickText(ensureBoundText(hit.id));

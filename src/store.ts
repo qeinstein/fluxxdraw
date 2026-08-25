@@ -130,7 +130,23 @@ class SceneStore {
   canRedo = () => this.redoStack.length > 0;
 
   setAppState(patch: Partial<AppState>) {
-    this.appState = { ...this.appState, ...patch };
+    let nextState = { ...this.appState, ...patch };
+    
+    // Automatically enter/exit arrow editing mode based on selection
+    if ("selectedIds" in patch) {
+      if (nextState.selectedIds.length === 1) {
+        const selected = this.getElement(nextState.selectedIds[0]);
+        if (selected && (selected.type === "arrow" || selected.type === "line")) {
+          nextState.editingArrowId = selected.id;
+        } else {
+          nextState.editingArrowId = null;
+        }
+      } else {
+        nextState.editingArrowId = null;
+      }
+    }
+    
+    this.appState = nextState;
     this.emit();
   }
 

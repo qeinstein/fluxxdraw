@@ -208,6 +208,7 @@ export const applySpecToScene = (spec: DiagramSpec): ApplyResult => {
           [60, 60],
         ];
         arrow.strokeStyle = wantsDashed ? "dashed" : "solid";
+        if (edge.route) arrow.pathType = edge.route;
         arrow.startBinding = defaultBinding(fromId);
         arrow.endBinding = defaultBinding(toId);
         arrow.dslKey = `${edge.from}→${edge.to}`;
@@ -227,6 +228,10 @@ export const applySpecToScene = (spec: DiagramSpec): ApplyResult => {
       const style = wantsDashed ? "dashed" : "solid";
       if (existing.strokeStyle !== style) {
         store.updateElement(existing.id, () => ({ strokeStyle: style }));
+        changed = true;
+      }
+      if (edge.route && existing.pathType !== edge.route) {
+        store.updateElement<import("../types").LinearElement>(existing.id, () => ({ pathType: edge.route }));
         changed = true;
       }
       const currentLabel = existing.boundText

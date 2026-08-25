@@ -64,7 +64,7 @@ export const newLinearElement = (
   points: [[0, 0]],
   startArrowhead: type === "arrow" ? state.currentStyle.startArrowhead : "none",
   endArrowhead: type === "arrow" ? state.currentStyle.endArrowhead : "none",
-  elbowed: type === "arrow" ? state.currentStyle.elbowed : false,
+  pathType: state.currentStyle.pathType,
   startBinding: null,
   endBinding: null,
   boundText: null,

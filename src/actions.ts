@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { store } from "./store";
 import { getBoundArrowPoints } from "./elements/binding";
+import { rerouteArrow } from "./elements/arrowRouting";
 import { duplicateElement } from "./elements/factory";
 import { INSTANCE_OVERRIDE_KEYS } from "./components-model";
 import { getCommonBounds, getElementBounds, getRotatedBounds } from "./geometry";
@@ -30,6 +31,13 @@ export const refreshBindings = (changedIds: string[]) => {
     .map((el) => el.id);
   if (arrowIds.length === 0) return;
   store.updateElements<LinearElement>(arrowIds, (arrow) => {
+    // For curved/elbow arrows, regenerate the full route so the path
+    // adapts to the new shape positions (L/Z/U routing, control points, etc.)
+    if (arrow.pathType === "curved" || arrow.pathType === "elbow") {
+      const points = rerouteArrow(arrow, byId);
+      return points ? { points } : undefined;
+    }
+    // For straight arrows, just update the bound endpoints
     const points = getBoundArrowPoints(arrow, byId);
     return points ? { points } : undefined;
   });

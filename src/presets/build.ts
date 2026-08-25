@@ -88,7 +88,7 @@ const line = (
     points,
     startArrowhead: "none",
     endArrowhead: "none",
-    elbowed: false,
+    pathType: "straight",
     startBinding: null,
     endBinding: null,
     boundText: null,

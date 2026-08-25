@@ -261,14 +261,19 @@ export const StylePanel = () => {
               ))}
             </select>
           </div>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={Boolean(valueOf("elbowed", style.elbowed))}
-              onChange={(e) => set({ elbowed: e.target.checked })}
+
+          <Section label="Routing">
+            <Choice
+              variant="text"
+              options={[
+                ["straight", "Straight", "Straight"],
+                ["curved", "Curved", "Curved"],
+                ["elbow", "Elbow", "Elbow"],
+              ]}
+              value={valueOf("pathType", style.pathType)}
+              onChange={(v) => set({ pathType: v })}
             />
-            <span>Elbowed routing</span>
-          </label>
+          </Section>
         </Section>
       )}
 

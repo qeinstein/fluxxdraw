@@ -89,6 +89,7 @@ export const specFromScene = (): SceneSpec => {
       to,
       kind: edgeKindOf(arrow),
       label: labelOf(arrow) || undefined,
+      route: arrow.pathType !== "straight" ? arrow.pathType : undefined,
     });
   }
 
@@ -126,6 +127,7 @@ export const specToText = (spec: DiagramSpec): string => {
   for (const edge of spec.edges) {
     let line = `${edge.from} ${operator[edge.kind]} ${edge.to}`;
     if (edge.label) line += `: ${edge.label}`;
+    if (edge.route) line += ` (${edge.route})`;
     lines.push(line);
   }
 
