@@ -2417,6 +2417,18 @@ kbd {
   animation: library-slide-in 0.18s ease-out;
 }
 
+.has-docked-library .top-right,
+.has-docked-library .bottom-right {
+  right: 428px; /* 400px sidebar + 14px right + 14px gap */
+}
+
+.has-docked-library .top-right,
+.has-docked-library .bottom-right,
+.has-docked-library .diagram-text,
+.has-docked-library .timeline {
+  transition: right var(--fast) ease;
+}
+
 @keyframes library-slide-in {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }

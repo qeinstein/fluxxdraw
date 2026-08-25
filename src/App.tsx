@@ -55,6 +55,7 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryDocked, setLibraryDocked] = useState(() => localStorage.getItem("fluxx_library_docked") === "true");
 
   const [presenting, setPresenting] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -482,7 +483,7 @@ export default function App() {
         setHistoryOpen(false);
         setStyleSheetOpen(false);
         setContextMenu(null);
-        setLibraryOpen(false);
+        if (!libraryDocked) setLibraryOpen(false);
       },
       onPresent: () => {
         track("present");
@@ -543,7 +544,7 @@ export default function App() {
         />
       )}
 
-      <div className={`ui-layer${isMobile ? " is-mobile" : ""}`}>
+      <div className={`ui-layer${isMobile ? " is-mobile" : ""}${libraryOpen && libraryDocked && !isMobile ? " has-docked-library" : ""}`}>
         <div className="top-left" style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
           <Menu
             onOpen={handleOpen}
@@ -704,7 +705,15 @@ export default function App() {
         />
       )}
 
-      {libraryOpen && <Library onClose={() => setLibraryOpen(false)} />}
+      {libraryOpen && <Library 
+        onClose={() => setLibraryOpen(false)} 
+        docked={libraryDocked}
+        onDockToggle={() => {
+          const next = !libraryDocked;
+          setLibraryDocked(next);
+          localStorage.setItem("fluxx_library_docked", next.toString());
+        }}
+      />}
 
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
 

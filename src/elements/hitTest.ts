@@ -130,6 +130,7 @@ export const hitTestElement = (
       );
     }
     case "rectangle":
+    case "sticky":
     default:
       if (isFilled(el)) return inside;
       return distanceToRectOutline(x, y, x1, y1, x2, y2) <= threshold;

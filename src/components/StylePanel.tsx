@@ -100,7 +100,7 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
   const shapeLike =
     selected.length === 0
       ? SHAPE_TOOLS.includes(tool)
-      : has("rectangle", "diamond", "ellipse", "arrow", "line", "freedraw", "frame", "instance");
+      : has("rectangle", "sticky", "diamond", "ellipse", "arrow", "line", "freedraw", "frame", "instance");
 
   return {
     background: shapeLike && (selected.length === 0 ? tool !== "freedraw" : !has("freedraw")),
@@ -109,7 +109,7 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
     edges:
       selected.length === 0
         ? ["rectangle", "sticky", "arrow", "line"].includes(tool)
-        : has("rectangle", "arrow", "line", "instance"),
+        : has("rectangle", "sticky", "arrow", "line", "instance"),
     arrowheads: selected.length === 0 ? tool === "arrow" : has("arrow"),
     font: selected.length === 0 ? tool === "text" : has("text"),
     layout: selected.length > 0,

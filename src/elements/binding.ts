@@ -13,6 +13,7 @@ import {
  */
 const BINDABLE = new Set([
   "rectangle",
+  "sticky",
   "diamond",
   "ellipse",
   "image",

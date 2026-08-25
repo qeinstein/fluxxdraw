@@ -680,12 +680,13 @@ export const Canvas = ({
       event.preventDefault();
       if (state.editingTextId) return;
       store.beginHistory();
-      const sticky = newGenericElement("rectangle", state, x - STICKY_SIZE / 2, y - STICKY_SIZE / 2);
+      const sticky = newGenericElement("sticky", state, x - STICKY_SIZE / 2, y - STICKY_SIZE / 2);
       sticky.width = STICKY_SIZE;
       sticky.height = STICKY_SIZE;
       sticky.backgroundColor = PALETTE[state.theme].background[STICKY_COLOR_INDEX];
+      sticky.strokeColor = "transparent"; // No outline for a realistic sticky note
       sticky.fillStyle = "solid";
-      sticky.edges = "round";
+      sticky.edges = "sharp"; // Sharp edges like a real paper note
       store.addElements(sticky);
       store.setAppState({ selectedIds: [sticky.id] });
       const label = ensureBoundText(sticky.id);
