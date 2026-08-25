@@ -15,6 +15,7 @@ import {
 } from "../actions";
 import { setZoom, zoomToFit } from "./ZoomControls";
 import { sc } from "../shortcuts";
+import { SHORTCUT_GROUPS } from "./HelpDialog";
 
 export interface CommandItem {
   id: string;
@@ -29,20 +30,19 @@ export const CommandPalette = ({
   isOpen,
   onClose,
   onOpenExport,
-  onOpenHelp,
   onOpenLibrary,
   onTogglePresentation,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onOpenExport?: () => void;
-  onOpenHelp?: () => void;
   onOpenLibrary?: () => void;
   onTogglePresentation?: () => void;
 }) => {
   const scene = useScene();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [tab, setTab] = useState<"commands" | "shortcuts">("commands");
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const setTool = (tool: Tool) => {
@@ -104,10 +104,9 @@ export const CommandPalette = ({
       // File & Export
       { id: "file-export", title: "Export Image / File (PNG, SVG, .fluxx)", category: "File & Export", shortcut: sc("export"), keywords: ["save", "download", "png", "svg", "json", "share"], action: () => onOpenExport?.() },
       { id: "file-library", title: "Open Component Library", category: "File & Export", keywords: ["library", "icons", "cloud", "aws", "templates"], action: () => onOpenLibrary?.() },
-      { id: "file-help", title: "Keyboard Shortcuts & Help", category: "File & Export", shortcut: "?", action: () => onOpenHelp?.() },
     ];
     return list;
-  }, [scene.appState.theme, scene.appState.gridSize, scene.appState.viewMode, onOpenExport, onOpenHelp, onOpenLibrary, onTogglePresentation]);
+  }, [scene.appState.theme, scene.appState.gridSize, scene.appState.viewMode, onOpenExport, onOpenLibrary, onTogglePresentation]);
 
   const filteredCommands = useMemo(() => {
     if (!query.trim()) return commands;
@@ -129,8 +128,20 @@ export const CommandPalette = ({
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
       setQuery("");
+      setTab("commands");
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape, true);
+    return () => window.removeEventListener("keydown", closeOnEscape, true);
+  }, [isOpen, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -163,6 +174,12 @@ export const CommandPalette = ({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
+        <div className="command-palette-tabs">
+          <button className={tab === "commands" ? "active" : ""} onClick={() => setTab("commands")}>Commands</button>
+          <button className={tab === "shortcuts" ? "active" : ""} onClick={() => setTab("shortcuts")}>Keyboard shortcuts</button>
+        </div>
+        {tab === "commands" ? (
+          <>
         <div className="command-palette-header">
           <input
             ref={inputRef}
@@ -197,6 +214,22 @@ export const CommandPalette = ({
             ))
           )}
         </div>
+          </>
+        ) : (
+          <div className="command-shortcuts">
+            {SHORTCUT_GROUPS.map((group) => (
+              <section key={group.title}>
+                <h3>{group.title}</h3>
+                {group.items.map((item) => (
+                  <div className="shortcut-row" key={item.label}>
+                    <span>{item.label}</span>
+                    <span className="shortcut-keys">{item.shortcut}</span>
+                  </div>
+                ))}
+              </section>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

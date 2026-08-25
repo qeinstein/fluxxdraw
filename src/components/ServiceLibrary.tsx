@@ -50,8 +50,8 @@ export const ServiceLibraryPanel = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <div className="service-panel" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div className="service-bar" style={{ padding: "0 16px 16px" }}>
-        <div className="choice service-tabs" style={{ marginBottom: 12 }}>
+      <div className="service-bar">
+        <div className="service-tabs">
           {(Object.keys(PROVIDERS) as Provider[]).map((id) => (
             <button
               key={id}
@@ -78,7 +78,7 @@ export const ServiceLibraryPanel = ({ onClose }: { onClose: () => void }) => {
         />
       </div>
 
-      <div className="service-body" style={{ flex: 1, overflowY: "auto", padding: "0 16px 16px" }}>
+      <div className="service-body" style={{ flex: 1, overflowY: "auto" }}>
         {results ? (
           results.length ? (
             <ServiceGrid items={results} onPick={place} showProvider />
@@ -95,7 +95,7 @@ export const ServiceLibraryPanel = ({ onClose }: { onClose: () => void }) => {
         )}
       </div>
 
-      <footer style={{ padding: "16px", borderTop: "1px solid var(--line)" }}>
+      <footer className="service-footer">
         <span className="hint">
           Placed services are ordinary components — connect, resize and edit them like
           anything else.

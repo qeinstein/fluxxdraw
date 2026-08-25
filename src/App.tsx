@@ -5,7 +5,6 @@ import { StylePanel, hasStyleControls } from "./components/StylePanel";
 import { Menu } from "./components/Menu";
 import { ZoomControls, zoomToElement } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
-import { HelpDialog } from "./components/HelpDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
@@ -28,7 +27,7 @@ import {
   IconCommand,
   IconEye,
   IconEyeOff,
-  IconHelp,
+  IconSave,
   IconSliders,
   IconUndo,
   IconRedo,
@@ -56,7 +55,7 @@ import { newImageElement, syncFrameCounter } from "./elements/factory";
 import { preloadFiles } from "./render/imageCache";
 import { recordRecentDocument, recordRecoverySnapshot } from "./workspaceData";
 
-import { APP_NAME, FILE_EXTENSION } from "./constants";
+import { APP_NAME, FILE_EXTENSION, PALETTE } from "./constants";
 import { inferTheme } from "./theme";
 import type { BinaryFile, SceneDocument } from "./types";
 import { sc } from "./shortcuts";
@@ -68,7 +67,6 @@ export default function App() {
   const scene = useScene();
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences());
   const [exportOpen, setExportOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [libraryDocked, setLibraryDocked] = useState(() => localStorage.getItem("fluxx_library_docked") === "true");
@@ -133,6 +131,10 @@ export default function App() {
     store.setAppState({
       viewBackgroundColor: prefs.viewBackgroundColor,
       theme: prefs.theme,
+      currentStyle: {
+        ...store.appState.currentStyle,
+        strokeColor: PALETTE[prefs.theme].stroke[0],
+      },
       gridSize: prefs.gridSize,
       snapToObjects: prefs.snapToObjects,
     });
@@ -502,12 +504,11 @@ export default function App() {
       onSave: handleSave,
       onSaveAs: handleSaveAs,
       onExport: () => setExportOpen(true),
-      onHelp: () => setHelpOpen(true),
+      onHelp: () => setCommandOpen(true),
       onHistory: () => openPanel("history"),
       onImage: onRequestImage,
       onEscape: () => {
         setExportOpen(false);
-        setHelpOpen(false);
         setHistoryOpen(false);
         setStyleSheetOpen(false);
         setContextMenu(null);
@@ -626,8 +627,8 @@ export default function App() {
                 label={`Save a .${FILE_EXTENSION} copy to your export folder`}
                 placement="bottom"
               >
-                <button className="ghost-button" onClick={quickExportJson}>
-                  Quick save
+                <button className="icon-button" aria-label="Quick save" onClick={quickExportJson}>
+                  <IconSave />
                 </button>
               </Tooltip>
             )}
@@ -654,9 +655,6 @@ export default function App() {
                 <IconLibrary />
               </button>
             </Tooltip>
-          </div>
-
-          <div className="island top-right-actions">
             <Tooltip label="Commands" shortcut="⌘K">
               <button className="icon-button" aria-label="Open command palette" onClick={() => setCommandOpen(true)}>
                 <IconCommand />
@@ -679,18 +677,6 @@ export default function App() {
               </button>
             </Tooltip>
           </div>
-        </div>
-
-        <div className="bottom-right">
-          <Tooltip label="Keyboard shortcuts" shortcut="?" placement="top">
-            <button
-              className="floating-help-button"
-              aria-label="Keyboard shortcuts"
-              onClick={() => setHelpOpen(true)}
-            >
-              <IconHelp />
-            </button>
-          </Tooltip>
         </div>
 
         {isMobile && sheetOpen && (
@@ -719,7 +705,6 @@ export default function App() {
         isOpen={commandOpen}
         onClose={() => setCommandOpen(false)}
         onOpenExport={() => setExportOpen(true)}
-        onOpenHelp={() => setHelpOpen(true)}
         onOpenLibrary={() => setLibraryOpen(true)}
         onTogglePresentation={() => setPresenting(true)}
       />
@@ -795,7 +780,6 @@ export default function App() {
         />
       )}
 
-      {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
 
       {promptRequest && (
         <InputDialog

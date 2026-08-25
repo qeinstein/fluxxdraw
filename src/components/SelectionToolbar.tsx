@@ -1,5 +1,7 @@
-import { useScene } from "../store";
+import { store, useScene } from "../store";
 import type { ReactNode } from "react";
+import { promptForInput } from "../prompt";
+import { addCanvasComment } from "../workspaceData";
 import { getCommonBounds } from "../geometry";
 import {
   applyStyleToSelection,
@@ -64,6 +66,13 @@ export const SelectionToolbar = () => {
       )}
       {grouped && <ToolbarAction label="Ungroup" onClick={ungroupSelection}><IconUngroup /></ToolbarAction>}
       <ToolbarAction label="Bring forward" onClick={() => changeZOrder("forward")}><IconBringForward /></ToolbarAction>
+      <ToolbarAction label="Add comment" onClick={async () => {
+        const text = await promptForInput({ title: "Add comment", label: "Comment", placeholder: "Leave a note…", confirmLabel: "Add comment", validate: (value) => value.trim() ? null : "Write a comment first." });
+        if (!text) return;
+        const target = selected[0];
+        addCanvasComment({ elementId: target.id, x: target.x + target.width, y: target.y, text: text.trim() });
+        store.emit();
+      }}><span className="selection-comment-icon">+</span></ToolbarAction>
       <ToolbarAction label={locked ? "Unlock" : "Lock"} onClick={toggleLockSelection}><IconLockClosed /></ToolbarAction>
       <ToolbarAction label="Delete" danger onClick={deleteSelection}><IconTrash /></ToolbarAction>
     </div>
