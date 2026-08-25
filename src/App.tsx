@@ -12,12 +12,13 @@ import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
 import { ContextMenu, type ContextMenuRequest } from "./components/ContextMenu";
 import { ServiceLibrary } from "./components/ServiceLibrary";
+import { LibrarySidebar } from "./components/LibrarySidebar";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
 import { cancelPrompt, setPromptHandler } from "./prompt";
 import { TextEditor } from "./components/TextEditor";
 import { Tooltip } from "./components/Tooltip";
-import { IconClose, IconHelp, IconSliders, IconUndo, IconRedo } from "./components/icons";
+import { IconClose, IconHelp, IconSliders, IconUndo, IconRedo, IconLibrary } from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
 import { MOBILE_QUERY, useIsMobile } from "./hooks/useMediaQuery";
@@ -44,7 +45,7 @@ import { inferTheme } from "./theme";
 import type { BinaryFile, SceneDocument } from "./types";
 import { sc } from "./shortcuts";
 
-const AUTOSAVE_KEY = "fluxxdraw:autosave";
+const AUTOSAVE_KEY = "fluxxdraw-autosave";
 const AUTOSAVE_DEBOUNCE_MS = 800;
 
 export default function App() {
@@ -52,8 +53,9 @@ export default function App() {
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences());
   const [exportOpen, setExportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [servicesOpen, setServicesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
   const [presenting, setPresenting] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [textPanelOpen, setTextPanelOpen] = useState(false);
@@ -455,7 +457,9 @@ export default function App() {
       }
     };
     window.addEventListener("paste", onPaste);
-    return () => window.removeEventListener("paste", onPaste);
+    return () => {
+      window.removeEventListener("paste", onPaste);
+    };
   }, [applyOpenResult]);
 
   // --- keyboard ------------------------------------------------------------
@@ -539,7 +543,16 @@ export default function App() {
       )}
 
       <div className={`ui-layer${isMobile ? " is-mobile" : ""}`}>
-        <div className="top-left">
+        <div className="top-left" style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+          <Tooltip label="Library" placement="bottom">
+            <button
+              className={`island icon-button ${libraryOpen ? "active" : ""}`}
+              aria-label="Library"
+              onClick={() => setLibraryOpen(!libraryOpen)}
+            >
+              <IconLibrary />
+            </button>
+          </Tooltip>
           <Menu
             onOpen={handleOpen}
             onSave={handleSave}
@@ -658,6 +671,7 @@ export default function App() {
         />
       )}
 
+      {libraryOpen && <LibrarySidebar onClose={() => setLibraryOpen(false)} />}
       {servicesOpen && <ServiceLibrary onClose={() => setServicesOpen(false)} />}
 
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
