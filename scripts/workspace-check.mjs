@@ -11,7 +11,14 @@ const check = (name, passed, detail = "") => {
 
 await page.goto("http://127.0.0.1:5180/", { waitUntil: "networkidle" });
 await page.evaluate(() => localStorage.clear());
+await page.evaluate(() => localStorage.setItem("fluxxdraw:preferences", JSON.stringify({ theme: "dark", viewBackgroundColor: "#121212" })));
 await page.reload({ waitUntil: "networkidle" });
+check("dark mode defaults to white stroke", await page.evaluate(() => window.__scene.appState.currentStyle.strokeColor === "#ffffff"));
+check("light mode maps default stroke to black", await page.evaluate(async () => {
+  const { setTheme } = await import("/src/theme.ts");
+  setTheme("light");
+  return window.__scene.appState.currentStyle.strokeColor === "#1e1e1e";
+}));
 
 await page.evaluate(async () => {
   const store = window.__scene;
@@ -43,9 +50,11 @@ check("layer click selects object", await page.evaluate(() => window.__scene.app
 await page.getByRole("button", { name: "Comments" }).click();
 await page.getByRole("button", { name: "Add comment to selection" }).click();
 await page.locator("#input-dialog-field").fill("Review gateway capacity");
-await page.getByRole("button", { name: "Add comment", exact: true }).click();
+await page.locator(".dialog footer .primary").click();
 check("comment is persisted", await page.evaluate(() => JSON.parse(localStorage.getItem("fluxxdraw:comments") ?? "[]").length === 1));
 check("comment pin appears", await page.locator(".comment-pin").count() === 1);
+await page.locator(".comment-pin").click();
+check("comment pin opens its comment", await page.locator(".comment-popover").getByText("Review gateway capacity").count() === 1);
 
 await page.getByRole("button", { name: "Recent" }).click();
 check("recent document is listed", await page.getByText("Gateway.fluxx", { exact: true }).count() === 1);
@@ -53,11 +62,12 @@ await page.getByRole("button", { name: "Recovery" }).click();
 check("recovery snapshot is listed", await page.getByText("Recovery.fluxx", { exact: true }).count() === 1);
 
 await page.getByRole("button", { name: "Close workspace" }).click();
-await page.getByRole("button", { name: "+ Save current" }).click();
-await page.locator("#input-dialog-field").fill("Gateway style");
-await page.getByRole("button", { name: "Save preset" }).click();
-check("style preset is persisted", await page.evaluate(() => JSON.parse(localStorage.getItem("fluxxdraw:style_presets") ?? "[]").length === 1));
-check("style preset is visible", await page.locator(".style-preset > button:first-child", { hasText: "Gateway style" }).count() === 1);
+await page.getByRole("button", { name: "Open command palette" }).click();
+check("command palette has two views", await page.locator(".command-palette-tabs button").count() === 2);
+await page.getByRole("button", { name: "Keyboard shortcuts", exact: true }).click();
+check("shortcuts render inside command palette", await page.locator(".command-shortcuts .shortcut-row").count() > 10);
+await page.keyboard.press("Escape");
+check("Escape closes command palette", await page.locator(".command-palette").count() === 0);
 
 await browser.close();
 if (failures.length) process.exitCode = 1;

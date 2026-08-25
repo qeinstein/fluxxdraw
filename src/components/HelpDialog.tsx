@@ -7,7 +7,7 @@ import { KEY, formatCombo, sc } from "../shortcuts";
  */
 const Kbd = ({ children }: { children: React.ReactNode }) => <kbd>{children}</kbd>;
 
-const GROUPS: { title: string; items: { label: string; shortcut: React.ReactNode }[] }[] = [
+export const SHORTCUT_GROUPS: { title: string; items: { label: string; shortcut: React.ReactNode }[] }[] = [
   {
     title: "Tools",
     items: [
@@ -95,7 +95,7 @@ export const HelpDialog = ({ onClose }: { onClose: () => void }) => (
         </button>
       </header>
       <div className="dialog-body shortcut-grid">
-        {GROUPS.map((group) => (
+        {SHORTCUT_GROUPS.map((group) => (
           <section key={group.title}>
             <h3>{group.title}</h3>
             {group.items.map((item) => (

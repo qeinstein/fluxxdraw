@@ -23,6 +23,12 @@ new version stops opening in an old one.
   multi-component installed state and server-side database routing
 - Prioritized software architecture, system-design and infrastructure component
   packs at the top of community library results
+- Made default strokes theme-aware: black on light canvases and white in dark mode
+- Merged keyboard shortcuts into a two-view Command-K palette and removed the
+  redundant floating shortcuts control
+- Added direct comment popovers and quick comment creation beside selections
+- Simplified the top-right action island, library navigation and provider tabs,
+  tightened sidebar spacing, and shifted the toolbar around a docked library
 
 ## v1.0.0
 
