@@ -161,7 +161,12 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
   const h = el.height;
 
   switch (el.type) {
-    case "rectangle":
+    case "rectangle": {
+      if (el.edges === "round" && Math.min(Math.abs(w), Math.abs(h)) > 8) {
+        return [generator.path(roundedRectPath(w, h, cornerRadius(el)), opts)];
+      }
+      return [generator.rectangle(0, 0, w, h, opts)];
+    }
     case "sticky": {
       const fold = Math.min(24, Math.abs(w) * 0.2, Math.abs(h) * 0.2);
       const signX = w >= 0 ? 1 : -1;

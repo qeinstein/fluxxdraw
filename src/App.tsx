@@ -14,6 +14,7 @@ import { ContextMenu, type ContextMenuRequest } from "./components/ContextMenu";
 import { Library } from "./components/Library";
 import { CommandPalette } from "./components/CommandPalette";
 import { Minimap } from "./components/Minimap";
+import { SelectionToolbar } from "./components/SelectionToolbar";
 import { ToolHint } from "./components/ToolHint";
 import type { ComponentEditSession } from "./components-model";
 import { InputDialog, type InputDialogRequest } from "./components/InputDialog";
@@ -592,6 +593,8 @@ export default function App() {
           <ToolHint tool={scene.appState.tool} />
           {scene.appState.viewMode && <div className="view-mode-banner">View-only</div>}
         </div>
+
+        {!isMobile && <SelectionToolbar />}
 
         <div className="top-right">
           <div className="island top-right-actions">

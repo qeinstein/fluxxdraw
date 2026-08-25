@@ -351,9 +351,26 @@ export const renderElement = (
     default: {
       const rc = getRoughCanvas(ctx);
       ctx.save();
+      if (el.type === "sticky" && !config.exporting) {
+        ctx.shadowColor = config.theme === "dark" ? "rgba(0,0,0,.34)" : "rgba(25,25,38,.16)";
+        ctx.shadowBlur = 12 / Math.max(config.zoom, 0.25);
+        ctx.shadowOffsetY = 5 / Math.max(config.zoom, 0.25);
+      }
       // arrows/lines keep their points relative to x/y, as do shapes at 0,0
       ctx.translate(el.x, el.y);
       for (const drawable of getDrawables(el)) rc.draw(drawable);
+      if (el.type === "sticky") {
+        ctx.shadowColor = "transparent";
+        ctx.globalAlpha = Math.min(ctx.globalAlpha, 0.09);
+        ctx.fillStyle = config.theme === "dark" ? "#ffffff" : "#342f1f";
+        const width = Math.max(Math.abs(el.width), 1);
+        const height = Math.max(Math.abs(el.height), 1);
+        for (let index = 0; index < 14; index++) {
+          const x = ((index * 47 + 19) % 97) / 100 * width;
+          const y = ((index * 31 + 11) % 89) / 100 * height;
+          ctx.fillRect(x, y, 0.7, 0.7);
+        }
+      }
       ctx.restore();
     }
   }

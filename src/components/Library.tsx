@@ -54,6 +54,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
   const { libraries, loading, error } = useLibraryList();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [installError, setInstallError] = useState<string | null>(null);
+  const [installSuccess, setInstallSuccess] = useState<string | null>(null);
 
   /** Filtered + sorted browse list: priority items first, then alphabetical. */
   const filteredLibraries = useMemo(() => {
@@ -85,6 +86,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
     try {
       setDownloadingId(id);
       setInstallError(null);
+      setInstallSuccess(null);
       const libraryItems = getLibraryItems(await fetchLibraryContent(id));
       if (libraryItems.length === 0) throw new Error("This library contains no compatible components.");
       libraryItems.forEach((elements, index) => {
@@ -95,6 +97,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
           elements,
         });
       });
+      setInstallSuccess(`${name} was added to your library.`);
       setTab("my-library");
     } catch (err) {
       console.error("Library install failed:", err);
@@ -187,6 +190,9 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
 
       {/* Content */}
       <div className="library-content">
+        {installSuccess && (
+          <div className="library-status success">{installSuccess}</div>
+        )}
         {/* ---- MY LIBRARY ---- */}
         {tab === "my-library" && (
           <>
