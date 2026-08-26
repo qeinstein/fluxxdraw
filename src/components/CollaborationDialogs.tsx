@@ -77,6 +77,8 @@ export function CollaborationMenu() {
   const [state, setState] = useState(collab.state);
   const [code, setCode] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -292,14 +294,51 @@ export function CollaborationMenu() {
                         width: '24px', height: '24px', borderRadius: '50%',
                         backgroundColor: collab.provider?.awareness.getLocalState()?.color || "#000",
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: '#000', fontSize: '11px', fontWeight: 'bold'
+                        color: '#000', fontSize: '11px', fontWeight: 'bold',
+                        flexShrink: 0
                       }}
                     >
                       {(collab.provider?.awareness.getLocalState()?.name || "A").charAt(0).toUpperCase()}
                     </div>
-                    <span style={{ fontSize: '13px', color: 'var(--fg)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {collab.provider?.awareness.getLocalState()?.name || "Anonymous Fox"} (You)
-                    </span>
+                    {isEditingName ? (
+                      <input 
+                        autoFocus
+                        value={editNameValue}
+                        onChange={(e) => setEditNameValue(e.target.value)}
+                        onBlur={() => {
+                          const newName = editNameValue.trim() || "Anonymous Fox";
+                          collab.updatePresence({ name: newName });
+                          localStorage.setItem("fluxx_collab_name", newName);
+                          setIsEditingName(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        style={{
+                          flex: 1, padding: '2px 4px', fontSize: '13px', borderRadius: '4px',
+                          border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--fg)',
+                          outline: 'none', minWidth: 0
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <span style={{ fontSize: '13px', color: 'var(--fg)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {collab.provider?.awareness.getLocalState()?.name || "Anonymous Fox"} (You)
+                        </span>
+                        <button 
+                          onClick={() => {
+                            setEditNameValue(collab.provider?.awareness.getLocalState()?.name || "Anonymous Fox");
+                            setIsEditingName(true);
+                          }}
+                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', opacity: 0.5, display: 'flex', alignItems: 'center', fontSize: '12px' }}
+                          title="Edit Name"
+                        >
+                          ✎
+                        </button>
+                      </>
+                    )}
                   </div>
                   
                   {/* Peers */}
