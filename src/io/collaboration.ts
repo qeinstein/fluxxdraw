@@ -6,7 +6,7 @@ import { store } from "../store";
 export type SessionState = "LOCAL" | "CREATING_SESSION" | "COLLABORATING" | "JOINING_SESSION";
 
 const collaborationRelay =
-  import.meta.env.VITE_YJS_RELAY_URL ?? "ws://127.0.0.1:1234";
+  import.meta.env.VITE_YJS_RELAY_URL ?? "wss://demos.yjs.dev/ws";
 
 export interface PeerPresence {
   name: string;
@@ -87,6 +87,13 @@ class CollaborationManager {
         store.emit();
 
         if (!this.isHost) {
+          // Auto-pan to center of the drawing once elements sync
+          if (store.elements.length > 0) {
+            import("../components/ZoomControls").then(({ zoomToFit }) => {
+              setTimeout(() => zoomToFit("all"), 100);
+            });
+          }
+
           // If a guest joins an empty room with no host, they should be kicked with a popup.
           // Wait 10 seconds to allow for slow awareness sync over the network.
           setTimeout(() => {
