@@ -6,7 +6,7 @@ import { Menu } from "./components/Menu";
 import { ZoomControls, zoomToElement } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
-import { collab, parseCollaborationPath } from "./io/collaboration";
+import { parseCollaborationPath } from "./io/collaboration";
 import { JoinDialog, CollaborationMenu } from "./components/CollaborationDialogs";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
@@ -34,7 +34,6 @@ import {
   IconUndo,
   IconRedo,
   IconLibrary,
-  IconUsers,
 } from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
