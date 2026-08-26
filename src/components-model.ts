@@ -124,9 +124,19 @@ export const createComponentFromSelection = (name?: string): ComponentDefinition
   const bounds = getCommonBounds(members);
   const { elements, width, height } = toLocalCoordinates(members);
 
+  let componentName: string = name?.trim() || "";
+  if (!componentName) {
+    const textEl = elements.find(el => el.type === "text" && "text" in el && typeof (el as any).text === "string" && (el as any).text.trim());
+    if (textEl && "text" in textEl) {
+      componentName = (textEl as any).text.slice(0, 20);
+    } else {
+      componentName = `Component ${Object.keys(store.components).length + 1}`;
+    }
+  }
+
   const definition: ComponentDefinition = {
     id: nanoid(),
-    name: name?.trim() || `Component ${Object.keys(store.components).length + 1}`,
+    name: componentName,
     elements,
     width,
     height,
