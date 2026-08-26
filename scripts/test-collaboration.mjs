@@ -41,12 +41,15 @@ try {
   check('Host has 1 element', await host.evaluate(() => window.__scene.visibleElements.length) === 1);
 
   console.log("Host creating collaboration session...");
-  await host.getByLabel('Collaborate').click();
-  await host.waitForSelector('.dialog');
+  await host.getByLabel('Collaboration menu').click();
+  await host.waitForSelector('.collab-popover');
   
-  const shareInput = host.locator('.dialog-body input');
-  const shareLink = await shareInput.inputValue();
-  check('Share link generated', shareLink.includes('#room='));
+  await host.locator('button:has-text("Start Session")').click();
+  await host.waitForURL(url => url.pathname.includes('/session/'));
+  await host.keyboard.press('Escape'); // Close the popover
+  
+  const shareLink = host.url();
+  check('Share link generated', shareLink.includes('/session/'));
 
   console.log(`Guest joining link: ${shareLink}...`);
   await guest.goto(shareLink, { waitUntil: 'networkidle' });
@@ -80,33 +83,29 @@ try {
   check('Host sees Guest drawing', await host.evaluate(() => window.__scene.visibleElements.length) === 2);
 
   // Test UI text
-  const hostEndText = await host.locator('.dialog footer button.ghost-button').textContent();
+  await host.getByLabel('Collaboration menu').click();
+  await host.waitForSelector('.collab-popover');
+  const hostEndText = await host.locator('.collab-popover button.ghost-button').textContent();
   check('Host button says "End Session"', hostEndText.trim() === 'End Session', `(was "${hostEndText.trim()}")`);
   
   // Close host dialog
-  await host.locator('button:has-text("Done")').click();
+  await host.keyboard.press('Escape');
 
   // Guest opens collab dialog
-  await guest.getByLabel('Collaborate').click();
-  await guest.waitForSelector('.dialog');
-  const guestEndText = await guest.locator('.dialog footer button.ghost-button').textContent();
+  await guest.getByLabel('Collaboration menu').click();
+  await guest.waitForSelector('.collab-popover');
+  const guestEndText = await guest.locator('.collab-popover button.ghost-button').textContent();
   check('Guest button says "Leave Session"', guestEndText.trim() === 'Leave Session');
 
   // Close guest dialog
-  await guest.locator('button:has-text("Done")').click();
+  await guest.keyboard.press('Escape');
 
-  // Test Host ending session kicks guest
+  // Test Host ending session kicks guest seamlessly (no page reload)
   console.log("Host ending session...");
   guest.on('console', msg => console.log(`Guest console: ${msg.text()}`));
   let alertFired = false;
   let endSessionAlert = null;
-  let beforeunloadCount = 0;
   const handleDialog = async (dialog) => {
-    if (dialog.type() === 'beforeunload') {
-      beforeunloadCount += 1;
-      await dialog.accept();
-      return;
-    }
     endSessionAlert = dialog.message();
     alertFired = true;
     console.log(`Guest dialog: type=${dialog.type()} message=${JSON.stringify(dialog.message())}`);
@@ -114,26 +113,25 @@ try {
   };
   guest.on('dialog', handleDialog);
   
-  await host.getByLabel('Collaborate').click();
-  await host.waitForSelector('.dialog');
+  await host.getByLabel('Collaboration menu').click();
+  await host.waitForSelector('.collab-popover');
   await host.locator('button:has-text("End Session")').click();
   
-  // Wait for guest page to reload and hash to be cleared
+  // Wait for guest path to be cleared
   let guestKicked = false;
   try {
-    await guest.waitForURL(url => !url.hash.includes('room='), { timeout: 5000 });
+    await guest.waitForURL(url => !url.pathname.includes('/session/'), { timeout: 5000 });
     guestKicked = true;
   } catch (e) {
     console.log("waitForURL timed out!");
   }
-  check('Guest kicked and hash cleared', guestKicked);
+  check('Guest kicked and path cleared', guestKicked);
   check('Alert was observed once', alertFired);
   check(
     'Exactly one end-session dialog appeared',
     alertFired === true &&
-      beforeunloadCount === 1 &&
       endSessionAlert?.includes('ended'),
-    `(alert=${JSON.stringify(endSessionAlert)}, beforeunload=${beforeunloadCount})`,
+    `(alert=${JSON.stringify(endSessionAlert)})`,
   );
 
   console.log("✅ All E2E collaboration checks passed!");

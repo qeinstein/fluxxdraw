@@ -6,8 +6,8 @@ import { Menu } from "./components/Menu";
 import { ZoomControls, zoomToElement } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
-import { collab, parseCollaborationHash, parseCollaborationPath } from "./io/collaboration";
-import { JoinDialog, ShareDialog, JoinByCodeDialog, CollaborationAvatars } from "./components/CollaborationDialogs";
+import { collab, parseCollaborationPath } from "./io/collaboration";
+import { JoinDialog, CollaborationMenu } from "./components/CollaborationDialogs";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
@@ -90,9 +90,7 @@ export default function App() {
   const isMobile = useIsMobile();
 
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [isJoinByCodeOpen, setIsJoinByCodeOpen] = useState(false);
-  const [collabRoom, setCollabRoom] = useState<{ room: string; key: string } | null>(null);
+  const [collabRoom, setCollabRoom] = useState<{ room: string } | null>(null);
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -224,13 +222,6 @@ export default function App() {
     const collabPath = parseCollaborationPath();
     if (collabPath) {
       setCollabRoom(collabPath);
-      setIsJoinDialogOpen(true);
-      return;
-    }
-
-    const legacyHash = parseCollaborationHash();
-    if (legacyHash) {
-      setCollabRoom({ ...legacyHash, key: legacyHash.key });
       setIsJoinDialogOpen(true);
       return;
     }
@@ -638,7 +629,7 @@ export default function App() {
 
         <div className="top-right">
           <div className="island top-right-actions" style={{ display: 'flex', alignItems: 'center' }}>
-            <CollaborationAvatars />
+            <CollaborationMenu />
             {isMobile ? (
               <button
                 className={`tool-button sheet-toggle ${sheetOpen ? "active" : ""} ${
@@ -663,29 +654,6 @@ export default function App() {
             <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
               <button className="export-button" onClick={openExportDialog}>
                 Export
-              </button>
-            </Tooltip>
-            <Tooltip label="Collaborate in real-time" placement="bottom">
-              <button 
-                className="icon-button" 
-                aria-label="Collaborate"
-                onClick={() => {
-                  if (!collab.room) setCollabRoom(null);
-                  setIsShareDialogOpen(true);
-                }}
-                style={{ color: '#e03131' }}
-              >
-                <IconUsers />
-              </button>
-            </Tooltip>
-            <Tooltip label="Join by code" placement="bottom">
-              <button
-                className="icon-button"
-                aria-label="Join by code"
-                onClick={() => setIsJoinByCodeOpen(true)}
-                style={{ color: '#40c057', fontSize: '11px', fontWeight: 700 }}
-              >
-                #
               </button>
             </Tooltip>
             <Tooltip label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"} placement="bottom">
@@ -798,32 +766,16 @@ export default function App() {
       {isJoinDialogOpen && collabRoom && (
         <JoinDialog 
           room={collabRoom.room} 
-          collabKey={collabRoom.key} 
           onJoin={() => {
             setCollabRoom(null);
             setIsJoinDialogOpen(false);
           }}
           onCancel={() => {
             setCollabRoom(null);
-            window.history.replaceState(null, "", window.location.pathname);
+            window.history.replaceState(null, "", window.location.pathname.replace(/\/session\/[A-Za-z0-9]+/, ''));
             setIsJoinDialogOpen(false);
           }}
         />
-      )}
-
-      {isJoinByCodeOpen && (
-        <JoinByCodeDialog
-          onClose={() => setIsJoinByCodeOpen(false)}
-          onJoin={(room) => {
-            setCollabRoom({ room, key: room });
-            setIsJoinByCodeOpen(false);
-            setIsJoinDialogOpen(true);
-          }}
-        />
-      )}
-      
-      {isShareDialogOpen && (
-        <ShareDialog onClose={() => setIsShareDialogOpen(false)} />
       )}
       
       {exportOpen && (
