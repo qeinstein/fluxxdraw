@@ -88,10 +88,23 @@ class CollaborationManager {
 
         if (!this.isHost) {
           // Auto-pan to center of the drawing once elements sync
-          if (store.elements.length > 0) {
-            import("../components/ZoomControls").then(({ zoomToFit }) => {
-              setTimeout(() => zoomToFit("all"), 100);
-            });
+          let hasAutoPanned = false;
+          const tryAutoPan = () => {
+            if (!hasAutoPanned && store.elements.length > 0) {
+              hasAutoPanned = true;
+              import("../components/ZoomControls").then(({ zoomToFit }) => {
+                setTimeout(() => zoomToFit("all"), 100);
+              });
+            }
+          };
+
+          tryAutoPan();
+          if (!hasAutoPanned) {
+            const updateHandler = () => {
+              tryAutoPan();
+              if (hasAutoPanned) this.collabDoc?.off("update", updateHandler);
+            };
+            this.collabDoc?.on("update", updateHandler);
           }
 
           // If a guest joins an empty room with no host, they should be kicked with a popup.
