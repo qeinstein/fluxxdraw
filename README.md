@@ -44,9 +44,14 @@ Choosing a specific export folder and opening files by double-click both rely on
 ```bash
 npm install
 npm run dev      # http://localhost:5173
+npm run collab:server # optional local Yjs relay on ws://127.0.0.1:1234
 npm run build    # production build into dist/
 npm run smoke    # end-to-end checks against a running dev server
 ```
+
+Collaboration uses a Yjs WebSocket relay. Development defaults to
+`ws://127.0.0.1:1234`; set `VITE_YJS_RELAY_URL` for a different deployment.
+The bundled relay is local-only and holds documents in memory.
 
 The test scripts under `scripts/` drive a real Chromium instance rather than mocking the DOM: they draw every element type, verify arrow binding, text growth, history round-trips, layout, components, presentations and gestures, and assert that PNG, SVG and `.fluxx` exports all reopen as identical editable scenes.
 

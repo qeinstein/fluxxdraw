@@ -264,6 +264,27 @@ export class SceneStore {
     this.emit();
   }
 
+  /** Publishes the current local scene as the initial state of a new room. */
+  publishScene() {
+    const elements = [...this.elements];
+    const files = Object.values(this.files);
+    const components = Object.values(this.components);
+
+    ydoc.transact(() => {
+      yOrder.delete(0, yOrder.length);
+      elements.forEach((element) => {
+        yElements.set(element.id, element);
+        yOrder.push([element.id]);
+      });
+      files.forEach((file) => {
+        yFiles.set(file.id, file);
+      });
+      components.forEach((definition) => {
+        yComponents.set(definition.id, definition);
+      });
+    }, "local");
+  }
+
   resetScene() {
     this.loadScene([], {}, { scrollX: 0, scrollY: 0, zoom: 1 });
   }

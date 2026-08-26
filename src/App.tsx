@@ -6,7 +6,7 @@ import { Menu } from "./components/Menu";
 import { ZoomControls, zoomToElement } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
-import { parseCollaborationHash } from "./io/collaboration";
+import { collab, parseCollaborationHash } from "./io/collaboration";
 import { JoinDialog, ShareDialog, CollaborationAvatars } from "./components/CollaborationDialogs";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
@@ -661,7 +661,10 @@ export default function App() {
               <button 
                 className="icon-button" 
                 aria-label="Collaborate"
-                onClick={() => setIsShareDialogOpen(true)} 
+                onClick={() => {
+                  if (!collab.room) setCollabRoom(null);
+                  setIsShareDialogOpen(true);
+                }}
                 style={{ color: '#e03131' }}
               >
                 <IconUsers />
@@ -778,8 +781,15 @@ export default function App() {
         <JoinDialog 
           room={collabRoom.room} 
           collabKey={collabRoom.key} 
-          onJoin={() => setIsJoinDialogOpen(false)} 
-          onCancel={() => setIsJoinDialogOpen(false)} 
+          onJoin={() => {
+            setCollabRoom(null);
+            setIsJoinDialogOpen(false);
+          }}
+          onCancel={() => {
+            setCollabRoom(null);
+            window.history.replaceState(null, "", window.location.pathname);
+            setIsJoinDialogOpen(false);
+          }}
         />
       )}
       

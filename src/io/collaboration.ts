@@ -16,6 +16,9 @@ export const yComponents = ydoc.getMap<any>("components");
 // Meta map for session state (e.g. session ended)
 export const yMeta = ydoc.getMap<boolean>("meta");
 
+const collaborationRelay =
+  import.meta.env.VITE_YJS_RELAY_URL ?? "ws://127.0.0.1:1234";
+
 export interface PeerPresence {
   name: string;
   color: string;
@@ -45,31 +48,25 @@ class CollaborationManager {
       this.provider.destroy();
       this.provider = null;
     }
+    if (this.persistence) {
+      this.persistence.destroy();
+      this.persistence = null;
+    }
 
     this.room = roomId;
     this.isHost = isHost;
     this.shareUrl = `${window.location.origin}${window.location.pathname}#room=${roomId}&key=${key}`;
     
-    // Switch IndexedDB persistence to a room-specific key so each session
-    // has its own persistent state and doesn't conflict with local solo data
-    if (this.persistence) {
-      this.persistence.destroy();
-    }
+    // Keep a room's document available when an installed PWA reopens it.
     this.persistence = new IndexeddbPersistence(`fluxxdraw-room-${roomId}`, ydoc);
 
-    // Connect via Websocket for reliable sync (public demo server for now)
-    // The password is sent as part of the room name since y-websocket doesn't have a password field
-    const secureRoomId = `${roomId}-${key}`;
-    this.provider = new WebsocketProvider("wss://demos.yjs.dev/ws", secureRoomId, ydoc);
-
-    // When syncs for the first time, force a re-read of the Yjs state
-    this.provider.on("sync", (isSynced: boolean) => {
-      if (isSynced) {
-        ydoc.transact(() => {
-          // no-op transaction
-        }, "sync-refresh");
-      }
-    });
+    // Connect through the Yjs WebSocket relay. The key scopes the room name;
+    // clients must send it to the relay, so it is not a secret there.
+    this.provider = new WebsocketProvider(
+      collaborationRelay,
+      `${roomId}-${key}`,
+      ydoc,
+    );
 
     // Set initial presence
     this.updatePresence({ name, color });
@@ -93,6 +90,7 @@ class CollaborationManager {
     }
     this.room = null;
     this.shareUrl = null;
+    this.isHost = false;
   }
 
   updatePresence(state: Partial<PeerPresence>) {
@@ -132,4 +130,3 @@ export const generateCollaborationLink = () => {
   const key = Math.random().toString(36).substring(2, 15);
   return { room, key, url: `${window.location.origin}${window.location.pathname}#room=${room}&key=${key}` };
 };
-
