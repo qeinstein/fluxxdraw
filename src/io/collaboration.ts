@@ -2,6 +2,10 @@ import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { IndexeddbPersistence } from "y-indexeddb";
 import { store } from "../store";
+import { promptForInput } from "../prompt";
+import { saveWithPicker } from "./fileSystem";
+import { serializeScene, sceneToJson } from "./serialize";
+import { FILE_EXTENSION } from "../constants";
 
 export type SessionState = "LOCAL" | "CREATING_SESSION" | "COLLABORATING" | "JOINING_SESSION";
 
@@ -124,13 +128,49 @@ class CollaborationManager {
     const yMeta = this.collabDoc!.getMap<boolean>("meta");
     yMeta.observe(() => {
       if (yMeta.get("ended") === true && !this.isHost) {
-        alert("The host has ended this collaboration session.");
-        this.leaveSession();
+        window.dispatchEvent(new CustomEvent("fluxxdraw:alert", { detail: "The host has ended this collaboration session." }));
+        this.leaveSession("The host has ended the session.");
       }
     });
   }
 
-  leaveSession() {
+  private promptToSaveSession(reason: string) {
+    if (store.elements.length === 0) return;
+    
+    // Capture state immediately before it is destroyed by leaveSession
+    const doc = serializeScene(store.elements, store.files, store.appState, [], store.components);
+    
+    setTimeout(async () => {
+      const fileName = await promptForInput({
+        title: "Session Ended",
+        label: `${reason} Do you want to save a local copy?`,
+        hint: `Leave blank to discard, or enter a name to download as .${FILE_EXTENSION}`,
+        defaultValue: "collaborative-drawing"
+      });
+
+      if (fileName) {
+        const json = sceneToJson(doc);
+        const blob = new Blob([json], { type: "application/json" });
+        const suggested = `${fileName.replace(/\.[^.]+$/, "")}.${FILE_EXTENSION}`;
+        try {
+          await saveWithPicker(blob, suggested, [
+            {
+              description: "Drawing",
+              accept: { "application/json": [`.${FILE_EXTENSION}`, ".excalidraw", ".json"] },
+            },
+          ]);
+        } catch (e) {
+          console.error("Failed to save session", e);
+        }
+      }
+    }, 100);
+  }
+
+  leaveSession(reason: string = "You left the session.") {
+    if (this.state === "COLLABORATING" && !this.isHost) {
+      this.promptToSaveSession(reason);
+    }
+
     if (this.provider) {
       this.provider.destroy();
       this.provider = null;
