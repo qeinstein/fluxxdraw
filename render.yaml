@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: fluxxdraw-collab-relay
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: node scripts/local/collaboration-server.mjs
+    envVars:
+      - key: PORT
+        value: 10000

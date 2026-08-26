@@ -106,6 +106,6 @@ wss.on("connection", (connection, request) => {
   });
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Yjs collaboration relay listening on ws://127.0.0.1:${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Yjs collaboration relay listening on port ${port}`);
 });
