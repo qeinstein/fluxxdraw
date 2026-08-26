@@ -66,11 +66,23 @@ function decodeFirstClientId(update) {
 
 const documents = new Map();
 const port = Number(process.env.PORT || 1234);
+const relayUrl = process.env.RENDER_EXTERNAL_URL || `http://127.0.0.1:${port}`;
 const server = http.createServer((_request, response) => {
+  if (new URL(_request.url, "http://localhost").pathname === "/health") {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ status: "ok", rooms: documents.size }));
+    return;
+  }
   response.writeHead(204);
   response.end();
 });
 const wss = new WebSocketServer({ server });
+
+setInterval(() => {
+  http
+    .get(`${relayUrl}/health`)
+    .on("error", () => {});
+}, 60_000);
 
 wss.on("connection", (connection, request) => {
   const roomName = new URL(request.url, "http://localhost").pathname.slice(1);
@@ -107,5 +119,5 @@ wss.on("connection", (connection, request) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`Yjs collaboration relay listening on port ${port}`);
+  console.log(`Yjs collaboration relay on port ${port} — self-ping to ${relayUrl}/health every 60s`);
 });
