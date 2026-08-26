@@ -3515,3 +3515,32 @@ button:active:not(:disabled) {
   .has-docked-library .top-centre { left: 50%; }
   .command-shortcuts { grid-template-columns: 1fr; }
 }
+
+.edit-name-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.edit-name-button:hover {
+  background: var(--surface-sunken);
+  opacity: 1;
+}
+
+.edit-name-button .edit-text {
+  display: none;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+.edit-name-button:hover .edit-text {
+  display: inline;
+}

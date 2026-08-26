@@ -18,6 +18,7 @@ import { freedrawPath, getDrawables } from "./shapes";
 import { getImage } from "./imageCache";
 import { FRAME_HEADER_HEIGHT } from "../elements/hitTest";
 import { linkBadgeBox } from "../links";
+import { resolveColor, type ThemeName } from "../constants";
 
 export interface RenderConfig {
   scrollX: number;
@@ -84,11 +85,12 @@ const drawTextElement = (
   ctx: CanvasRenderingContext2D,
   el: TextElement,
   container: ExcaliElement | null,
+  theme: ThemeName,
 ) => {
   const lines = getTextLines(el, container);
   const lineHeightPx = el.fontSize * el.lineHeight;
   ctx.font = fontString(el);
-  ctx.fillStyle = el.strokeColor;
+  ctx.fillStyle = resolveColor(el.strokeColor, theme, "stroke");
   ctx.textBaseline = "alphabetic";
 
   const { width: textWidth, height: textHeight } = measureText(lines, el);
@@ -298,7 +300,12 @@ export const renderElement = (
 
   switch (el.type) {
     case "text":
-      drawTextElement(ctx, el, el.containerId ? (elementsById.get(el.containerId) ?? null) : null);
+      drawTextElement(
+        ctx,
+        el,
+        el.containerId ? (elementsById.get(el.containerId) ?? null) : null,
+        config.theme ?? "light"
+      );
       break;
     case "image":
       drawImageElement(ctx, el);
@@ -342,7 +349,7 @@ export const renderElement = (
       if (path) {
         ctx.save();
         ctx.translate(el.x, el.y);
-        ctx.fillStyle = el.strokeColor;
+        ctx.fillStyle = resolveColor(el.strokeColor, config.theme ?? "light", "stroke");
         ctx.fill(new Path2D(path));
         ctx.restore();
       }
@@ -358,7 +365,7 @@ export const renderElement = (
       }
       // arrows/lines keep their points relative to x/y, as do shapes at 0,0
       ctx.translate(el.x, el.y);
-      for (const drawable of getDrawables(el)) rc.draw(drawable);
+      for (const drawable of getDrawables(el, config.theme ?? "light")) rc.draw(drawable);
       if (el.type === "sticky") {
         ctx.shadowColor = "transparent";
         ctx.globalAlpha = Math.min(ctx.globalAlpha, 0.09);

@@ -3,6 +3,8 @@ import type { Drawable, Options } from "roughjs/bin/core";
 import getStroke from "perfect-freehand";
 import type { ExcaliElement, FreedrawElement, LinearElement } from "../types";
 import { getElementBounds } from "../geometry";
+import { resolveColor } from "../constants";
+import type { ThemeName } from "../constants";
 
 const generator = rough.generator();
 
@@ -12,14 +14,16 @@ const dashPattern = (el: ExcaliElement): number[] | undefined => {
   return undefined;
 };
 
-const roughOptions = (el: ExcaliElement): Options => {
+const roughOptions = (el: ExcaliElement, theme: ThemeName): Options => {
   const dash = dashPattern(el);
+  const stroke = resolveColor(el.strokeColor, theme, "stroke");
+  const bg = resolveColor(el.backgroundColor, theme, "background");
   return {
     seed: el.seed,
-    stroke: el.strokeColor,
+    stroke: stroke,
     strokeWidth: el.strokeWidth,
     roughness: el.roughness,
-    fill: el.backgroundColor === "transparent" ? undefined : el.backgroundColor,
+    fill: bg === "transparent" ? undefined : bg,
     fillStyle: el.fillStyle,
     fillWeight: el.strokeWidth / 2,
     hachureGap: el.strokeWidth * 4,
@@ -155,8 +159,8 @@ export const freedrawPath = (el: FreedrawElement): string => {
  * (translate by x/y before drawing). Text, images and embeds are drawn by the
  * backends directly and produce no drawables.
  */
-const buildDrawables = (el: ExcaliElement): Drawable[] => {
-  const opts = roughOptions(el);
+const buildDrawables = (el: ExcaliElement, theme: ThemeName): Drawable[] => {
+  const opts = roughOptions(el, theme);
   const w = el.width;
   const h = el.height;
 
@@ -260,9 +264,10 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
         for (const pos of ["start", "end"] as const) {
           const head = getArrowheadShape(el as LinearElement, pos);
           if (!head) continue;
+          const stroke = resolveColor(el.strokeColor, theme, "stroke");
           const headOpts: Options = {
             ...opts,
-            fill: head.filled ? el.strokeColor : undefined,
+            fill: head.filled ? stroke : undefined,
             fillStyle: "solid",
             strokeLineDash: undefined,
           };
@@ -270,7 +275,7 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
             out.push(
               generator.circle(head.path[0][0], head.path[0][1], head.circle * 2, {
                 ...headOpts,
-                fill: el.strokeColor,
+                fill: stroke,
               }),
             );
           } else if (head.closed) {
@@ -287,14 +292,14 @@ const buildDrawables = (el: ExcaliElement): Drawable[] => {
   }
 };
 
-const cache = new WeakMap<ExcaliElement, { version: number; drawables: Drawable[] }>();
+const cache = new WeakMap<ExcaliElement, { version: number; theme: ThemeName; drawables: Drawable[] }>();
 
-/** Cached per element identity + version so re-renders stay cheap. */
-export const getDrawables = (el: ExcaliElement): Drawable[] => {
+/** Cached per element identity + version + theme so re-renders stay cheap. */
+export const getDrawables = (el: ExcaliElement, theme: ThemeName): Drawable[] => {
   const hit = cache.get(el);
-  if (hit && hit.version === el.version) return hit.drawables;
-  const drawables = buildDrawables(el);
-  cache.set(el, { version: el.version, drawables });
+  if (hit && hit.version === el.version && hit.theme === theme) return hit.drawables;
+  const drawables = buildDrawables(el, theme);
+  cache.set(el, { version: el.version, theme, drawables });
   return drawables;
 };
 
