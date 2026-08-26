@@ -13,6 +13,7 @@ import {
 import { Tooltip } from "./Tooltip";
 import { promptForInput } from "../prompt";
 import { IconDuplicate, IconGroup, IconUngroup } from "./icons";
+import { useLocalLibrary } from "../hooks/useLocalLibrary";
 import type { InstanceElement } from "../types";
 
 interface ComponentControlsProps {
@@ -32,6 +33,7 @@ export const ComponentControls = ({
 }: ComponentControlsProps) => {
   const scene = useScene();
   const selected = scene.getSelected();
+  const { saveLocalItems } = useLocalLibrary();
   /*
    * Only what's actually on the canvas is listed. Service presets register a
    * definition on first use and it stays in the document for undo's sake, so
@@ -137,7 +139,10 @@ export const ComponentControls = ({
                 hint: "Editing the master later updates every instance.",
               }).then((name) => {
                 if (name === null) return;
-                createComponentFromSelection(name);
+                const def = createComponentFromSelection(name);
+                if (def) {
+                  saveLocalItems([{ id: def.id, name: def.name, elements: def.elements }]);
+                }
               });
             }}
           >
