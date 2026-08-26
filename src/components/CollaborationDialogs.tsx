@@ -5,8 +5,6 @@ import {
   type PeerPresence,
 } from "../io/collaboration";
 import { IconClose, IconUsers } from "./icons";
-import { store } from "../store";
-
 export function JoinDialog({ 
   room, 
   onJoin, 
@@ -76,7 +74,6 @@ export function JoinDialog({
 export function CollaborationMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [peers, setPeers] = useState<Map<number, PeerPresence>>(new Map());
-  const [room, setRoom] = useState(collab.room);
   const [state, setState] = useState(collab.state);
   const [code, setCode] = useState("");
   const [copied, setCopied] = useState(false);
@@ -84,7 +81,6 @@ export function CollaborationMenu() {
 
   useEffect(() => {
     const updateState = () => {
-      setRoom(collab.room);
       setState(collab.state);
       setPeers(new Map(collab.getPeers()));
     };
