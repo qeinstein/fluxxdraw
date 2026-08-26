@@ -44,7 +44,7 @@ const LibraryItemPreview = ({ elements }: { elements: any[] }) => {
   return <div ref={containerRef} className="library-item-content preview-bg" style={{ padding: "8px", boxSizing: "border-box" }} />;
 };
 
-const getLibraryItems = (payload: unknown): any[][] => {
+const getLibraryItems = (payload: unknown): { name?: string; elements: any[] }[] => {
   let value: unknown = payload;
   if (typeof value === "string") value = JSON.parse(value);
   if (value && typeof value === "object" && "content" in value) {
@@ -58,13 +58,13 @@ const getLibraryItems = (payload: unknown): any[][] => {
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => {
-      if (Array.isArray(item)) return item;
+      if (Array.isArray(item)) return { elements: item };
       if (item && typeof item === "object" && Array.isArray((item as { elements?: unknown }).elements)) {
-        return (item as { elements: any[] }).elements;
+        return { name: (item as any).name, elements: (item as { elements: any[] }).elements };
       }
-      return item && typeof item === "object" && "type" in item ? [item] : [];
+      return item && typeof item === "object" && "type" in item ? { elements: [item] } : { elements: [] };
     })
-    .filter((elements) => elements.length > 0);
+    .filter((parsed) => parsed.elements.length > 0);
 };
 
 export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void, docked?: boolean, onDockToggle?: () => void }) => {
@@ -109,11 +109,11 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
       setInstallSuccess(null);
       const libraryItems = getLibraryItems(await fetchLibraryContent(id));
       if (libraryItems.length === 0) throw new Error("This library contains no compatible components.");
-      const newItems = libraryItems.map((elements, index) => ({
+      const newItems = libraryItems.map((item, index) => ({
         id: libraryItems.length === 1 ? id : `${id}:${index}`,
-        name: libraryItems.length === 1 ? name : `${name} ${index + 1}`,
+        name: item.name || (libraryItems.length === 1 ? name : `${name} ${index + 1}`),
         preview: libraryItems.length === 1 ? previewUrl : undefined,
-        elements,
+        elements: item.elements,
       }));
       saveLocalItems(newItems);
       setInstallSuccess(`${name} was added to your library.`);
