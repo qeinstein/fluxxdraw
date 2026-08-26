@@ -281,30 +281,46 @@ export function CollaborationMenu() {
               
               <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '0' }} />
               <div>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: 550, color: 'var(--fg-muted)', marginBottom: '6px' }}>
-                  My Name
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 550, color: 'var(--fg-muted)', marginBottom: '8px' }}>
+                  Participants
                 </label>
-                <input
-                  type="text"
-                  defaultValue={collab.provider?.awareness.getLocalState()?.name || localStorage.getItem("fluxx_collab_name") || "Anonymous Fox"}
-                  onChange={(e) => {
-                    const newName = e.target.value.trim() || "Anonymous Fox";
-                    collab.updatePresence({ name: newName });
-                    localStorage.setItem("fluxx_collab_name", newName);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.currentTarget.blur();
-                      setIsOpen(false);
-                    }
-                  }}
-                  style={{
-                    width: '100%', padding: '6px 8px', borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--line)', background: 'var(--surface-sunken)',
-                    color: 'var(--fg)', fontSize: '12px', outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+                  {/* Local User */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div 
+                      style={{
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        backgroundColor: collab.provider?.awareness.getLocalState()?.color || "#000",
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#000', fontSize: '11px', fontWeight: 'bold'
+                      }}
+                    >
+                      {(collab.provider?.awareness.getLocalState()?.name || "A").charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontSize: '13px', color: 'var(--fg)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {collab.provider?.awareness.getLocalState()?.name || "Anonymous Fox"} (You)
+                    </span>
+                  </div>
+                  
+                  {/* Peers */}
+                  {Array.from(peers.values()).map((peer, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div 
+                        style={{
+                          width: '24px', height: '24px', borderRadius: '50%',
+                          backgroundColor: peer.color || "#000", display: 'flex',
+                          alignItems: 'center', justifyContent: 'center',
+                          color: '#000', fontSize: '11px', fontWeight: 'bold'
+                        }}
+                      >
+                        {(peer.name || "A").charAt(0).toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: '13px', color: 'var(--fg)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {peer.name || "Anonymous Fox"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
               
               {peers.size > 0 && (

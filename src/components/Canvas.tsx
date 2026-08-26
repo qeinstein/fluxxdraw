@@ -414,9 +414,8 @@ export const Canvas = ({
           const width = metrics.width + 12;
           const height = 20;
           
-          ctx.beginPath();
-          ctx.roundRect(14, 18, width, height, 4);
-          ctx.fill();
+          ctx.fillStyle = peer.color || "#000";
+          ctx.fillRect(14, 18, width, height);
           
           ctx.fillStyle = "#fff";
           ctx.fillText(displayName, 20, 32);
