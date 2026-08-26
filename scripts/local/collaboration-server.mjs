@@ -1,4 +1,5 @@
 import http from "node:http";
+import https from "node:https";
 
 import * as decoding from "lib0/decoding";
 import * as encoding from "lib0/encoding";
@@ -79,7 +80,8 @@ const server = http.createServer((_request, response) => {
 const wss = new WebSocketServer({ server });
 
 setInterval(() => {
-  http
+  const client = relayUrl.startsWith("https:") ? https : http;
+  client
     .get(`${relayUrl}/health`)
     .on("error", () => {});
 }, 60_000);

@@ -125,8 +125,15 @@ export const parseCollaborationHash = () => {
   return null;
 };
 
+export const parseCollaborationPath = () => {
+  if (typeof window === "undefined") return null;
+  const match = window.location.pathname.match(/^\/session\/([A-Za-z0-9]+)$/);
+  if (!match) return null;
+  return { room: match[1], key: match[1] };
+};
+
 export const generateCollaborationLink = () => {
   const room = Math.random().toString(36).substring(2, 10);
   const key = Math.random().toString(36).substring(2, 15);
-  return { room, key, url: `${window.location.origin}${window.location.pathname}#room=${room}&key=${key}` };
+  return { room, key, url: `${window.location.origin}/session/${room}` };
 };
