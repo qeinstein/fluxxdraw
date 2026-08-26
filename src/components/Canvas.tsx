@@ -376,9 +376,35 @@ export const Canvas = ({
     laserRef.current = trail;
     if (trail.length > 1) drawLaserTrail(ctx, trail, zoom, now);
 
-    // multiplayer cursors
+    // multiplayer cursors and selections
     if (collab.state !== "LOCAL") {
       const peers = collab.getPeers();
+
+      // Draw peer selections
+      for (const [, peer] of peers.entries()) {
+        if (peer.selection && peer.selection.length > 0) {
+          const selectedEls = store.visibleElements.filter(el => peer.selection!.includes(el.id));
+          if (selectedEls.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = peer.color || "#000";
+            ctx.lineWidth = 2 / zoom;
+            ctx.setLineDash([]);
+            
+            for (const el of selectedEls) {
+              const bounds = getElementBounds(el);
+              ctx.strokeRect(
+                bounds.x1 - 4 / zoom,
+                bounds.y1 - 4 / zoom,
+                bounds.x2 - bounds.x1 + 8 / zoom,
+                bounds.y2 - bounds.y1 + 8 / zoom
+              );
+            }
+            ctx.restore();
+          }
+        }
+      }
+
+      // Draw peer cursors
       for (const [, peer] of peers.entries()) {
         if (peer.cursor) {
           const { x, y } = peer.cursor;
@@ -1008,8 +1034,8 @@ export const Canvas = ({
     const state = store.appState;
     const [x, y] = toScene(event.clientX, event.clientY);
 
-    // Throttle cursor broadcast slightly to avoid flooding awareness
-    if (performance.now() - (pointerRef.current as any).lastCursorTime > 50) {
+    // Broadcast cursor at ~60fps (16ms) to feel realtime
+    if (performance.now() - (pointerRef.current as any).lastCursorTime > 16) {
       collab.updatePresence({ cursor: { x, y } });
       (pointerRef.current as any).lastCursorTime = performance.now();
     }

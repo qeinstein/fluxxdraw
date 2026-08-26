@@ -31,6 +31,7 @@ class CollaborationManager {
   shareUrl: string | null = null;
   isHost: boolean = false;
   state: SessionState = "LOCAL";
+  unsubscribeStore?: () => void;
   
   initLocalDB() {
     this.localPersistence = new IndexeddbPersistence("fluxxdraw-local-db", this.localDoc);
@@ -81,6 +82,14 @@ class CollaborationManager {
 
     // Set initial presence
     this.updatePresence({ name, color });
+
+    let lastSelection = store.appState.selectedIds;
+    this.unsubscribeStore = store.subscribe(() => {
+      if (store.appState.selectedIds !== lastSelection) {
+        lastSelection = store.appState.selectedIds;
+        this.updatePresence({ selection: lastSelection });
+      }
+    });
 
     // Re-render canvas when peer cursors or presence updates
     this.provider.awareness.on("change", () => {
@@ -178,6 +187,10 @@ class CollaborationManager {
     if (this.roomPersistence) {
       this.roomPersistence.destroy();
       this.roomPersistence = null;
+    }
+    if (this.unsubscribeStore) {
+      this.unsubscribeStore();
+      this.unsubscribeStore = undefined;
     }
     if (this.collabDoc) {
       this.collabDoc.destroy();
