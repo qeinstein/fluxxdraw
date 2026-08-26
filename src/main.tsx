@@ -11,6 +11,9 @@ import { startAnalytics } from "./analytics";
 installFontFaces();
 startAnalytics();
 
+import { collab } from "./io/collaboration";
+collab.initLocalDB();
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
