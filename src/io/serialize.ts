@@ -89,14 +89,12 @@ export const parseSceneDocument = (raw: unknown): SceneDocument => {
   // get cleaned up so they don't cause ghost connections.
   const elementIds = new Set(elements.map((el) => el.id));
   for (const el of elements) {
-    if (el.type === "arrow" || el.type === "line") {
-      const arrow = el as import("../types").LinearElement;
-      if (arrow.startBinding && !elementIds.has(arrow.startBinding.elementId)) {
-        (arrow as unknown as Record<string, unknown>).startBinding = null;
-      }
-      if (arrow.endBinding && !elementIds.has(arrow.endBinding.elementId)) {
-        (arrow as unknown as Record<string, unknown>).endBinding = null;
-      }
+    const anyEl = el as any;
+    if (anyEl.startBinding && !elementIds.has(anyEl.startBinding.elementId)) {
+      anyEl.startBinding = null;
+    }
+    if (anyEl.endBinding && !elementIds.has(anyEl.endBinding.elementId)) {
+      anyEl.endBinding = null;
     }
   }
 

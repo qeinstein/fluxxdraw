@@ -10,7 +10,7 @@ import { FILE_EXTENSION } from "../constants";
 export type SessionState = "LOCAL" | "CREATING_SESSION" | "COLLABORATING" | "JOINING_SESSION";
 
 const collaborationRelay =
-  import.meta.env.VITE_YJS_RELAY_URL ?? "wss://demos.yjs.dev/ws";
+  import.meta.env.VITE_WS_URL ?? import.meta.env.VITE_YJS_RELAY_URL ?? "wss://fluxxdraw.onrender.com";
 
 export interface PeerPresence {
   name: string;
@@ -32,6 +32,16 @@ class CollaborationManager {
   isHost: boolean = false;
   state: SessionState = "LOCAL";
   unsubscribeStore?: () => void;
+  private awarenessListeners = new Set<() => void>();
+  
+  subscribeAwareness = (listener: () => void) => {
+    this.awarenessListeners.add(listener);
+    return () => this.awarenessListeners.delete(listener);
+  };
+  
+  private emitAwarenessChange() {
+    for (const listener of this.awarenessListeners) listener();
+  }
   
   initLocalDB() {
     this.localPersistence = new IndexeddbPersistence("fluxxdraw-local-db", this.localDoc);
@@ -48,6 +58,7 @@ class CollaborationManager {
     const state = Y.encodeStateAsUpdate(this.localDoc);
     Y.applyUpdate(this.collabDoc, state);
     
+    this.collabDoc.getMap<boolean>("meta").set("isRoomActive", true);
     this.isHost = true;
     this._connect(roomId, name, color);
   }
@@ -91,9 +102,9 @@ class CollaborationManager {
       }
     });
 
-    // Re-render canvas when peer cursors or presence updates
+    // Emit awareness changes to specific listeners instead of forcing the whole store to re-render
     this.provider.awareness.on("change", () => {
-      store.emit();
+      this.emitAwarenessChange();
     });
 
     this.provider.on('sync', (isSynced: boolean) => {
@@ -123,13 +134,15 @@ class CollaborationManager {
           }
 
           // If a guest joins an empty room with no host, they should be kicked with a popup.
-          // Wait 10 seconds to allow for slow awareness sync over the network.
+          // Wait 15 seconds to allow for slow awareness sync over the network.
           setTimeout(() => {
-            if (this.state === "COLLABORATING" && this.provider!.awareness.getStates().size <= 1 && store.elements.length === 0) {
+            const yMeta = this.collabDoc?.getMap<boolean>("meta");
+            const isRoomActive = yMeta ? yMeta.get("isRoomActive") : false;
+            if (this.state === "COLLABORATING" && !isRoomActive && this.provider!.awareness.getStates().size <= 1) {
               window.dispatchEvent(new CustomEvent("fluxxdraw:alert", { detail: "This session no longer exists or the host has left." }));
               this.leaveSession();
             }
-          }, 10000);
+          }, 15000);
         }
       }
     });
@@ -211,6 +224,7 @@ class CollaborationManager {
   endSession() {
     if (this.isHost && this.collabDoc) {
       this.collabDoc.getMap<boolean>("meta").set("ended", true);
+      this.collabDoc.getMap<boolean>("meta").set("isRoomActive", false);
       
       // Save the final state back to the local document BEFORE tearing down
       const finalState = Y.encodeStateAsUpdate(this.collabDoc);
@@ -219,7 +233,7 @@ class CollaborationManager {
     // Give Yjs a moment to broadcast the 'ended' message
     setTimeout(() => {
       this.leaveSession();
-    }, 1000);
+    }, 2000);
   }
 
   updatePresence(state: Partial<PeerPresence>) {

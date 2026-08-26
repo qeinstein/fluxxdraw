@@ -403,52 +403,6 @@ export const Canvas = ({
           }
         }
       }
-
-      // Draw peer cursors
-      for (const [, peer] of peers.entries()) {
-        if (peer.cursor) {
-          const { x, y } = peer.cursor;
-          
-          ctx.save();
-          ctx.translate(x, y);
-          // Scale cursor inversely so it stays the same size regardless of zoom
-          ctx.scale(1 / zoom, 1 / zoom);
-          
-          // Draw cursor pointer (Figma-style arrow)
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(5.6, 15.6);
-          ctx.lineTo(8.2, 11.2);
-          ctx.lineTo(13.6, 14.8);
-          ctx.lineTo(15.4, 12.0);
-          ctx.lineTo(10.0, 8.4);
-          ctx.lineTo(14.8, 6.2);
-          ctx.closePath();
-          
-          ctx.fillStyle = peer.color || "#000";
-          ctx.fill();
-          ctx.strokeStyle = "#fff";
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-
-          // Draw name tag
-          const name = peer.name || "Anonymous";
-          const displayName = name.length > 15 ? name.slice(0, 15) + "…" : name;
-          
-          ctx.font = "bold 11px Inter, system-ui, sans-serif";
-          const metrics = ctx.measureText(displayName);
-          const width = metrics.width + 12;
-          const height = 20;
-          
-          ctx.fillStyle = peer.color || "#000";
-          ctx.fillRect(14, 18, width, height);
-          
-          ctx.fillStyle = "#fff";
-          ctx.fillText(displayName, 20, 32);
-          
-          ctx.restore();
-        }
-      }
     }
   }, []);
 
@@ -1034,8 +988,8 @@ export const Canvas = ({
     const state = store.appState;
     const [x, y] = toScene(event.clientX, event.clientY);
 
-    // Broadcast cursor at ~60fps (16ms) to feel realtime
-    if (performance.now() - (pointerRef.current as any).lastCursorTime > 16) {
+    // Broadcast cursor at ~12fps (80ms) to reduce network load
+    if (performance.now() - (pointerRef.current as any).lastCursorTime > 80) {
       collab.updatePresence({ cursor: { x, y } });
       (pointerRef.current as any).lastCursorTime = performance.now();
     }
@@ -1797,15 +1751,11 @@ function RemoteCursors() {
   const [peers, setPeers] = useState<Map<number, PeerPresence>>(new Map());
 
   useEffect(() => {
-    if (!collab.provider) return;
-    
     const updatePeers = () => setPeers(new Map(collab.getPeers()));
-    
-    collab.provider.awareness.on("change", updatePeers);
+    const unsubscribe = collab.subscribeAwareness(updatePeers);
     updatePeers();
-    return () => {
-      if (collab.provider) collab.provider.awareness.off("change", updatePeers);
-    }
+    
+    return unsubscribe;
   }, []);
 
   return (
@@ -1823,7 +1773,7 @@ function RemoteCursors() {
             left: screenX, 
             top: screenY, 
             transform: 'translate(0, 0)',
-            transition: 'transform 0.1s linear, left 0.1s linear, top 0.1s linear',
+            transition: 'left 0.08s linear, top 0.08s linear',
             zIndex: 100
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill={peer.color} style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.2))' }}>
