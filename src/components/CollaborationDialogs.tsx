@@ -98,6 +98,7 @@ export function ShareDialog({
       collab.joinRoom(room, key, name, color, true);
       yMeta.set("ended", false);
       store.publishScene();
+      window.history.replaceState(null, "", `/session/${room}`);
       setLink(collab.shareUrl!);
     }
   }, []);
@@ -175,9 +176,57 @@ export function ShareDialog({
   );
 }
 
+export function JoinByCodeDialog({
+  onClose,
+  onJoin,
+}: {
+  onClose: () => void;
+  onJoin: (room: string) => void;
+}) {
+  const [code, setCode] = useState("");
+
+  return (
+    <div className="dialog-backdrop" onClick={onClose}>
+      <div className="dialog compact" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
+        <header>
+          <h2>Join Session</h2>
+          <button className="icon-button" aria-label="Close" onClick={onClose}>
+            <IconClose />
+          </button>
+        </header>
+        <div className="dialog-body" style={{ padding: '16px 20px' }}>
+          <p style={{ color: 'var(--fg-muted)', fontSize: '13px', margin: '0 0 16px' }}>
+            Enter the session code shared with you.
+          </p>
+          <input
+            autoFocus
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="e.g. abc123xy"
+            onKeyDown={(e) => e.key === "Enter" && code.trim() && onJoin(code.trim())}
+            style={{
+              width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--line)', background: 'var(--surface-sunken)',
+              color: 'var(--fg)', fontSize: '13px', outline: 'none',
+              boxSizing: 'border-box', textTransform: 'lowercase',
+            }}
+          />
+        </div>
+        <footer>
+          <button onClick={onClose}>Cancel</button>
+          <button className="primary" disabled={!code.trim()} onClick={() => code.trim() && onJoin(code.trim())}>
+            Join Session
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export function CollaborationAvatars() {
   const [peers, setPeers] = useState<Map<number, PeerPresence>>(new Map());
-  const [room] = useState(collab.room);
+  const [room, setRoom] = useState(collab.room);
 
   useEffect(() => {
     if (!room) return;
@@ -194,6 +243,13 @@ export function CollaborationAvatars() {
       if (collab.provider) collab.provider.awareness.off("change", updatePeers);
     }
   }, [room]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRoom(collab.room);
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!room) return null;
 

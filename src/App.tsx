@@ -6,8 +6,8 @@ import { Menu } from "./components/Menu";
 import { ZoomControls, zoomToElement } from "./components/ZoomControls";
 import { ExportDialog } from "./components/ExportDialog";
 import { TimelinePanel } from "./components/TimelinePanel";
-import { collab, parseCollaborationHash } from "./io/collaboration";
-import { JoinDialog, ShareDialog, CollaborationAvatars } from "./components/CollaborationDialogs";
+import { collab, parseCollaborationHash, parseCollaborationPath } from "./io/collaboration";
+import { JoinDialog, ShareDialog, JoinByCodeDialog, CollaborationAvatars } from "./components/CollaborationDialogs";
 import { Presentation } from "./components/Presentation";
 import { ComponentControls } from "./components/ComponentControls";
 import { DiagramTextPanel } from "./components/DiagramTextPanel";
@@ -91,6 +91,7 @@ export default function App() {
 
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isJoinByCodeOpen, setIsJoinByCodeOpen] = useState(false);
   const [collabRoom, setCollabRoom] = useState<{ room: string; key: string } | null>(null);
 
   const fileHandleRef = useRef<FileSystemFileHandle | null>(null);
@@ -220,9 +221,16 @@ export default function App() {
 
   // restore the last session so a refresh doesn't lose work
   useEffect(() => {
-    const collabHash = parseCollaborationHash();
-    if (collabHash) {
-      setCollabRoom(collabHash);
+    const collabPath = parseCollaborationPath();
+    if (collabPath) {
+      setCollabRoom(collabPath);
+      setIsJoinDialogOpen(true);
+      return;
+    }
+
+    const legacyHash = parseCollaborationHash();
+    if (legacyHash) {
+      setCollabRoom({ ...legacyHash, key: legacyHash.key });
       setIsJoinDialogOpen(true);
       return;
     }
@@ -670,6 +678,16 @@ export default function App() {
                 <IconUsers />
               </button>
             </Tooltip>
+            <Tooltip label="Join by code" placement="bottom">
+              <button
+                className="icon-button"
+                aria-label="Join by code"
+                onClick={() => setIsJoinByCodeOpen(true)}
+                style={{ color: '#40c057', fontSize: '11px', fontWeight: 700 }}
+              >
+                #
+              </button>
+            </Tooltip>
             <Tooltip label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"} placement="bottom">
               <button
                 className={`icon-button ${scene.appState.viewMode ? "active" : ""}`}
@@ -789,6 +807,17 @@ export default function App() {
             setCollabRoom(null);
             window.history.replaceState(null, "", window.location.pathname);
             setIsJoinDialogOpen(false);
+          }}
+        />
+      )}
+
+      {isJoinByCodeOpen && (
+        <JoinByCodeDialog
+          onClose={() => setIsJoinByCodeOpen(false)}
+          onJoin={(room) => {
+            setCollabRoom({ room, key: room });
+            setIsJoinByCodeOpen(false);
+            setIsJoinDialogOpen(true);
           }}
         />
       )}
