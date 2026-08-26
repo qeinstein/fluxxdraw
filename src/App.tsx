@@ -601,7 +601,13 @@ export default function App() {
    * On mobile the style controls live in a sheet. An active component edit
    * session has to keep it open, otherwise there is no way back out of it.
    */
-  const styleAvailable = hasStyleControls(scene.getSelected(), scene.appState.tool);
+  const rawSelectedForStyle = scene.getSelected();
+  const editingTextForStyle = scene.appState.editingTextId ? store.getElement(scene.appState.editingTextId) : null;
+  const selectedForStyle = editingTextForStyle
+    ? (editingTextForStyle.type === "text" && editingTextForStyle.containerId ? [store.getElement(editingTextForStyle.containerId) ?? editingTextForStyle] : [editingTextForStyle])
+    : rawSelectedForStyle;
+
+  const styleAvailable = hasStyleControls(selectedForStyle, scene.appState.tool);
   const sheetOpen = isMobile && (styleSheetOpen || componentSession !== null);
 
   return (

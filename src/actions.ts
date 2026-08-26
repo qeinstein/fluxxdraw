@@ -498,7 +498,12 @@ export const toggleLockSelection = () => {
 /** Applies a style patch to the selection and remembers it for new elements. */
 export const applyStyleToSelection = (patch: Record<string, unknown>) => {
   store.setStyle(patch as never);
-  const selected = store.getSelected();
+  const rawSelected = store.getSelected();
+  const editingText = store.appState.editingTextId ? store.getElement(store.appState.editingTextId) : null;
+  const selected = editingText
+    ? (editingText.type === "text" && editingText.containerId ? [store.getElement(editingText.containerId) ?? editingText] : [editingText])
+    : rawSelected;
+
   if (selected.length === 0) return;
   const ids = selected.map((el) => el.id);
   // style changes should also reach labels inside the selected containers

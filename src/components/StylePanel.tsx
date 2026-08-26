@@ -139,7 +139,12 @@ export const hasStyleControls = (selected: ExcaliElement[], tool: Tool) =>
 
 export const StylePanel = () => {
   const scene = useScene();
-  const selected = scene.getSelected();
+  const rawSelected = scene.getSelected();
+  const editingText = scene.appState.editingTextId ? scene.getElement(scene.appState.editingTextId) : null;
+  const selected = editingText
+    ? (editingText.type === "text" && editingText.containerId ? [scene.getElement(editingText.containerId) ?? editingText] : [editingText])
+    : rawSelected;
+
   const style = scene.appState.currentStyle;
   const palette = PALETTE[scene.appState.theme];
   const controls = relevantControls(selected, scene.appState.tool);
