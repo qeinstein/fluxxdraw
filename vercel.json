@@ -1,8 +1,7 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/session/:path*", "destination": "/index.html" },
     { "source": "/uqnautmfluxx", "destination": "/uqnautmfluxx.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
