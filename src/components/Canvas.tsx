@@ -375,6 +375,56 @@ export const Canvas = ({
     const trail = laserRef.current.filter((p) => now - p.time < LASER_FADE_MS);
     laserRef.current = trail;
     if (trail.length > 1) drawLaserTrail(ctx, trail, zoom, now);
+
+    // multiplayer cursors
+    if (collab.state !== "LOCAL") {
+      const peers = collab.getPeers();
+      for (const [, peer] of peers.entries()) {
+        if (peer.cursor) {
+          const { x, y } = peer.cursor;
+          
+          ctx.save();
+          ctx.translate(x, y);
+          // Scale cursor inversely so it stays the same size regardless of zoom
+          ctx.scale(1 / zoom, 1 / zoom);
+          
+          // Draw cursor pointer (Figma-style arrow)
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(5.6, 15.6);
+          ctx.lineTo(8.2, 11.2);
+          ctx.lineTo(13.6, 14.8);
+          ctx.lineTo(15.4, 12.0);
+          ctx.lineTo(10.0, 8.4);
+          ctx.lineTo(14.8, 6.2);
+          ctx.closePath();
+          
+          ctx.fillStyle = peer.color || "#000";
+          ctx.fill();
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Draw name tag
+          const name = peer.name || "Anonymous";
+          const displayName = name.length > 15 ? name.slice(0, 15) + "…" : name;
+          
+          ctx.font = "bold 11px Inter, system-ui, sans-serif";
+          const metrics = ctx.measureText(displayName);
+          const width = metrics.width + 12;
+          const height = 20;
+          
+          ctx.beginPath();
+          ctx.roundRect(14, 18, width, height, 4);
+          ctx.fill();
+          
+          ctx.fillStyle = "#fff";
+          ctx.fillText(displayName, 20, 32);
+          
+          ctx.restore();
+        }
+      }
+    }
   }, []);
 
   const draw = useCallback(() => {

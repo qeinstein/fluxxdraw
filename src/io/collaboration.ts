@@ -76,6 +76,11 @@ class CollaborationManager {
     // Set initial presence
     this.updatePresence({ name, color });
 
+    // Re-render canvas when peer cursors or presence updates
+    this.provider.awareness.on("change", () => {
+      store.emit();
+    });
+
     this.provider.on('sync', (isSynced: boolean) => {
       if (isSynced) {
         this.state = "COLLABORATING";
