@@ -1196,9 +1196,30 @@ export const Canvas = ({
             x2: movingBounds.x2 + moveX,
             y2: movingBounds.y2 + moveY,
           };
-          const idSet = new Set(ids);
+          const movingIdSet = new Set(ids);
+          let added = true;
+          while (added) {
+            added = false;
+            for (const el of store.elements) {
+              if (movingIdSet.has(el.id)) continue;
+              if (el.frameId !== null && movingIdSet.has(el.frameId)) {
+                movingIdSet.add(el.id);
+                added = true;
+              } else if (el.type === "text" && el.containerId !== null && movingIdSet.has(el.containerId)) {
+                movingIdSet.add(el.id);
+                added = true;
+              } else if (el.type === "arrow" || el.type === "line") {
+                const arrow = el as LinearElement;
+                if ((arrow.startBinding && movingIdSet.has(arrow.startBinding.elementId)) ||
+                    (arrow.endBinding && movingIdSet.has(arrow.endBinding.elementId))) {
+                  movingIdSet.add(el.id);
+                  added = true;
+                }
+              }
+            }
+          }
           const others = store.visibleElements.filter(
-            (el) => !idSet.has(el.id) && el.type !== "frame",
+            (el) => !movingIdSet.has(el.id) && el.type !== "frame",
           );
           const snap = computeSnap(shifted, others, state.zoom);
           moveX += snap.dx;
