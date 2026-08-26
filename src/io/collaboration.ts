@@ -36,7 +36,7 @@ class CollaborationManager {
   
   subscribeAwareness = (listener: () => void) => {
     this.awarenessListeners.add(listener);
-    return () => this.awarenessListeners.delete(listener);
+    return () => { this.awarenessListeners.delete(listener); };
   };
   
   private emitAwarenessChange() {
