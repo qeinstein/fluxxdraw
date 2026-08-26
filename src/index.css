@@ -3031,7 +3031,7 @@ button:active:not(:disabled) {
   align-items: center;
   gap: 2px;
   padding: 4px;
-  transform: translate(-50%, calc(-100% - 13px));
+  transform: translate(-50%, calc(-100% - 32px));
   border-radius: 9px;
   box-shadow: var(--shadow-float);
   animation: selection-toolbar-in 150ms var(--ease);
@@ -3039,8 +3039,8 @@ button:active:not(:disabled) {
 }
 
 @keyframes selection-toolbar-in {
-  from { opacity: 0; transform: translate(-50%, calc(-100% - 8px)) scale(0.97); }
-  to { opacity: 1; transform: translate(-50%, calc(-100% - 13px)) scale(1); }
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 24px)) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, calc(-100% - 32px)) scale(1); }
 }
 
 .selection-colors {
