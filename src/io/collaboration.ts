@@ -145,7 +145,7 @@ class CollaborationManager {
         title: "Session Ended",
         label: `${reason} Do you want to save a local copy?`,
         hint: `Leave blank to discard, or enter a name to download as .${FILE_EXTENSION}`,
-        defaultValue: "collaborative-drawing"
+        initialValue: "collaborative-drawing"
       });
 
       if (fileName) {
