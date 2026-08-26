@@ -7,6 +7,20 @@ new version stops opening in an old one.
 
 ## Unreleased
 
+## v1.2.1
+
+### Real-Time Live Collaboration
+- Transitioned the core architecture from strictly single-player to a live multiplayer WebSocket relay engine via `y-websocket`
+- Re-architected data structures into CRDTs (Conflict-free Replicated Data Types) using Yjs
+- Added real-time 60fps multiplayer cursor tracking with participant name tags and avatars
+- Added live visual bounding-box highlights when remote peers select elements on the canvas
+- Guests automatically pan to the host's active viewing area upon joining
+- Session participants can now easily edit their own display name inline at any time
+- Safely restricts automatic IndexedDB local persistence to the session Host only
+- Guests are proactively prompted with an opt-in to download a local `.fluxx` save file when leaving a live session
+- Host's session data is perfectly merged and preserved in their local document when the session concludes
+- Improved library naming heuristic to intelligently extract titles from contained text elements
+
 ## v1.1.1
 
 - Automated GitHub Releases via Actions
