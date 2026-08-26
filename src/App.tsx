@@ -79,6 +79,7 @@ export default function App() {
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [textPanelOpen, setTextPanelOpen] = useState(false);
   const [componentSession, setComponentSession] = useState<{
@@ -305,6 +306,14 @@ export default function App() {
     }
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [moreMenuOpen]);
+
+  useEffect(() => {
+    const handleAlert = (e: Event) => {
+      setAlertMessage((e as CustomEvent<string>).detail);
+    };
+    window.addEventListener("fluxxdraw:alert", handleAlert);
+    return () => window.removeEventListener("fluxxdraw:alert", handleAlert);
+  }, []);
 
   // --- opening -------------------------------------------------------------
 
@@ -805,6 +814,28 @@ export default function App() {
                 }}
               >
                 Clear canvas
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+      {alertMessage && (
+        <div className="dialog-backdrop" onClick={() => setAlertMessage(null)}>
+          <div className="dialog compact" onClick={(e) => e.stopPropagation()}>
+            <header>
+              <h2>Notice</h2>
+              <button className="icon-button" aria-label="Close" onClick={() => setAlertMessage(null)}>
+                <IconClose />
+              </button>
+            </header>
+            <div className="dialog-body">
+              <p>{alertMessage}</p>
+            </div>
+            <footer>
+              <div style={{ flex: 1 }} />
+              <button className="primary" onClick={() => setAlertMessage(null)}>
+                OK
               </button>
             </footer>
           </div>

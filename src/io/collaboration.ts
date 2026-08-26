@@ -90,7 +90,7 @@ class CollaborationManager {
           // If a guest joins an empty room with no host, they should be kicked with a popup
           setTimeout(() => {
             if (this.state === "COLLABORATING" && this.getPeers().size === 0 && store.elements.length === 0) {
-              alert("This session no longer exists or the host has left.");
+              window.dispatchEvent(new CustomEvent("fluxxdraw:alert", { detail: "This session no longer exists or the host has left." }));
               this.leaveSession();
             }
           }, 3000);

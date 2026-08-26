@@ -268,8 +268,20 @@ button:active:not(:disabled) {
 
 button.active,
 button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--surface-sunken);
+}
+
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+}
+button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 85%, #000);
+}
+button.primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 70%, #000);
 }
 
 button:disabled {
