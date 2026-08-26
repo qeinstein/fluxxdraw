@@ -60,8 +60,10 @@ class CollaborationManager {
     this.room = roomId;
     this.shareUrl = `${window.location.origin}/session/${roomId}`;
     
-    // Keep a room's document available when an installed PWA reopens it.
-    this.roomPersistence = new IndexeddbPersistence(`fluxxdraw-room-${roomId}`, this.collabDoc!);
+    if (this.isHost) {
+      // Keep a room's document available when an installed PWA reopens it.
+      this.roomPersistence = new IndexeddbPersistence(`fluxxdraw-room-${roomId}`, this.collabDoc!);
+    }
 
     // Connect through the Yjs WebSocket relay.
     this.provider = new WebsocketProvider(
