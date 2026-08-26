@@ -292,6 +292,12 @@ export function CollaborationMenu() {
                     collab.updatePresence({ name: newName });
                     localStorage.setItem("fluxx_collab_name", newName);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.currentTarget.blur();
+                      setIsOpen(false);
+                    }
+                  }}
                   style={{
                     width: '100%', padding: '6px 8px', borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--line)', background: 'var(--surface-sunken)',
