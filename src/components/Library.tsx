@@ -60,7 +60,13 @@ const getLibraryItems = (payload: unknown): { name?: string; elements: any[] }[]
     .map((item) => {
       if (Array.isArray(item)) return { elements: item };
       if (item && typeof item === "object" && Array.isArray((item as { elements?: unknown }).elements)) {
-        return { name: (item as any).name, elements: (item as { elements: any[] }).elements };
+        const elements = (item as { elements: any[] }).elements;
+        let name = (item as any).name;
+        if (!name) {
+          const textEl = elements.find(el => el.type === "text" && el.text);
+          if (textEl) name = textEl.text.slice(0, 20); // Limit length
+        }
+        return { name, elements };
       }
       return item && typeof item === "object" && "type" in item ? { elements: [item] } : { elements: [] };
     })
