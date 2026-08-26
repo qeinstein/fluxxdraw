@@ -87,13 +87,14 @@ class CollaborationManager {
         store.emit();
 
         if (!this.isHost) {
-          // If a guest joins an empty room with no host, they should be kicked with a popup
+          // If a guest joins an empty room with no host, they should be kicked with a popup.
+          // Wait 10 seconds to allow for slow awareness sync over the network.
           setTimeout(() => {
-            if (this.state === "COLLABORATING" && this.getPeers().size === 0 && store.elements.length === 0) {
+            if (this.state === "COLLABORATING" && this.provider!.awareness.getStates().size <= 1 && store.elements.length === 0) {
               window.dispatchEvent(new CustomEvent("fluxxdraw:alert", { detail: "This session no longer exists or the host has left." }));
               this.leaveSession();
             }
-          }, 3000);
+          }, 10000);
         }
       }
     });
