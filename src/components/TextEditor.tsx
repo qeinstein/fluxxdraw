@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { store } from "../store";
+import { store, useScene } from "../store";
 import { refreshBindings, refreshTextLayout } from "../actions";
 import { fontString, getLabelBox, measureText, wrapText } from "../elements/text";
 import { CONTAINER_PADDING } from "../constants";
@@ -20,6 +20,7 @@ interface TextEditorProps {
  * out of room or gets clipped.
  */
 export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
+  useScene(); // subscribe so style changes (e.g. strokeColor) re-render us live
   const ref = useRef<HTMLTextAreaElement>(null);
   const element = store.getElement(elementId) as TextElement | null;
   const [value, setValue] = useState(element?.text ?? "");
