@@ -198,6 +198,10 @@ class CollaborationManager {
   endSession() {
     if (this.isHost && this.collabDoc) {
       this.collabDoc.getMap<boolean>("meta").set("ended", true);
+      
+      // Save the final state back to the local document BEFORE tearing down
+      const finalState = Y.encodeStateAsUpdate(this.collabDoc);
+      Y.applyUpdate(this.localDoc, finalState);
     }
     // Give Yjs a moment to broadcast the 'ended' message
     setTimeout(() => {
