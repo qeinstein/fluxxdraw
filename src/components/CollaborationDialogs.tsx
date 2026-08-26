@@ -328,14 +328,15 @@ export function CollaborationMenu() {
                           {collab.provider?.awareness.getLocalState()?.name || "Anonymous Fox"} (You)
                         </span>
                         <button 
+                          className="edit-name-button"
                           onClick={() => {
                             setEditNameValue(collab.provider?.awareness.getLocalState()?.name || "Anonymous Fox");
                             setIsEditingName(true);
                           }}
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', opacity: 0.5, display: 'flex', alignItems: 'center', fontSize: '12px' }}
                           title="Edit Name"
                         >
-                          ✎
+                          <span className="edit-icon">✎</span>
+                          <span className="edit-text">Edit Name</span>
                         </button>
                       </>
                     )}

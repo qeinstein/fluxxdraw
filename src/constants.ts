@@ -40,6 +40,24 @@ export const mapColorAcrossThemes = (
   return PALETTE[to][role][index];
 };
 
+export const resolveColor = (
+  color: string,
+  theme: ThemeName,
+  role: PaletteRole,
+): string => {
+  if (!color || color === "transparent") return color;
+  if (theme === "dark") {
+    if ((PALETTE.light[role] as readonly string[]).includes(color)) {
+      return mapColorAcrossThemes(color, "light", "dark", role);
+    }
+  } else {
+    if ((PALETTE.dark[role] as readonly string[]).includes(color)) {
+      return mapColorAcrossThemes(color, "dark", "light", role);
+    }
+  }
+  return color;
+};
+
 /**
  * A sticky note is a filled square with a centred label — a rectangle and a
  * bound text, not a new element type, so it selects, resizes, takes arrows,

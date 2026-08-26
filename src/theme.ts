@@ -15,17 +15,6 @@ export const setTheme = (next: ThemeName) => {
   if (current === next) return;
 
   store.mutate(() => {
-    const ids = store.elements.map((el) => el.id);
-    store.updateElements(ids, (el) => ({
-      strokeColor: mapColorAcrossThemes(el.strokeColor, current, next, "stroke"),
-      backgroundColor: mapColorAcrossThemes(
-        el.backgroundColor,
-        current,
-        next,
-        "background",
-      ),
-    }));
-
     const style = store.appState.currentStyle;
     store.appState = {
       ...store.appState,

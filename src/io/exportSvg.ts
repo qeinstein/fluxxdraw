@@ -4,6 +4,7 @@ import { getCommonBounds, getElementCenter } from "../geometry";
 import { freedrawPath, getDrawables } from "../render/shapes";
 import { baselineOffset, getLabelBox, getTextLines, measureText } from "../elements/text";
 import { FONT_BY_ID, fontAsDataUrl, fontStack } from "../fonts";
+import { resolveColor } from "../constants";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 export const SVG_METADATA_ID = "scene-source";
@@ -28,6 +29,7 @@ const appendTextElement = (
   parent: SVGElement,
   el: TextElement,
   container: ExcaliElement | null,
+  theme: "light" | "dark",
 ) => {
   const lines = getTextLines(el, container);
   const lineHeightPx = el.fontSize * el.lineHeight;
@@ -59,7 +61,7 @@ const appendTextElement = (
   text.setAttribute("y", String(originY + baseline));
   text.setAttribute("font-family", fontStack(el.fontFamily));
   text.setAttribute("font-size", `${el.fontSize}px`);
-  text.setAttribute("fill", el.strokeColor);
+  text.setAttribute("fill", resolveColor(el.strokeColor, theme, "stroke"));
   text.setAttribute("text-anchor", anchor);
   text.setAttribute("white-space", "pre");
 
@@ -133,6 +135,7 @@ export const exportToSvgElement = (opts: ExportSvgOptions): SVGSVGElement => {
           group,
           el,
           el.containerId ? (byId.get(el.containerId) ?? null) : null,
+          opts.theme ?? "light"
         );
         break;
       case "image": {
@@ -182,7 +185,7 @@ export const exportToSvgElement = (opts: ExportSvgOptions): SVGSVGElement => {
         if (d) {
           const path = document.createElementNS(SVG_NS, "path");
           path.setAttribute("d", d);
-          path.setAttribute("fill", el.strokeColor);
+          path.setAttribute("fill", resolveColor(el.strokeColor, opts.theme ?? "light", "stroke"));
           path.setAttribute("transform", `translate(${el.x} ${el.y})`);
           group.appendChild(path);
         }
@@ -191,7 +194,7 @@ export const exportToSvgElement = (opts: ExportSvgOptions): SVGSVGElement => {
       default: {
         const inner = document.createElementNS(SVG_NS, "g");
         inner.setAttribute("transform", `translate(${el.x} ${el.y})`);
-        for (const drawable of getDrawables(el)) inner.appendChild(rc.draw(drawable));
+        for (const drawable of getDrawables(el, opts.theme ?? "light")) inner.appendChild(rc.draw(drawable));
         group.appendChild(inner);
       }
     }
