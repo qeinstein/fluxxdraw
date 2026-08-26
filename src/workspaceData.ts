@@ -73,3 +73,13 @@ export const addCanvasComment = (comment: Omit<CanvasComment, "id" | "createdAt"
 export const deleteCanvasComment = (id: string) => {
   write(COMMENTS_KEY, getCanvasComments().filter((comment) => comment.id !== id));
 };
+
+/** Remove all comments attached to any of the given element IDs. */
+export const deleteCommentsForElements = (elementIds: string[]) => {
+  const idSet = new Set(elementIds);
+  const comments = getCanvasComments();
+  const remaining = comments.filter((c) => !c.elementId || !idSet.has(c.elementId));
+  if (remaining.length !== comments.length) {
+    write(COMMENTS_KEY, remaining);
+  }
+};

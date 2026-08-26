@@ -9,6 +9,7 @@ import type {
   ExcaliElement,
 } from "./types";
 import type { Checkpoint } from "./io/history";
+import { deleteCommentsForElements } from "./workspaceData";
 
 /**
  * Scene state lives outside React so the pointer handlers can mutate at
@@ -225,6 +226,8 @@ export class SceneStore {
       ...this.appState,
       selectedIds: this.appState.selectedIds.filter((id) => !idSet.has(id)),
     };
+    // Clean up any canvas comments attached to the deleted elements
+    deleteCommentsForElements(ids);
   }
 
   addFile(file: BinaryFile) {
