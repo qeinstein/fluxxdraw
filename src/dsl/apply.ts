@@ -34,11 +34,11 @@ export interface ApplyResult {
 
 /** Sets or replaces a shape's bound label. */
 const setLabel = (containerId: string, label: string) => {
-  const container = store.getElement(containerId) as GenericElement | null;
+  const container = (store.getElement(containerId) ?? store.yElements.get(containerId)) as GenericElement | null;
   if (!container) return;
 
   const existingId = container.boundText;
-  const existing = existingId ? (store.getElement(existingId) as TextElement | null) : null;
+  const existing = existingId ? ((store.getElement(existingId) ?? store.yElements.get(existingId)) as TextElement | null) : null;
 
   if (!label) {
     if (existing) {
@@ -156,7 +156,7 @@ export const applySpecToScene = (spec: DiagramSpec): ApplyResult => {
       }
 
       const currentLabel = element.boundText
-        ? ((store.getElement(element.boundText) as TextElement | null)?.text ?? "")
+        ? (((store.getElement(element.boundText) ?? store.yElements.get(element.boundText)) as TextElement | null)?.text ?? "")
         : "";
       const nextLabel = node.label === node.key ? currentLabel || node.label : node.label;
       if (currentLabel !== nextLabel) {
@@ -196,7 +196,7 @@ export const applySpecToScene = (spec: DiagramSpec): ApplyResult => {
       const existing = existingArrows.get(`${edge.from}→${edge.to}`);
 
       if (!existing) {
-        const source = store.getElement(fromId)!;
+        const source = store.getElement(fromId) ?? store.yElements.get(fromId)!;
         const arrow = newLinearElement(
           wantsArrow ? "arrow" : "line",
           store.appState,
@@ -235,7 +235,7 @@ export const applySpecToScene = (spec: DiagramSpec): ApplyResult => {
         changed = true;
       }
       const currentLabel = existing.boundText
-        ? ((store.getElement(existing.boundText) as TextElement | null)?.text ?? "")
+        ? (((store.getElement(existing.boundText) ?? store.yElements.get(existing.boundText)) as TextElement | null)?.text ?? "")
         : "";
       if ((edge.label ?? "") !== currentLabel) {
         if (edge.label) {

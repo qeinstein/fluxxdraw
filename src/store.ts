@@ -56,6 +56,7 @@ export class SceneStore {
     
     this.undoManager = new Y.UndoManager([this.yElements, this.yOrder], {
       captureTimeout: 500,
+      trackedOrigins: new Set(["local"]),
     });
     
     this.ydoc.on("update", this.ydocUpdateHandler);
@@ -199,14 +200,15 @@ export class SceneStore {
     const idSet = new Set(ids);
     const updated: ExcaliElement[] = [];
     
-    // We iterate over this.elements (which is synced from Yjs)
-    this.elements.forEach((el) => {
-      if (!idSet.has(el.id)) return;
-      const patch = fn(el as T);
-      const next = { ...el, ...(patch ?? {}), version: el.version + 1 } as ExcaliElement;
-      updated.push(next);
-      this.yElements.set(el.id, next);
-    });
+    for (const id of idSet) {
+      const el = this.yElements.get(id);
+      if (el) {
+        const patch = fn(el as T);
+        const next = { ...el, ...(patch ?? {}), version: el.version + 1 } as ExcaliElement;
+        updated.push(next);
+        this.yElements.set(el.id, next);
+      }
+    }
     return updated;
   }
 
@@ -217,11 +219,12 @@ export class SceneStore {
   /** Soft-deletes so history and bindings can still reference the elements. */
   deleteElements(ids: string[]) {
     const idSet = new Set(ids);
-    this.elements.forEach((el) => {
-      if (idSet.has(el.id)) {
+    for (const id of idSet) {
+      const el = this.yElements.get(id);
+      if (el) {
         this.yElements.set(el.id, { ...el, isDeleted: true, version: el.version + 1 });
       }
-    });
+    }
     this.appState = {
       ...this.appState,
       selectedIds: this.appState.selectedIds.filter((id) => !idSet.has(id)),
