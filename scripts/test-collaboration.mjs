@@ -97,13 +97,22 @@ try {
 
   // Test Host ending session kicks guest
   console.log("Host ending session...");
-  let alertFired = false;
   guest.on('console', msg => console.log(`Guest console: ${msg.text()}`));
-  guest.on('dialog', async (dialog) => {
+  let alertFired = false;
+  let endSessionAlert = null;
+  let beforeunloadCount = 0;
+  const handleDialog = async (dialog) => {
+    if (dialog.type() === 'beforeunload') {
+      beforeunloadCount += 1;
+      await dialog.accept();
+      return;
+    }
+    endSessionAlert = dialog.message();
     alertFired = true;
-    check('Guest received alert', dialog.message().includes('ended'), `(was "${dialog.message()}")`);
+    console.log(`Guest dialog: type=${dialog.type()} message=${JSON.stringify(dialog.message())}`);
     await dialog.accept();
-  });
+  };
+  guest.on('dialog', handleDialog);
   
   await host.getByLabel('Collaborate').click();
   await host.waitForSelector('.dialog');
@@ -118,6 +127,14 @@ try {
     console.log("waitForURL timed out!");
   }
   check('Guest kicked and hash cleared', guestKicked);
+  check('Alert was observed once', alertFired);
+  check(
+    'Exactly one end-session dialog appeared',
+    alertFired === true &&
+      beforeunloadCount === 1 &&
+      endSessionAlert?.includes('ended'),
+    `(alert=${JSON.stringify(endSessionAlert)}, beforeunload=${beforeunloadCount})`,
+  );
 
   console.log("✅ All E2E collaboration checks passed!");
   

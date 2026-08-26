@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { collab, generateCollaborationLink, type PeerPresence } from "../io/collaboration";
+import {
+  collab,
+  generateCollaborationLink,
+  yMeta,
+  type PeerPresence,
+} from "../io/collaboration";
+import { store } from "../store";
 import { IconClose } from "./icons";
 
 export function JoinDialog({ 
@@ -23,7 +29,7 @@ export function JoinDialog({
     const colors = ["#ff8787", "#69db7c", "#74c0fc", "#ffd43b", "#b2f2bb", "#a5d8ff"];
     const color = colors[Math.floor(Math.random() * colors.length)];
     
-    collab.joinRoom(room, collabKey, finalName, color);
+    collab.joinRoom(room, collabKey, finalName, color, false);
     
     // Remove hash from URL without reloading
     window.history.replaceState(null, "", window.location.pathname);
@@ -90,9 +96,8 @@ export function ShareDialog({
       const color = colors[Math.floor(Math.random() * colors.length)];
       
       collab.joinRoom(room, key, name, color, true);
-      import("../io/collaboration").then(({ yMeta }) => {
-        yMeta.set("ended", false);
-      });
+      yMeta.set("ended", false);
+      store.publishScene();
       setLink(collab.shareUrl!);
     }
   }, []);
@@ -105,9 +110,7 @@ export function ShareDialog({
 
   const handleEnd = () => {
     if (collab.isHost) {
-      import("../io/collaboration").then(({ yMeta }) => {
-        yMeta.set("ended", true);
-      });
+      yMeta.set("ended", true);
     }
     
     // Give Yjs a moment to broadcast the 'ended' message before destroying the provider
@@ -174,10 +177,12 @@ export function ShareDialog({
 
 export function CollaborationAvatars() {
   const [peers, setPeers] = useState<Map<number, PeerPresence>>(new Map());
-  // Force a re-render periodically or subscribe to changes
+  const [room] = useState(collab.room);
+
   useEffect(() => {
+    if (!room) return;
     if (!collab.provider) return;
-    
+
     const updatePeers = () => {
       setPeers(new Map(collab.getPeers()));
     };
@@ -188,18 +193,9 @@ export function CollaborationAvatars() {
     return () => {
       if (collab.provider) collab.provider.awareness.off("change", updatePeers);
     }
-  }, [collab.provider]);
+  }, [room]);
 
-  // We need to re-render when collab.room changes
-  const [inRoom, setInRoom] = useState(!!collab.room);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!!collab.room !== inRoom) setInRoom(!!collab.room);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [inRoom]);
-
-  if (!inRoom) return null;
+  if (!room) return null;
 
   return (
     <div className="collab-avatars" style={{ display: 'flex', gap: '4px', alignItems: 'center', marginRight: '8px' }}>
@@ -219,7 +215,16 @@ export function CollaborationAvatars() {
         </div>
       ))}
       {peers.size > 3 && <div className="avatar-more" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--fg-muted)' }}>+{peers.size - 3}</div>}
-      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#40c057', marginLeft: '4px' }} title="Connected" />
+      <div
+        style={{
+          width: '8px',
+          height: '8px',
+          borderRadius: '50%',
+          backgroundColor: collab.provider?.wsconnected ? '#40c057' : '#fd7e14',
+          marginLeft: '4px',
+        }}
+        title={collab.provider?.wsconnected ? "Connected" : "Connecting"}
+      />
     </div>
   );
 }

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "collab:server": "node scripts/local/collaboration-server.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
@@ -30,6 +31,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "roughjs": "^4.6.6",
+    "ws": "^8.18.3",
     "y-indexeddb": "^9.0.12",
     "y-websocket": "^3.1.0",
     "yjs": "^13.6.32"
