@@ -34,6 +34,7 @@ import {
   IconUndo,
   IconRedo,
   IconLibrary,
+  IconMenu,
 } from "./components/icons";
 import { store, useScene } from "./store";
 import { useKeyboardShortcuts } from "./hooks/useKeyboard";
@@ -76,6 +77,7 @@ export default function App() {
   const [presenting, setPresenting] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [promptRequest, setPromptRequest] = useState<InputDialogRequest | null>(null);
   const [textPanelOpen, setTextPanelOpen] = useState(false);
@@ -279,6 +281,30 @@ export default function App() {
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // prevent saving via browser default
+      if (e.key.toLowerCase() === "s" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        quickExportJson();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!(event.target as Element).closest('.top-right-more-menu')) {
+        setMoreMenuOpen(false);
+      }
+    };
+    if (moreMenuOpen) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [moreMenuOpen]);
 
   // --- opening -------------------------------------------------------------
 
@@ -629,7 +655,67 @@ export default function App() {
         <div className="top-right">
           <div className="island top-right-actions" style={{ display: 'flex', alignItems: 'center' }}>
             <CollaborationMenu />
-            {isMobile ? (
+            
+            <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
+              <button className="export-button" onClick={openExportDialog}>
+                Export
+              </button>
+            </Tooltip>
+
+            <div className="top-right-more-menu" style={{ position: 'relative' }}>
+              <button
+                className={`icon-button ${moreMenuOpen ? "active" : ""}`}
+                aria-label="More options"
+                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
+              >
+                <IconMenu />
+              </button>
+
+              {moreMenuOpen && (
+                <div
+                  className="collab-popover"
+                  style={{
+                    position: 'absolute', top: '100%', right: '0', marginTop: '8px',
+                    background: 'var(--surface)', border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    width: '220px', zIndex: 100, padding: '6px 0', display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <button
+                    className="menu-item"
+                    onClick={() => { setMoreMenuOpen(false); quickExportJson(); }}
+                    style={{ textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <IconSave /> Save to file
+                  </button>
+                  <button
+                    className="menu-item"
+                    onClick={() => { setMoreMenuOpen(false); store.setAppState({ viewMode: !scene.appState.viewMode }); }}
+                    style={{ textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {scene.appState.viewMode ? <IconEyeOff /> : <IconEye />}
+                    {scene.appState.viewMode ? "Exit view-only mode" : "View-only mode"}
+                  </button>
+                  <button
+                    className="menu-item"
+                    onClick={() => { setMoreMenuOpen(false); setLibraryOpen(!libraryOpen); }}
+                    style={{ textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <IconLibrary /> Library
+                  </button>
+                  <button
+                    className="menu-item"
+                    onClick={() => { setMoreMenuOpen(false); setCommandOpen(true); }}
+                    style={{ textAlign: 'left', padding: '8px 16px', background: 'transparent', border: 'none', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <IconCommand /> Command Palette
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isMobile && (
               <button
                 className={`tool-button sheet-toggle ${sheetOpen ? "active" : ""} ${
                   styleAvailable ? "has-options" : ""
@@ -640,44 +726,7 @@ export default function App() {
               >
                 <IconSliders />
               </button>
-            ) : (
-              <Tooltip
-                label={`Save a .${FILE_EXTENSION} copy to your export folder`}
-                placement="bottom"
-              >
-                <button className="icon-button" aria-label="Quick save" onClick={quickExportJson}>
-                  <IconSave />
-                </button>
-              </Tooltip>
             )}
-            <Tooltip label="Export as an image or file" shortcut={sc("export")} placement="bottom">
-              <button className="export-button" onClick={openExportDialog}>
-                Export
-              </button>
-            </Tooltip>
-            <Tooltip label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"} placement="bottom">
-              <button
-                className={`icon-button ${scene.appState.viewMode ? "active" : ""}`}
-                aria-label={scene.appState.viewMode ? "Exit view-only mode" : "Enter view-only mode"}
-                onClick={() => store.setAppState({ viewMode: !scene.appState.viewMode })}
-              >
-                {scene.appState.viewMode ? <IconEyeOff /> : <IconEye />}
-              </button>
-            </Tooltip>
-            <Tooltip label="Library" placement="bottom">
-              <button
-                className={`icon-button ${libraryOpen ? "active" : ""}`}
-                aria-label="Library"
-                onClick={() => setLibraryOpen(!libraryOpen)}
-              >
-                <IconLibrary />
-              </button>
-            </Tooltip>
-            <Tooltip label="Commands" shortcut="⌘K">
-              <button className="icon-button" aria-label="Open command palette" onClick={() => setCommandOpen(true)}>
-                <IconCommand />
-              </button>
-            </Tooltip>
           </div>
         </div>
 

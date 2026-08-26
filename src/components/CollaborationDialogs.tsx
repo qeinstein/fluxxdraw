@@ -279,6 +279,28 @@ export function CollaborationMenu() {
                 </div>
               </div>
               
+              <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '0' }} />
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 550, color: 'var(--fg-muted)', marginBottom: '6px' }}>
+                  My Name
+                </label>
+                <input
+                  type="text"
+                  defaultValue={collab.provider?.awareness.getLocalState()?.name || localStorage.getItem("fluxx_collab_name") || "Anonymous Fox"}
+                  onChange={(e) => {
+                    const newName = e.target.value.trim() || "Anonymous Fox";
+                    collab.updatePresence({ name: newName });
+                    localStorage.setItem("fluxx_collab_name", newName);
+                  }}
+                  style={{
+                    width: '100%', padding: '6px 8px', borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--line)', background: 'var(--surface-sunken)',
+                    color: 'var(--fg)', fontSize: '12px', outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              
               {peers.size > 0 && (
                 <>
                   <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: '0' }} />
