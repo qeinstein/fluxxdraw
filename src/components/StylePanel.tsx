@@ -195,7 +195,13 @@ export const StylePanel = () => {
   );
 
   return (
-    <div className="style-panel island">
+    <div 
+      className="style-panel island" 
+      onPointerDown={(e) => {
+        // Prevent focus loss from TextEditor when clicking buttons, but allow inputs to work
+        if ((e.target as HTMLElement).tagName !== "INPUT") e.preventDefault();
+      }}
+    >
       <Section label="Style presets">
         <div className="style-presets">
           <button className="style-preset-add" onClick={savePreset}>+ Save current</button>

@@ -47,15 +47,23 @@ export const SelectionToolbar = () => {
       role="toolbar"
       aria-label="Selection actions"
       style={{ left: center, top }}
+      onPointerDown={(e) => e.preventDefault()}
     >
       <div className="selection-colors" aria-label="Quick colours">
         {palette.background.slice(1, 5).map((color) => (
           <button
             key={color}
             className="selection-color"
-            aria-label={`Set background ${color}`}
+            aria-label={`Set colour ${color}`}
             style={{ background: color }}
-            onClick={() => applyStyleToSelection({ backgroundColor: color, fillStyle: "solid" })}
+            onClick={() => {
+              const onlyText = selected.every((el) => el.type === "text");
+              if (onlyText) {
+                applyStyleToSelection({ strokeColor: color });
+              } else {
+                applyStyleToSelection({ backgroundColor: color, fillStyle: "solid" });
+              }
+            }}
           />
         ))}
       </div>
