@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { store, useScene } from "../store";
 import { refreshBindings, refreshTextLayout } from "../actions";
 import { fontString, getLabelBox, measureText, wrapText } from "../elements/text";
-import { CONTAINER_PADDING } from "../constants";
+import { CONTAINER_PADDING, resolveColor } from "../constants";
 import { fontStack } from "../fonts";
 import type { TextElement } from "../types";
 
@@ -64,7 +64,7 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
   if (!element) return null;
 
   const container = element.containerId ? store.getElement(element.containerId) : null;
-  const { scrollX, scrollY, zoom } = store.appState;
+  const { scrollX, scrollY, zoom, theme } = store.appState;
 
   // Measure the text being typed, including the line currently in progress, so
   // the box is always at least as large as its content.
@@ -166,7 +166,7 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
         }),
         fontFamily: fontStack(element.fontFamily),
         lineHeight: element.lineHeight,
-        color: element.strokeColor,
+        color: resolveColor(element.strokeColor, theme, "stroke"),
         textAlign: element.textAlign,
         opacity: element.opacity / 100,
         // free text never wraps on its own; labels wrap inside their shape
