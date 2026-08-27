@@ -46,6 +46,7 @@ const base = (x: number, y: number, width: number, height: number, stroke: strin
   isDeleted: false,
   link: null,
   strokeColor: stroke,
+  textColor: stroke,
   backgroundColor: "transparent",
   fillStyle: "solid" as const,
   // a value the toolbar can actually show as selected, not a bespoke 1.25
