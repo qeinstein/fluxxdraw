@@ -61,7 +61,7 @@ const appendTextElement = (
   text.setAttribute("y", String(originY + baseline));
   text.setAttribute("font-family", fontStack(el.fontFamily));
   text.setAttribute("font-size", `${el.fontSize}px`);
-  text.setAttribute("fill", resolveColor(el.strokeColor, theme, "stroke"));
+  text.setAttribute("fill", resolveColor((el as any).textColor ?? el.strokeColor, theme, "stroke"));
   text.setAttribute("text-anchor", anchor);
   text.setAttribute("white-space", "pre");
 

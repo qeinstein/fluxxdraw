@@ -146,6 +146,7 @@ export default function App() {
       currentStyle: {
         ...store.appState.currentStyle,
         strokeColor: PALETTE[prefs.theme].stroke[0],
+        textColor: PALETTE[prefs.theme].stroke[0],
       },
       gridSize: prefs.gridSize,
       snapToObjects: prefs.snapToObjects,

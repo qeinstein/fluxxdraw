@@ -195,6 +195,7 @@ export const StylePanel = () => {
   };
 
   const strokeColor = String(valueOf("strokeColor", style.strokeColor) ?? palette.stroke[0]);
+  const textColor = String(valueOf("textColor", (style as any).textColor ?? style.strokeColor) ?? palette.stroke[0]);
   const backgroundColor = String(
     valueOf("backgroundColor", style.backgroundColor) ?? "transparent",
   );
@@ -355,6 +356,15 @@ export const StylePanel = () => {
 
       {controls.font && (
         <>
+          <Section label="Text color">
+            <Swatches
+              colors={palette.stroke}
+              value={textColor}
+              onPick={(color) => set({ textColor: color })}
+              customValue={textColor}
+              onCustom={(color) => set({ textColor: color })}
+            />
+          </Section>
           <Section label="Font">
             <div className="row choice choice--font">
               {FONTS.map((font) => (

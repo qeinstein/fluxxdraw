@@ -19,6 +19,7 @@ export type VerticalAlign = "top" | "middle" | "bottom";
 export interface ElementStyle {
   strokeColor: string;
   backgroundColor: string;
+  textColor: string;
   fillStyle: FillStyle;
   strokeWidth: number;
   strokeStyle: StrokeStyle;

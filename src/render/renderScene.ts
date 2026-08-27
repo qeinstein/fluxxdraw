@@ -90,7 +90,7 @@ const drawTextElement = (
   const lines = getTextLines(el, container);
   const lineHeightPx = el.fontSize * el.lineHeight;
   ctx.font = fontString(el);
-  ctx.fillStyle = resolveColor(el.strokeColor, theme, "stroke");
+  ctx.fillStyle = resolveColor((el as any).textColor ?? el.strokeColor, theme, "stroke");
   ctx.textBaseline = "alphabetic";
 
   const { width: textWidth, height: textHeight } = measureText(lines, el);
