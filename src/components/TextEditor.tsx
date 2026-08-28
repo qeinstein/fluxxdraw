@@ -166,7 +166,7 @@ export const TextEditor = ({ elementId, onDone }: TextEditorProps) => {
         }),
         fontFamily: fontStack(element.fontFamily),
         lineHeight: element.lineHeight,
-        color: element.strokeColor,
+        color: (element as any).textColor ?? element.strokeColor,
         textAlign: element.textAlign,
         opacity: element.opacity / 100,
         // free text never wraps on its own; labels wrap inside their shape

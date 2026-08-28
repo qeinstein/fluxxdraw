@@ -32,6 +32,7 @@ const baseFrom = (state: AppState, x: number, y: number) => {
     link: null,
     strokeColor: s.strokeColor,
     backgroundColor: s.backgroundColor,
+    textColor: s.textColor ?? s.strokeColor,
     fillStyle: s.fillStyle,
     strokeWidth: s.strokeWidth,
     strokeStyle: s.strokeStyle,

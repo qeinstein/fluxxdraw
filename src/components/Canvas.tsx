@@ -215,6 +215,10 @@ export const Canvas = ({
         ...bound,
         id: idMap.get(bound.id) ?? bound.id,
       })) ?? [],
+      boundText: el.boundText ? idMap.get(el.boundText) ?? el.boundText : null,
+      containerId: el.containerId ? idMap.get(el.containerId) ?? el.containerId : null,
+      startBinding: el.startBinding ? { ...el.startBinding, elementId: idMap.get(el.startBinding.elementId) ?? el.startBinding.elementId } : null,
+      endBinding: el.endBinding ? { ...el.endBinding, elementId: idMap.get(el.endBinding.elementId) ?? el.endBinding.elementId } : null,
       frameId: el.frameId ? idMap.get(el.frameId) ?? null : null,
       x: (el.x ?? 0) - minX + sceneX - (maxX - minX) / 2,
       y: (el.y ?? 0) - minY + sceneY - (maxY - minY) / 2,
@@ -1361,6 +1365,7 @@ export const Canvas = ({
     if (keepActive) {
       pointerRef.current.placingPoints = true;
       pointerRef.current.activeId = activeId;
+      pointerRef.current.mode = "drawing-linear";
     }
     store.emit();
   };

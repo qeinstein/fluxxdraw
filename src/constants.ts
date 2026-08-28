@@ -115,6 +115,7 @@ export const DEFAULT_APP_STATE: AppState = {
   currentStyle: {
     strokeColor: PALETTE.light.stroke[0],
     backgroundColor: "transparent",
+    textColor: PALETTE.light.stroke[0],
     fillStyle: "hachure",
     strokeWidth: 1,
     strokeStyle: "solid",

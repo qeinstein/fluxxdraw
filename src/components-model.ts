@@ -38,6 +38,7 @@ const toLocalCoordinates = (elements: ExcaliElement[]) => {
  */
 export const INSTANCE_OVERRIDE_KEYS = [
   "strokeColor",
+  "textColor",
   "backgroundColor",
   "fillStyle",
   "strokeWidth",
@@ -97,6 +98,7 @@ export const newInstance = (
   isDeleted: false,
   link: null,
   strokeColor: "#1e1e1e",
+  textColor: "#1e1e1e",
   backgroundColor: "transparent",
   fillStyle: "solid",
   strokeWidth: 1,

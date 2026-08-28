@@ -344,6 +344,7 @@ export const copyStyle = () => {
   clipboardStyle = {
     strokeColor: source.strokeColor,
     backgroundColor: source.backgroundColor,
+    textColor: source.textColor ?? source.strokeColor,
     fillStyle: source.fillStyle,
     strokeWidth: source.strokeWidth,
     strokeStyle: source.strokeStyle,
@@ -367,7 +368,7 @@ export const pasteStyle = () => {
   store.mutate(() => {
     store.updateElements(selected.map(s => s.id), (el) => {
       const updates: any = {};
-      const genericKeys = ["strokeColor", "backgroundColor", "fillStyle", "strokeWidth", "strokeStyle", "roughness", "edges", "opacity"];
+      const genericKeys = ["strokeColor", "backgroundColor", "textColor", "fillStyle", "strokeWidth", "strokeStyle", "roughness", "edges", "opacity"];
       for (const key of genericKeys) {
         if (clipboardStyle![key as keyof ElementStyle] !== undefined) {
            updates[key] = clipboardStyle![key as keyof ElementStyle];

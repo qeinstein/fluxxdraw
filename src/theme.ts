@@ -28,6 +28,7 @@ export const setTheme = (next: ThemeName) => {
       currentStyle: {
         ...style,
         strokeColor: mapColorAcrossThemes(style.strokeColor, current, next, "stroke"),
+        textColor: mapColorAcrossThemes(style.textColor ?? style.strokeColor, current, next, "stroke"),
         backgroundColor: mapColorAcrossThemes(
           style.backgroundColor,
           current,
