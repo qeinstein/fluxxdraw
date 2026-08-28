@@ -57,6 +57,7 @@ export const hitTestElement = (
   sceneX: number,
   sceneY: number,
   threshold = HIT_THRESHOLD,
+  strict = true,
 ): boolean => {
   const [x, y] = toLocalSpace(el, sceneX, sceneY);
   const { x1, y1, x2, y2 } = getElementBounds(el);
