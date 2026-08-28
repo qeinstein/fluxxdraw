@@ -104,7 +104,7 @@ export const hitTestElement = (
       const rx = Math.max((x2 - x1) / 2, 1);
       const ry = Math.max((y2 - y1) / 2, 1);
       const norm = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-      if (isFilled(el)) return norm <= 1;
+      if (!strict || isFilled(el)) return norm <= 1;
       // ring test: scale the tolerance by the smaller radius
       const tol = threshold / Math.min(rx, ry);
       return Math.abs(Math.sqrt(norm) - 1) <= tol;
@@ -115,7 +115,7 @@ export const hitTestElement = (
       const rx = Math.max((x2 - x1) / 2, 1);
       const ry = Math.max((y2 - y1) / 2, 1);
       const norm = Math.abs(x - cx) / rx + Math.abs(y - cy) / ry;
-      if (isFilled(el)) return norm <= 1;
+      if (!strict || isFilled(el)) return norm <= 1;
       const top: [number, number] = [cx, y1];
       const right: [number, number] = [x2, cy];
       const bottom: [number, number] = [cx, y2];
@@ -132,7 +132,7 @@ export const hitTestElement = (
     case "rectangle":
     case "sticky":
     default:
-      if (isFilled(el)) return inside;
+      if (!strict || isFilled(el)) return inside;
       return distanceToRectOutline(x, y, x1, y1, x2, y2) <= threshold;
   }
 };
@@ -151,10 +151,14 @@ export const getElementAtPosition = (
   y: number,
   threshold?: number,
 ): ExcaliElement | null => {
+  let fallbackHit: ExcaliElement | null = null;
   for (let i = elements.length - 1; i >= 0; i--) {
     const el = elements[i];
     if (el.isDeleted || el.locked) continue;
-    if (hitTestElement(el, x, y, threshold)) return el;
+    if (hitTestElement(el, x, y, threshold, true)) return el;
+    if (!fallbackHit && hitTestElement(el, x, y, threshold, false)) {
+      fallbackHit = el;
+    }
   }
-  return null;
+  return fallbackHit;
 };
