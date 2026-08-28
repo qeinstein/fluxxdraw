@@ -117,6 +117,7 @@ const relevantControls = (selected: ExcaliElement[], tool: Tool) => {
       : has("rectangle", "sticky", "diamond", "ellipse", "arrow", "line", "freedraw", "frame", "instance");
 
   return {
+    stroke: shapeLike,
     background: shapeLike && (selected.length === 0 ? tool !== "freedraw" : !has("freedraw")),
     strokeWidth: shapeLike,
     sloppiness: shapeLike,
@@ -219,15 +220,17 @@ export const StylePanel = () => {
           ))}
         </div>
       </Section>
-      <Section label="Stroke">
-        <Swatches
-          colors={palette.stroke}
-          value={strokeColor}
-          onPick={(color) => set({ strokeColor: color })}
-          customValue={strokeColor}
-          onCustom={(color) => set({ strokeColor: color })}
-        />
-      </Section>
+      {controls.stroke && (
+        <Section label="Stroke">
+          <Swatches
+            colors={palette.stroke}
+            value={strokeColor}
+            onPick={(color) => set({ strokeColor: color })}
+            customValue={strokeColor}
+            onCustom={(color) => set({ strokeColor: color })}
+          />
+        </Section>
+      )}
 
       {controls.background && (
         <Section label="Background">

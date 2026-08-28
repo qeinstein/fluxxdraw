@@ -1312,6 +1312,9 @@ export const Canvas = ({
         const el = store.getElement(pointer.activeId!) as LinearElement | null;
         if (el) {
           const [lx, ly] = el.points[el.points.length - 1];
+          if (pointer.placingPoints) {
+            return;
+          }
           if (Math.hypot(lx, ly) < 4) {
             // click without drag => start multi-point placement
             pointer.placingPoints = true;
