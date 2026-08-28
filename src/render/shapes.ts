@@ -132,7 +132,7 @@ export const getArrowheadShape = (
 export const freedrawPath = (el: FreedrawElement): string => {
   const inputPoints = el.points.map(([x, y], i) => [x, y, el.pressures[i] ?? 0.5]);
   const stroke = getStroke(inputPoints, {
-    size: el.strokeWidth * 4 + 4,
+    size: el.strokeWidth * 2.5 + 2,
     thinning: 0.6,
     smoothing: 0.65,
     streamline: 0.6,
