@@ -1361,6 +1361,7 @@ export const Canvas = ({
     if (keepActive) {
       pointerRef.current.placingPoints = true;
       pointerRef.current.activeId = activeId;
+      pointerRef.current.mode = "drawing-linear";
     }
     store.emit();
   };
