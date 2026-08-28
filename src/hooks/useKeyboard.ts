@@ -108,9 +108,12 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (isTypingTarget(event.target)) return;
+      const typing = isTypingTarget(event.target);
 
       if (event.key === "Escape") {
+        if (typing && event.target instanceof HTMLElement) {
+          event.target.blur();
+        }
         handlers.onEscape();
         store.setAppState({ selectedIds: [], tool: "selection" });
         return;
@@ -118,12 +121,19 @@ export const useKeyboardShortcuts = (handlers: KeyboardHandlers) => {
 
       for (const [id, run] of Object.entries(actions)) {
         if (!matches(event, SHORTCUTS[id as ShortcutId])) continue;
+        
+        if (typing && !["save", "saveAs", "export", "open"].includes(id)) {
+           return;
+        }
+
         // Claim the key before the browser acts on it (⌘D bookmarks, ⌘O opens
         // a file picker, ⌘S saves the page).
         event.preventDefault();
         run();
         return;
       }
+
+      if (typing) return;
 
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();

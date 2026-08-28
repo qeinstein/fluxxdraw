@@ -43,7 +43,7 @@ export const computeSnap = (
     for (const mx of movingEdges.x) {
       for (const ox of otherEdges.x) {
         const delta = ox - mx;
-        if (Math.abs(delta) > threshold) continue;
+        if (Number.isNaN(delta) || Math.abs(delta) > threshold) continue;
         if (bestX && Math.abs(delta) >= Math.abs(bestX.delta)) continue;
         bestX = {
           delta,
@@ -60,7 +60,7 @@ export const computeSnap = (
     for (const my of movingEdges.y) {
       for (const oy of otherEdges.y) {
         const delta = oy - my;
-        if (Math.abs(delta) > threshold) continue;
+        if (Number.isNaN(delta) || Math.abs(delta) > threshold) continue;
         if (bestY && Math.abs(delta) >= Math.abs(bestY.delta)) continue;
         bestY = {
           delta,

@@ -391,8 +391,8 @@ export default function App() {
       updatePrefs({
         exportSettings: { ...prefs.exportSettings, filename: stem },
       });
-      // the handle still points at the old file, so Save must ask again
-      fileHandleRef.current = null;
+      // Deliberately not clearing the file handle here, so Cmd+S resaves to the same file 
+      // even if the user changed the display name.
     },
     [fileName, prefs.exportSettings, updatePrefs],
   );
