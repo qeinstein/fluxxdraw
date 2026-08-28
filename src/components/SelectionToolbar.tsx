@@ -59,7 +59,7 @@ export const SelectionToolbar = () => {
             onClick={() => {
               const onlyText = selected.every((el) => el.type === "text");
               if (onlyText) {
-                applyStyleToSelection({ strokeColor: color });
+                applyStyleToSelection({ textColor: color });
               } else {
                 applyStyleToSelection({ backgroundColor: color, fillStyle: "solid" });
               }
