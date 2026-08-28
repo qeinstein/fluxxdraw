@@ -224,6 +224,10 @@ export const changeZOrder = (action: ZAction) => {
       }
       store.elements = next;
     }
+    
+    // Sync the new order to Yjs so that UndoManager tracks it
+    store.yOrder.delete(0, store.yOrder.length);
+    store.elements.forEach(el => store.yOrder.push([el.id]));
   });
 };
 
