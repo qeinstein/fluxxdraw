@@ -34,16 +34,22 @@ export const getElementBounds = (el: ExcaliElement): Bounds => {
     let maxX = -Infinity;
     let maxY = -Infinity;
     for (const [px, py] of el.points) {
-      minX = Math.min(minX, px);
-      minY = Math.min(minY, py);
-      maxX = Math.max(maxX, px);
-      maxY = Math.max(maxY, py);
+      minX = Math.min(minX, px || 0);
+      minY = Math.min(minY, py || 0);
+      maxX = Math.max(maxX, px || 0);
+      maxY = Math.max(maxY, py || 0);
     }
-    return { x1: el.x + minX, y1: el.y + minY, x2: el.x + maxX, y2: el.y + maxY };
+    const x = el.x ?? 0;
+    const y = el.y ?? 0;
+    return { x1: x + minX, y1: y + minY, x2: x + maxX, y2: y + maxY };
   }
-  const x1 = Math.min(el.x, el.x + el.width);
-  const y1 = Math.min(el.y, el.y + el.height);
-  return { x1, y1, x2: x1 + Math.abs(el.width), y2: y1 + Math.abs(el.height) };
+  const w = el.width ?? 0;
+  const h = el.height ?? 0;
+  const x = el.x ?? 0;
+  const y = el.y ?? 0;
+  const x1 = Math.min(x, x + w);
+  const y1 = Math.min(y, y + h);
+  return { x1, y1, x2: x1 + Math.abs(w), y2: y1 + Math.abs(h) };
 };
 
 export const getElementCenter = (el: ExcaliElement): [number, number] => {
