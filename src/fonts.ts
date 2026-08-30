@@ -85,7 +85,12 @@ export const installFontFaces = () => {
   src: url("${font.url}") format("woff2");
   font-weight: 400;
   font-style: normal;
-  font-display: block;
+  /*
+   * "swap" instead of "block": on a slow connection the fallback in the
+   * stack renders immediately so typing never hits an invisible-text
+   * window, then it's swapped for the real drawing font once it lands.
+   */
+  font-display: swap;
 }`,
   ).join("\n");
   document.head.appendChild(style);
