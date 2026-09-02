@@ -95,13 +95,13 @@ describe('DSL Parser', () => {
   });
 
   it('reports an issue for unknown shape in declaration', () => {
-    const result = parseDiagram('a: Label [triangle]');
+    const result = parseDiagram('a: Label [star]');
     expect(result.issues).toHaveLength(1);
-    expect(result.issues[0].message).toContain('Unknown shape "triangle"');
+    expect(result.issues[0].message).toContain('Unknown shape "star"');
   });
 
   it('reports an issue for unknown shape in edge label', () => {
-    const result = parseDiagram('a -> b: Label [triangle]');
+    const result = parseDiagram('a -> b: Label [star]');
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0].message).toContain('not a known shape');
   });
@@ -138,5 +138,30 @@ describe('DSL Parser', () => {
       { key: 'a', label: 'A Label', shape: 'rectangle' },
       { key: 'b', label: 'b', shape: 'rectangle' }
     ]);
+  });
+
+  it('parses rich nodes, edges, frames, text and paths', () => {
+    const result = parseDiagram(`
+      layout right
+      frame clients "Clients" at=40,60 size=300x240 fill=#f8fafc
+      node api "API Gateway" shape=rounded at=120,100 size=180x90 fill=#e8f1ff stroke=#2563eb frame=clients
+      node db "Postgres" shape=cylinder strokeWidth=2
+      edge api -> db "queries" route=orthogonal from=east to=west end=triangle stroke=dashed
+      text title "Checkout System" at=120,20 size-text=28 font=normal
+      path sketch kind=line points="0,0 20,20 50,5" closed stroke=#ef4444
+    `);
+
+    expect(result.issues).toEqual([]);
+    expect(result.spec.rich).toBe(true);
+    expect(result.spec.layout).toBe('right');
+    expect(result.spec.frames?.[0]).toMatchObject({ key: 'clients', label: 'Clients', x: 40, width: 300 });
+    expect(result.spec.nodes[0]).toMatchObject({
+      key: 'api', label: 'API Gateway', shape: 'rectangle', edges: 'round', x: 120, fill: '#e8f1ff', frame: 'clients'
+    });
+    expect(result.spec.edges[0]).toMatchObject({
+      route: 'elbow', startPort: 'east', endPort: 'west', endArrowhead: 'triangle', strokeStyle: 'dashed'
+    });
+    expect(result.spec.texts?.[0]).toMatchObject({ text: 'Checkout System', fontSize: 28, fontFamily: 'normal' });
+    expect(result.spec.paths?.[0]).toMatchObject({ kind: 'line', closed: true, points: [[0, 0], [20, 20], [50, 5]] });
   });
 });

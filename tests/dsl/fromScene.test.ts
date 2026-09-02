@@ -4,6 +4,7 @@ import { store } from '../../src/store';
 import { slugify, specFromScene, specToText } from '../../src/dsl/fromScene';
 import type { ExcaliElement, LinearElement, TextElement } from '../../src/types';
 import type { DiagramSpec } from '../../src/dsl/spec';
+import { parseDiagram } from '../../src/dsl/parse';
 
 describe('DSL fromScene', () => {
   beforeEach(() => {
@@ -131,6 +132,25 @@ describe('DSL fromScene', () => {
       };
       const text = specToText(spec);
       expect(text).toEqual('a --> b (straight)');
+    });
+
+    it('renders rich declarations that parse back without losing their controls', () => {
+      const spec: DiagramSpec = {
+        rich: true,
+        layout: 'none',
+        nodes: [{ key: 'api', label: 'API Gateway', shape: 'rectangle', edges: 'round', x: 10, y: 20, width: 180, height: 90, fill: '#e8f1ff', strokeColor: '#2563eb' }],
+        edges: [{ from: 'api', to: 'db', kind: 'arrow', route: 'elbow', startPort: 'east', endPort: 'west', endArrowhead: 'triangle', strokeStyle: 'dashed' }],
+        frames: [{ key: 'backend', label: 'Backend', x: 0, y: 0, width: 400, height: 220 }],
+        texts: [{ key: 'title', text: 'Checkout', x: 20, y: 10, fontSize: 28, fontFamily: 'normal' }],
+        paths: [{ key: 'mark', kind: 'line', points: [[0, 0], [20, 20]], strokeWidth: 3 }],
+      };
+      const parsed = parseDiagram(specToText(spec));
+      expect(parsed.issues).toEqual([]);
+      expect(parsed.spec).toMatchObject({ rich: true, layout: 'none' });
+      expect(parsed.spec.nodes[0]).toMatchObject({ x: 10, y: 20, width: 180, height: 90, edges: 'round' });
+      expect(parsed.spec.edges[0]).toMatchObject({ route: 'elbow', startPort: 'east', endPort: 'west', endArrowhead: 'triangle', strokeStyle: 'dashed' });
+      expect(parsed.spec.texts?.[0]).toMatchObject({ fontSize: 28, fontFamily: 'normal' });
+      expect(parsed.spec.paths?.[0]).toMatchObject({ strokeWidth: 3 });
     });
   });
 });

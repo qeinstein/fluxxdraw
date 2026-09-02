@@ -29,6 +29,20 @@ Every drawing carries its own past. Checkpoints are recorded as you work and wri
 ### Bidirectional diagram/text synchronization
 Press `⌘/` to open a text view beside the canvas. The two stay in sync in both directions. Type `api -> db: queries` and the boxes appear automatically. Drag a box on the canvas, and the textual representation rewrites itself to match the new visual state.
 
+The text view also accepts a richer, declarative scene language for LLM-generated diagrams. It compiles to ordinary editable FluxxDraw elements, so the result remains selectable, bindable, themeable, collaborative, and exportable:
+
+```text
+layout right
+frame backend "Backend" at=60,60 size=600x240 fill=#f8fafc
+node api "API Gateway" shape=rounded at=100,120 size=180x90 fill=#e8f1ff stroke=#2563eb frame=backend
+node db "Postgres" shape=cylinder at=420,120
+edge api -> db "queries" route=orthogonal from=east to=west end=triangle stroke=dashed
+text title "Checkout System" at=100,20 size=28 font=normal
+path accent points="0,0 30,20 60,0" stroke=#ef4444 width=3
+```
+
+Rich declarations support nodes, frames, loose text, freehand paths, polylines, explicit coordinates and sizes, ports, routing, arrowheads, component ids, and the full element style vocabulary. The compact node/edge syntax remains supported for quick hand-authored diagrams.
+
 ### Diagrams that tidy themselves
 Press `⇧⌘T` to take a scattered mess of boxes and arrows and lay it out properly — layered, evenly spaced, and re-routed — without losing the hand-drawn look.
 
