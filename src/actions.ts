@@ -24,6 +24,12 @@ import type {
 export const refreshBindings = (changedIds: string[]) => {
   const changed = new Set(changedIds);
   const byId = new Map(store.elements.map((el) => [el.id, el]));
+  // During a Yjs transaction the React-facing array is updated only after the
+  // transaction commits. Read the map as well so layout and grouped moves can
+  // route connectors against the positions written earlier in this transaction.
+  if (store.yElements) {
+    store.yElements.forEach((element: ExcaliElement) => byId.set(element.id, element));
+  }
   const arrowIds = store.elements
     .filter(
       (el): el is LinearElement =>

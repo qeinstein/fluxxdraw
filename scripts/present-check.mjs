@@ -30,7 +30,7 @@ await p.evaluate(async () => {
   store.emit();
 });
 
-await p.keyboard.press("Meta+Shift+p");
+await p.keyboard.press("Shift+p");
 await p.waitForSelector(".presentation-canvas");
 await p.waitForTimeout(500);
 ok("presentation opens", true);
@@ -59,7 +59,7 @@ ok("canvas is intact after presenting", (await p.evaluate(() => window.__scene.v
 
 // with no frames at all, it should explain itself rather than show a blank screen
 await p.evaluate(() => window.__scene.resetScene());
-await p.keyboard.press("Meta+Shift+p");
+await p.keyboard.press("Shift+p");
 await p.waitForTimeout(300);
 ok("empty state explains frames", (await p.locator(".presentation-empty-card").count()) === 1);
 await b.close();

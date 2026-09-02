@@ -189,6 +189,17 @@ export class SceneStore {
     });
   }
 
+  /** Replaces the Yjs-backed element list without opening a history group. */
+  replaceElements(elements: ExcaliElement[]) {
+    const currentIds = Array.from(this.yElements.keys());
+    currentIds.forEach((id) => this.yElements.delete(id));
+    this.yOrder.delete(0, this.yOrder.length);
+    elements.forEach((element) => {
+      this.yElements.set(element.id, element);
+      this.yOrder.push([element.id]);
+    });
+  }
+
   /**
    * Replaces elements by id with the result of `fn`, bumping their version so
    * the render cache invalidates. Returns the updated elements.

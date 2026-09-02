@@ -971,7 +971,8 @@ kbd {
   backdrop-filter: blur(3px);
   display: grid;
   place-items: center;
-  z-index: 100;
+  /* Modals must cover the persistent menu island as well as the canvas. */
+  z-index: 200;
   animation: fade-in 140ms var(--ease);
 }
 
@@ -2021,6 +2022,11 @@ kbd {
  */
 @media (max-width: 720px),
 (pointer: coarse) and (max-width: 1024px) {
+  /* Keep a wrapped toolbar clear of the zoom/history controls on phones. */
+  .top-centre {
+    bottom: calc(var(--dock) + 54px);
+  }
+
   .top-left {
     top: max(10px, env(safe-area-inset-top));
     left: var(--edge);
@@ -2072,7 +2078,7 @@ kbd {
   }
 
   .toolbar {
-    gap: 2px;
+    gap: 1px;
   }
 
   .toolbar-divider {
@@ -2133,6 +2139,25 @@ kbd {
   .dialog-body {
     padding: 14px;
     gap: 14px;
+  }
+
+  /* Export's desktop preview/settings split is too narrow to read on a phone. */
+  .export-dialog .dialog-body {
+    flex-direction: column !important;
+    min-height: 0;
+  }
+
+  .export-dialog .dialog-body > div:first-child {
+    flex: none !important;
+    min-height: 170px !important;
+    max-height: 210px;
+  }
+
+  .export-dialog .dialog-body > div:last-child {
+    flex: none !important;
+    width: 100%;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .dialog footer {

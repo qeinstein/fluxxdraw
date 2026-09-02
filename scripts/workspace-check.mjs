@@ -40,7 +40,7 @@ await page.evaluate(async () => {
   localStorage.setItem("fluxxdraw:recovery_snapshots", JSON.stringify([{ id: "recovery", name: "Recovery.fluxx", updatedAt: Date.now(), document }]));
 });
 
-await page.getByRole("button", { name: "Menu" }).click();
+await page.getByRole("button", { name: "Menu", exact: true }).click();
 await page.getByRole("menuitem", { name: /Workspace, comments/ }).click();
 await page.getByPlaceholder("Search layers…").fill("Gateway");
 check("layer search finds labelled object", await page.locator(".workspace-row").count() === 1);

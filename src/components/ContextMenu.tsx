@@ -75,7 +75,10 @@ export const ContextMenu = ({
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const { width, height } = el.getBoundingClientRect();
+    // getBoundingClientRect() includes the opening scale transform, so it
+    // underestimates the final menu size and can leave the bottom rows off
+    // screen when the menu is opened near the viewport edge.
+    const { offsetWidth: width, offsetHeight: height } = el;
     setPosition({
       x: Math.max(GAP, Math.min(request.x, window.innerWidth - width - GAP)),
       y: Math.max(GAP, Math.min(request.y, window.innerHeight - height - GAP)),

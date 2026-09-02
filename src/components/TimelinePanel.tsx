@@ -81,7 +81,7 @@ export const TimelinePanel = ({ onClose }: TimelinePanelProps) => {
     if (liveRef.current) store.elements = liveRef.current;
     store.previewing = false;
     store.mutate(() => {
-      store.elements = elements;
+      store.replaceElements(elements);
     });
     store.timeline.labelLatest(`Restored ${relativeTime(current.t, now)} state`);
     liveRef.current = elements;
