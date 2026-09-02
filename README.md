@@ -24,16 +24,16 @@ Work together with others in real-time. The application utilizes a full collabor
 Every drawing is a `.fluxx` file on your disk, opened and saved like a normal document. Nothing lives in a browser tab you're afraid to close. PNG and SVG exports carry the whole editable scene inside them — drop an exported PNG back onto the canvas and you're editing it again.
 
 ### Version history that belongs to you
-Every drawing carries its own past. Checkpoints are recorded as you work and written into the file itself. Press `⌘H` to scrub through history, play it back, or restore an old version. Even an exported PNG carries its history.
+Every drawing carries its own past. Checkpoints are recorded as you work and written into the file itself. Press `⇧H` to scrub through history, play it back, or restore an old version. Even an exported PNG carries its history.
 
 ### Bidirectional diagram/text synchronization
 Press `⌘/` to open a text view beside the canvas. The two stay in sync in both directions. Type `api -> db: queries` and the boxes appear automatically. Drag a box on the canvas, and the textual representation rewrites itself to match the new visual state.
 
-The text view also accepts a richer, declarative scene language for LLM-generated diagrams. It compiles to ordinary editable FluxxDraw elements, so the result remains selectable, bindable, themeable, collaborative, and exportable:
+The text view also accepts a richer, declarative scene language for LLM-generated diagrams. It compiles to ordinary editable FluxxDraw elements, so the result remains selectable, bindable, themeable, collaborative, and exportable. The complete, copy/pasteable authoring contract for language models lives in [`FLUXXDRAW_DSL_PROMPT.md`](FLUXXDRAW_DSL_PROMPT.md).
 
 ```text
-layout right
-frame backend "Backend" at=60,60 size=600x240 fill=#f8fafc
+layout none
+frame backend "Backend" at=60,60 size=600x240 background=#f8fafc
 node api "API Gateway" shape=rounded at=100,120 size=180x90 fill=#e8f1ff stroke=#2563eb frame=backend
 node db "Postgres" shape=cylinder at=420,120
 edge api -> db "queries" route=orthogonal from=east to=west end=triangle stroke=dashed
@@ -41,19 +41,28 @@ text title "Checkout System" at=100,20 size=28 font=normal
 path accent points="0,0 30,20 60,0" stroke=#ef4444 width=3
 ```
 
-Rich declarations support nodes, frames, loose text, freehand paths, polylines, explicit coordinates and sizes, ports, routing, arrowheads, component ids, and the full element style vocabulary. The compact node/edge syntax remains supported for quick hand-authored diagrams.
+Rich declarations support nodes, frames, loose text, freehand paths, polylines, explicit coordinates and sizes, ports, routing, arrowheads, component ids, and the full element style vocabulary. The compact node/edge syntax remains supported for quick hand-authored diagrams. Use `layout none` when coordinates must be preserved; use `layout down`, `layout right`, or `layout grid` when FluxxDraw should arrange the managed nodes.
 
 ### Diagrams that tidy themselves
 Press `⇧⌘T` to take a scattered mess of boxes and arrows and lay it out properly — layered, evenly spaced, and re-routed — without losing the hand-drawn look.
 
 ### Presentations for free
-Frames act as slides. Press `⇧⌘P` to go full screen and step through them with the arrow keys. The UI fades away, leaving just you and a laser pointer for presenting.
+Frames act as slides. Press `⇧P` to go full screen and step through them with the arrow keys. The UI fades away, leaving just you and a laser pointer for presenting.
 
 ### Shapes that are actually reusable
 A component is a real instance. Edit the master component once, and every placed copy updates instantly. Detach one, and it becomes ordinary shapes again.
 
 ### Consistent handwriting everywhere
 Six drawing fonts are bundled with the app. SVG exports inline the fonts they use, ensuring your diagram looks identical on a computer that has never seen it.
+
+### FluxxDraw DSL at a glance
+
+The DSL is intentionally declarative: it describes scene data, never executable code. It has two compatible forms:
+
+- **Compact syntax** for quick diagrams: `api: API Gateway`, `db [cylinder]`, `api -> db: queries`.
+- **Rich syntax** for deterministic, model-generated scenes: `node`, `edge`, `frame`, `text`, `path`/`draw`, and `layout` declarations with geometry and style options.
+
+Rich source is reconciled in place using stable keys. Editing a declaration updates the matching canvas element instead of rebuilding unrelated hand-drawn work. Invalid or partially typed source is reported in the text panel and does not replace the last valid scene. See [`FLUXXDRAW_DSL_PROMPT.md`](FLUXXDRAW_DSL_PROMPT.md) for the full grammar, option vocabulary, layout guidance, and model instructions.
 
 ---
 

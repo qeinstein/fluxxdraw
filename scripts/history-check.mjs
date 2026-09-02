@@ -38,7 +38,7 @@ const recon = await p.evaluate(() => {
 ok("each checkpoint reconstructs a growing scene", recon[recon.length - 1] === 4 && recon[0] <= 1, JSON.stringify(recon));
 
 // open the panel and scrub back
-await p.keyboard.press("Meta+h");
+await p.keyboard.press("Shift+h");
 await p.waitForSelector(".timeline");
 await p.locator(".timeline-slider").fill("1");
 await p.waitForTimeout(250);
@@ -52,7 +52,7 @@ const afterClose = await p.evaluate(() => window.__scene.visibleElements.length)
 ok("closing restores the live scene", afterClose === 4, `${afterClose} elements`);
 
 // restore for real
-await p.keyboard.press("Meta+h");
+await p.keyboard.press("Shift+h");
 await p.waitForSelector(".timeline");
 await p.locator(".timeline-slider").fill("1");
 await p.waitForTimeout(200);
@@ -84,7 +84,7 @@ const png = await p.evaluate(async () => {
 });
 ok("an exported PNG carries its own history", png > 0, `${png} checkpoints in the PNG`);
 
-await p.keyboard.press("Meta+h");
+await p.keyboard.press("Shift+h");
 await p.waitForSelector(".timeline");
 await p.screenshot({ path: new URL("../.smoke/timeline.png", import.meta.url).pathname });
 await b.close();

@@ -40,9 +40,10 @@ ok("bare hostnames get an https scheme", embed?.url === "https://github.com/qein
 
 // clicking a selected embed opens the link in a new tab
 const popupPromise = p.waitForEvent("popup", { timeout: 4000 }).catch(() => null);
-await p.mouse.click(box.x + 430, box.y + 270);
+// Stay well inside the card so the click cannot be captured by its resize handle.
+await p.mouse.click(box.x + 630, box.y + 350);
 await p.waitForTimeout(200);
-await p.mouse.click(box.x + 430, box.y + 270);
+await p.mouse.click(box.x + 630, box.y + 350);
 const popup = await popupPromise;
 ok("clicking a selected embed opens the link", popup !== null, popup ? popup.url() : "no popup");
 await popup?.close();
