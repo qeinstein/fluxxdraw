@@ -62,7 +62,8 @@ await page.getByRole("button", { name: "Recovery" }).click();
 check("recovery snapshot is listed", await page.getByText("Recovery.fluxx", { exact: true }).count() === 1);
 
 await page.getByRole("button", { name: "Close workspace" }).click();
-await page.getByRole("button", { name: "Open command palette" }).click();
+await page.getByRole("button", { name: "More options" }).click();
+await page.getByRole("button", { name: "Command Palette", exact: true }).click();
 check("command palette has two views", await page.locator(".command-palette-tabs button").count() === 2);
 await page.getByRole("button", { name: "Keyboard shortcuts", exact: true }).click();
 check("shortcuts render inside command palette", await page.locator(".command-shortcuts .shortcut-row").count() > 10);

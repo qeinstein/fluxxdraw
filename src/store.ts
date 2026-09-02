@@ -56,7 +56,11 @@ export class SceneStore {
     
     this.undoManager = new Y.UndoManager([this.yElements, this.yOrder], {
       captureTimeout: 500,
-      trackedOrigins: new Set(["local"]),
+      // Interactive canvas gestures update the Yjs collections directly so
+      // they can be coalesced across pointer moves. Those transactions have
+      // Yjs's default null origin; explicit store.mutate calls use "local".
+      // Track both, while still excluding provider/remote origins.
+      trackedOrigins: new Set([null, "local"]),
     });
     
     this.ydoc.on("update", this.ydocUpdateHandler);

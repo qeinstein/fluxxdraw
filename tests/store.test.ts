@@ -74,6 +74,17 @@ describe('SceneStore', () => {
     expect(store.elements.length).toBe(1);
   });
 
+  it('tracks direct gesture mutations for undo', () => {
+    const el = { id: 'test6', type: 'rectangle', x: 0, y: 0, width: 10, height: 10 } as ExcaliElement;
+    store.beginHistory();
+    store.addElements(el);
+    store.commit();
+
+    expect(store.canUndo()).toBe(true);
+    store.undo();
+    expect(store.elements.length).toBe(0);
+  });
+
   it('sets editing arrow id based on selection', () => {
     const el = { id: 'arrow1', type: 'arrow', x: 0, y: 0 } as ExcaliElement;
     store.mutate(() => {

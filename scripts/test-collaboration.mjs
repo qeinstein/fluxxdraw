@@ -102,16 +102,6 @@ try {
 
   // Test Host ending session kicks guest seamlessly (no page reload)
   console.log("Host ending session...");
-  guest.on('console', msg => console.log(`Guest console: ${msg.text()}`));
-  let alertFired = false;
-  let endSessionAlert = null;
-  const handleDialog = async (dialog) => {
-    endSessionAlert = dialog.message();
-    alertFired = true;
-    console.log(`Guest dialog: type=${dialog.type()} message=${JSON.stringify(dialog.message())}`);
-    await dialog.accept();
-  };
-  guest.on('dialog', handleDialog);
   
   await host.getByLabel('Collaboration menu').click();
   await host.waitForSelector('.collab-popover');
@@ -126,15 +116,22 @@ try {
     console.log("waitForURL timed out!");
   }
   check('Guest kicked and path cleared', guestKicked);
-  check('Alert was observed once', alertFired);
+  const notice = guest.locator('.dialog.compact').filter({ hasText: 'host has ended' });
+  const alertFired = await notice.count() === 1;
+  check('End-session notice was observed once', alertFired);
   check(
-    'Exactly one end-session dialog appeared',
-    alertFired === true &&
-      endSessionAlert?.includes('ended'),
-    `(alert=${JSON.stringify(endSessionAlert)})`,
+    'End-session notice has the right message',
+    alertFired && (await notice.first().textContent())?.includes('The host has ended this collaboration session.'),
+    `(notice=${JSON.stringify(await notice.first().textContent())})`,
   );
 
-  console.log("✅ All E2E collaboration checks passed!");
+  const failed = checks.filter(({ ok }) => !ok);
+  if (failed.length || errors.length) {
+    console.error(`❌ Collaboration checks failed: ${failed.length}; runtime errors: ${errors.length}`);
+    process.exitCode = 1;
+  } else {
+    console.log("✅ All E2E collaboration checks passed!");
+  }
   
 } catch (e) {
   console.error("Test failed:", e);
