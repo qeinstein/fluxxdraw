@@ -15,14 +15,15 @@ interface DiagramTextPanelProps {
 /** How long typing has to settle before the canvas is rebuilt. */
 const TYPING_DEBOUNCE_MS = 450;
 
-const PLACEHOLDER = `# Describe the diagram, or draw it — either side updates the other.
+const PLACEHOLDER = `# Compact syntax stays easy to type; rich syntax gives an LLM full scene control.
 
-api: API Gateway
-db: Postgres [ellipse] {blue}
-cache: Redis [diamond]
+node api "API Gateway" shape=rounded at=120,100 size=180x90 fill=#e8f1ff
+node db "Postgres" shape=cylinder at=420,100
+edge api -> db "queries" route=orthogonal from=east to=west end=triangle
 
-api -> db: queries
-api --> cache`;
+frame backend "Backend" at=60,60 size=600x220
+text title "Checkout System" at=120,20 size=28 font=normal
+path accent points="0,0 30,20 60,0" stroke=#ef4444 width=3`;
 
 /**
  * The text view of the diagram, kept in sync with the canvas in both
@@ -78,6 +79,14 @@ export const DiagramTextPanel = ({ onClose }: DiagramTextPanelProps) => {
     timerRef.current = window.setTimeout(() => {
       const { spec, issues: found } = parseDiagram(next);
       setIssues(found);
+
+      // A half-written rich declaration can otherwise parse as an empty or
+      // partial scene and delete work already on the canvas. Keep the last
+      // valid scene until the source is valid again.
+      if (found.length > 0) {
+        setStatus("Fix the highlighted source before applying it to the canvas.");
+        return;
+      }
 
       const key = canonical(spec as DiagramSpec);
       if (key === agreedRef.current) return;

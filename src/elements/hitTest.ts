@@ -130,6 +130,26 @@ export const hitTestElement = (
         ) <= threshold
       );
     }
+    case "triangle": {
+      const top: [number, number] = [((x1 + x2) / 2), y1];
+      const right: [number, number] = [x2, y2];
+      const left: [number, number] = [x1, y2];
+      if (!strict || isFilled(el)) {
+        const area = Math.abs((right[0] - left[0]) * (top[1] - left[1]) - (top[0] - left[0]) * (right[1] - left[1]));
+        const a = Math.abs((right[0] - x) * (top[1] - y) - (top[0] - x) * (right[1] - y));
+        const b = Math.abs((top[0] - x) * (left[1] - y) - (left[0] - x) * (top[1] - y));
+        const c = Math.abs((left[0] - x) * (right[1] - y) - (right[0] - x) * (left[1] - y));
+        return Math.abs(area - a - b - c) < 0.5;
+      }
+      return Math.min(
+        distanceToSegment(x, y, ...top, ...right),
+        distanceToSegment(x, y, ...right, ...left),
+        distanceToSegment(x, y, ...left, ...top),
+      ) <= threshold;
+    }
+    case "hexagon":
+    case "parallelogram":
+    case "cylinder":
     case "rectangle":
     case "sticky":
     default:

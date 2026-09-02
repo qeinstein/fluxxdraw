@@ -14,7 +14,7 @@ const ok = (n, c, d = "") => console.log(`${c ? "PASS" : "FAIL"}  ${n}${d ? ` â€
 const shapes = () =>
   p.evaluate(() =>
     window.__scene.visibleElements
-      .filter((e) => ["rectangle", "ellipse", "diamond"].includes(e.type))
+      .filter((e) => ["rectangle", "ellipse", "diamond", "sticky", "triangle", "hexagon", "parallelogram", "cylinder", "instance"].includes(e.type))
       .map((e) => ({
         key: e.dslKey,
         type: e.type,
@@ -68,6 +68,50 @@ ok("edge label applied", a.some((e) => e.label === "queries"));
 ok("new diagram was laid out", s.some((n) => n.y !== s[0].y), s.map((n) => `${n.key}@${n.x},${n.y}`).join(" "));
 
 await p.screenshot({ path: new URL("../.smoke/dsl.png", import.meta.url).pathname });
+
+// --- rich scene declarations ---------------------------------------------
+await type(`layout none
+frame backend "Backend" at=60,60 size=600x240 fill=#f8fafc
+node api "API Gateway" shape=rounded at=100,120 size=180x90 fill=#e8f1ff stroke=#2563eb frame=backend
+node db "Postgres" shape=cylinder at=420,120
+node bucket "S3" component=aws:s3 at=720,120
+edge api -> db "queries" route=orthogonal from=east to=west end=triangle stroke=dashed
+text title "Checkout System" at=100,20 size=28 font=normal
+path accent kind=line points="0,0 30,20 60,0" stroke=#ef4444 width=3`);
+const rich = await p.evaluate(() => window.__scene.visibleElements.map((e) => ({
+  id: e.id,
+  key: e.dslKey,
+  type: e.type,
+  frameId: e.frameId,
+  x: e.x,
+  y: e.y,
+  width: e.width,
+  height: e.height,
+  stroke: e.strokeColor,
+  end: e.endArrowhead,
+})));
+const richApi = rich.find((e) => e.key === "api");
+const richDb = rich.find((e) => e.key === "db");
+const richBucket = rich.find((e) => e.key === "bucket");
+const richEdge = rich.find((e) => e.type === "arrow");
+const richFrame = rich.find((e) => e.key === "backend");
+const richTitle = rich.find((e) => e.key === "title");
+const richPath = rich.find((e) => e.key === "accent");
+ok("rich syntax creates explicit shapes", richApi?.x === 100 && richDb?.type === "cylinder");
+ok("rich syntax resolves a built-in component", richBucket?.type === "instance");
+ok("rich syntax creates a frame and assigns membership", richFrame?.type === "frame" && richApi?.frameId === richFrame?.id,
+  `${richApi?.frameId ?? "none"} / ${richFrame?.id ?? "none"}`);
+ok("rich syntax honours routing and arrowheads", richEdge?.type === "arrow" && richEdge?.end === "triangle");
+ok("rich syntax creates loose text and paths", richTitle?.type === "text" && richPath?.type === "line");
+
+// Return to a three-node compact diagram before checking in-place edits. This
+// keeps the new-node auto-layout assertion above independent of that check.
+await type(`api: API Gateway
+db: Postgres [ellipse] {blue}
+cache: Redis [diamond]
+
+api -> db: queries
+api --> cache`);
 
 // --- positions survive an edit --------------------------------------------
 const before = await shapes();
@@ -137,13 +181,28 @@ worker: Worker
 api -> db: reads`);
 ok("removing a line deletes its shape", (await shapes()).length === 3,
   (await shapes()).map((n) => n.key).join(" "));
-ok("removing an edge deletes its arrow", (await arrows()).length === 1);
+ok("removing an edge deletes its arrow", (await arrows()).filter((e) => e.bound).length === 1);
 
+const beforeBadSource = await p.evaluate(() => window.__scene.visibleElements.map((e) => ({
+  id: e.id,
+  type: e.type,
+  x: e.x,
+  y: e.y,
+  text: e.type === "text" ? e.text : undefined,
+})));
 await type(`api: Edge Gateway
 bad name here!: nope
 api -> db`);
 const issues = await p.locator(".diagram-issues li").allTextContents();
 ok("bad syntax is reported with a line number", issues.length > 0, issues.join(" | "));
+const afterBadSource = await p.evaluate(() => window.__scene.visibleElements.map((e) => ({
+  id: e.id,
+  type: e.type,
+  x: e.x,
+  y: e.y,
+  text: e.type === "text" ? e.text : undefined,
+})));
+ok("bad syntax leaves the last valid scene intact", JSON.stringify(afterBadSource) === JSON.stringify(beforeBadSource));
 
 // --- untranslatable content is never destroyed -----------------------------
 await p.evaluate(async () => {

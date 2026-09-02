@@ -213,6 +213,36 @@ const buildDrawables = (el: ExcaliElement, theme: ThemeName): Drawable[] => {
       ];
       return [generator.polygon(pts, opts)];
     }
+    case "triangle":
+      return [generator.polygon([[w / 2, 0], [w, h], [0, h]], opts)];
+    case "hexagon": {
+      const inset = Math.min(Math.abs(w), Math.abs(h)) * 0.22;
+      return [generator.polygon([
+        [inset, 0],
+        [w - inset, 0],
+        [w, h / 2],
+        [w - inset, h],
+        [inset, h],
+        [0, h / 2],
+      ], opts)];
+    }
+    case "parallelogram": {
+      const inset = Math.min(Math.abs(w) * 0.2, Math.abs(h) * 0.45);
+      return [generator.polygon([
+        [inset, 0],
+        [w, 0],
+        [w - inset, h],
+        [0, h],
+      ], opts)];
+    }
+    case "cylinder": {
+      const ry = Math.min(Math.abs(h) * 0.16, 18);
+      return [
+        generator.rectangle(0, ry, w, Math.max(Math.abs(h) - ry * 2, 1), opts),
+        generator.ellipse(w / 2, ry, w, ry * 2, opts),
+        generator.ellipse(w / 2, h - ry, w, ry * 2, { ...opts, fill: undefined }),
+      ];
+    }
     case "arrow":
     case "line": {
       const pts = getRenderPoints(el as LinearElement);

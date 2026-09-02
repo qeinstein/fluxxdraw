@@ -11,31 +11,114 @@ import type { ThemeName } from "../constants";
  * and forth forever.
  */
 
-export type NodeShape = "rectangle" | "ellipse" | "diamond";
+export type NodeShape =
+  | "rectangle"
+  | "ellipse"
+  | "diamond"
+  | "sticky"
+  | "triangle"
+  | "hexagon"
+  | "parallelogram"
+  | "cylinder";
 export type EdgeKind = "arrow" | "dashed" | "line";
 
-export interface NodeSpec {
+import type {
+  Arrowhead,
+  Edges,
+  FillStyle,
+  FontFamily,
+  PathType,
+  StrokeStyle,
+  TextAlign,
+  VerticalAlign,
+} from "../types";
+
+export type PortName = "auto" | "north" | "east" | "south" | "west";
+
+/** Optional visual properties accepted by rich declarations. */
+export interface StyleSpec {
+  strokeColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  fillStyle?: FillStyle;
+  strokeWidth?: number;
+  strokeStyle?: StrokeStyle;
+  roughness?: number;
+  edges?: Edges;
+  opacity?: number;
+  fontSize?: number;
+  fontFamily?: FontFamily;
+  textAlign?: TextAlign;
+  verticalAlign?: VerticalAlign;
+}
+
+export interface GeometrySpec {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  angle?: number;
+}
+
+export interface NodeSpec extends GeometrySpec, StyleSpec {
   /** stable identifier, written by the user in the text */
   key: string;
   label: string;
   shape: NodeShape;
   /** named palette colour or hex; undefined means transparent */
   fill?: string;
+  /** an installed component or built-in service id, e.g. `aws:s3` */
+  component?: string;
+  /** explicit frame key for rich declarations */
+  frame?: string;
 }
 
-import type { PathType } from "../types";
-
-export interface EdgeSpec {
+export interface EdgeSpec extends StyleSpec {
   from: string;
   to: string;
   label?: string;
   kind: EdgeKind;
   route?: PathType;
+  startArrowhead?: Arrowhead;
+  endArrowhead?: Arrowhead;
+  startPort?: PortName;
+  endPort?: PortName;
+  /** Optional local points for a manually routed connector. */
+  points?: [number, number][];
+}
+
+export interface TextSpec extends GeometrySpec, StyleSpec {
+  key: string;
+  text: string;
+  frame?: string;
+}
+
+export interface FrameSpec extends GeometrySpec, StyleSpec {
+  key: string;
+  label: string;
+}
+
+export type PathSpecKind = "freehand" | "line";
+
+export interface PathSpec extends GeometrySpec, StyleSpec {
+  key: string;
+  kind: PathSpecKind;
+  points: [number, number][];
+  pressures?: number[];
+  closed?: boolean;
+  frame?: string;
 }
 
 export interface DiagramSpec {
   nodes: NodeSpec[];
   edges: EdgeSpec[];
+  /** Rich declarations are optional to keep the legacy AST source-compatible. */
+  texts?: TextSpec[];
+  frames?: FrameSpec[];
+  paths?: PathSpec[];
+  layout?: "down" | "right" | "grid" | "none";
+  /** true when the source used the extended declaration syntax */
+  rich?: boolean;
 }
 
 export const emptySpec = (): DiagramSpec => ({ nodes: [], edges: [] });
@@ -81,11 +164,14 @@ export const edgeId = (edge: Pick<EdgeSpec, "from" | "to">) => `${edge.from}→$
 export const canonical = (spec: DiagramSpec): string => {
   const nodes = [...spec.nodes]
     .sort((a, b) => a.key.localeCompare(b.key))
-    .map((n) => `${n.key}|${n.label}|${n.shape}|${n.fill ?? ""}`);
+    .map((n) => n);
   const edges = [...spec.edges]
     .sort((a, b) => edgeId(a).localeCompare(edgeId(b)))
-    .map((e) => `${e.from}|${e.to}|${e.kind}|${e.label ?? ""}`);
-  return JSON.stringify({ nodes, edges });
+    .map((e) => e);
+  const texts = [...(spec.texts ?? [])].sort((a, b) => a.key.localeCompare(b.key));
+  const frames = [...(spec.frames ?? [])].sort((a, b) => a.key.localeCompare(b.key));
+  const paths = [...(spec.paths ?? [])].sort((a, b) => a.key.localeCompare(b.key));
+  return JSON.stringify({ nodes, edges, texts, frames, paths, layout: spec.layout ?? "none", rich: spec.rich ?? false });
 };
 
 export const specsEqual = (a: DiagramSpec, b: DiagramSpec) => canonical(a) === canonical(b);

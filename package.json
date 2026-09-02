@@ -14,6 +14,7 @@
     "icons": "node scripts/icons.mjs",
     "test": "node scripts/smoke.mjs",
     "test:library": "node scripts/library-check.mjs",
+    "test:library:local": "node scripts/library-local-check.mjs",
     "test:workspace": "node scripts/workspace-check.mjs",
     "test:unit": "vitest run",
     "coverage": "vitest run --coverage"

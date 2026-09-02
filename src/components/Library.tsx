@@ -7,15 +7,19 @@ import { IconLockOpen, IconLockClosed } from "./icons";
 import { isArchitectureLibrary, libraryPriorityScore, rankLibraries } from "../libraryRanking";
 import { exportToSvgString } from "../io/exportSvg";
 import { store } from "../store";
+import { adaptLibraryElementsForTheme, filterLibraryItems, libraryPreviewBackground } from "../libraryUtils";
 
 const LibraryItemPreview = ({ elements }: { elements: any[] }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const theme = store.appState.theme;
+  const previewElements = adaptLibraryElementsForTheme(elements, theme);
+  const previewBackground = libraryPreviewBackground(previewElements, theme);
   useEffect(() => {
     let active = true;
     const render = async () => {
       try {
         const svgString = await exportToSvgString({
-          elements,
+          elements: previewElements,
           files: store.files,
           scale: 1,
           padding: 10,
@@ -39,9 +43,9 @@ const LibraryItemPreview = ({ elements }: { elements: any[] }) => {
     };
     render();
     return () => { active = false; };
-  }, [elements]);
+  }, [elements, previewElements, theme]);
 
-  return <div ref={containerRef} className="library-item-content preview-bg" style={{ padding: "8px", boxSizing: "border-box" }} />;
+  return <div ref={containerRef} className="library-item-content preview-bg" style={{ padding: "8px", boxSizing: "border-box", backgroundColor: previewBackground }} />;
 };
 
 const getLibraryItems = (payload: unknown): { name?: string; elements: any[] }[] => {
@@ -100,6 +104,8 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
     return rankLibraries(filtered);
   }, [libraries, query]);
 
+  const filteredLocalItems = useMemo(() => filterLibraryItems(localItems, query), [localItems, query]);
+
   // ---------------------------------------------------------------------------
   // Actions
   // ---------------------------------------------------------------------------
@@ -133,14 +139,16 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
   };
 
   const queuePlacement = (items: any[], libraryId: string) => {
-    window.dispatchEvent(new CustomEvent("fluxxdraw:place-library", { detail: items }));
+    window.dispatchEvent(new CustomEvent("fluxxdraw:place-library", {
+      detail: adaptLibraryElementsForTheme(items, store.appState.theme),
+    }));
     trackUsage(libraryId);
   };
 
   const onDragStart = (e: React.DragEvent, items: any[]) => {
     e.dataTransfer.setData(
       "application/vnd.fluxxdraw.library+json",
-      JSON.stringify(items),
+      JSON.stringify(adaptLibraryElementsForTheme(items, store.appState.theme)),
     );
     e.dataTransfer.effectAllowed = "copy";
   };
@@ -149,6 +157,7 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
   // Recently-used section (top 6 most recent)
   // ---------------------------------------------------------------------------
   const recentUsed = recentItems
+    .filter((i) => filteredLocalItems.some((item) => item.id === i.id))
     .filter((i) => (i.lastUsed ?? 0) > 0)
     .slice(0, 6);
 
@@ -197,18 +206,19 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
         </div>
       </header>
 
-      {/* Search — visible in Browse tab */}
-      {tab === "browse" && (
+      {/* Search personal and community libraries; built-in has its own provider search. */}
+      {(tab === "my-library" || tab === "browse") && (
         <div className="library-search">
           <input
             type="search"
-            placeholder="Search libraries…"
+            aria-label={tab === "my-library" ? "Search your library" : "Search community libraries"}
+            placeholder={tab === "my-library" ? "Search your components…" : "Search libraries…"}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") e.preventDefault();
             }}
-            autoFocus
+            autoFocus={tab === "browse"}
           />
         </div>
       )}
@@ -238,6 +248,9 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
 
             {localItems.length > 0 && (
               <>
+                {filteredLocalItems.length === 0 && (
+                  <div className="library-status">No components match “{query}”.</div>
+                )}
                 {/* Recently used */}
                 {recentUsed.length > 0 && (
                   <div className="library-section">
@@ -274,8 +287,8 @@ export const Library = ({ onClose, docked, onDockToggle }: { onClose: () => void
                 {/* All installed */}
                 <div className="library-section">
                   <h4 className="library-section-title">All components</h4>
-                  <div className="library-grid">
-                    {localItems.map((lib) => (
+                    <div className="library-grid">
+                      {filteredLocalItems.map((lib) => (
                       <div
                         key={lib.id}
                         className="library-item"
